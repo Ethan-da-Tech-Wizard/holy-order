@@ -1,0 +1,47 @@
+HOLY ORDER 0.7 — DOUBLE OMAHA WAVES
+
+Open the existing click2play.desktop, choose OMAHA, and use LOW / MAX FPS.
+Close any older running game first so the new scripts load. F10 shows FPS.
+Winter and Desert remain in the same main launcher. No software or assets downloaded.
+
+FORCE AND BREACHES
+1,200 Americans, including the player and crews, versus 100 Germans.
+Two waves of 600; twenty Higgins craft per wave, still 240 seconds apart.
+The landing frontage remains concentrated at 228 metres; terrain width unchanged.
+Forty craft, eighty Brownings, forty protected drivers and fourteen flamethrowers.
+Three Bangalore carriers per boat: sixty per wave, each carrying three charges.
+Engineers plant at their own lane's intact wire before considering an existing gap.
+Riflemen use nearby gaps, not a long sideways march across the beach.
+Local seawall waypoints avoid steering every boat's infantry into three bottlenecks.
+First-wave boats still leave before the second wave's approach. Reserve boats turn
+in formation with 12 metres between hull centres, avoiding overlapping circles.
+
+PERFORMANCE
+The reserve's infantry physics and hitboxes sleep until its scheduled release.
+Only living active fighters receive AI decisions; target searches use spatial cells.
+Low-mode infantry keeps 20 Hz movement and real cover collision, but samples the
+terrain height directly instead of repeatedly sweeping the entire terrain mesh.
+Soldier batches upload changed poses only. Unused first-person AI gun markers are
+removed. Persistent bodies and loot render in shared batches; their collision,
+finite inventory, damage and detached body-part movement remain functional.
+Omaha Low renders 3D at 40% resolution (was 50%), which draws 36% fewer pixels.
+Text remains sharp. Standard and High retain their existing resolution options.
+
+SERIAL CPU REPLAY
+45 seconds of the doubled landing: 44.03 wall seconds before optimization,
+24.47 after (44.4% less time). Render-loop 95th percentile: 62.00 -> 23.61 ms.
+The previous 600-person build retested at 21.01 wall seconds; doubling the force
+adds about 16% CPU time after these changes, with less severe long-frame intervals.
+Combat outcomes differ because engineer routing and decision scheduling changed.
+These are headless CPU measurements, not desktop FPS. GPU and audio are excluded.
+The actual laptop FPS must be read in game. See reviews/omaha/double-wave-performance.json.
+
+VALIDATION
+42 Omaha mechanics checks; 19 additional scale, routing, collision and loot checks.
+Seven route/objective checks; 42 attackers cleared an 11-man bunker strongpoint.
+Six minutes of the full battle: 59 gaps, all 40 boats departed, 502 assault troops
+past all wire, seven strongpoints secured, town controlled and zero defenders left.
+Winter: 85 checks and four-minute battle. Shared menu/fire rates/grenades: 52 checks.
+Armor and health: 10 checks. The final test logs contain no engine/script errors.
+The headless renderer cannot verify GPU pixels; the body/weapon batch lifecycles
+and physical mechanics were checked, with appearance left for in-game playtesting.

@@ -1,0 +1,107 @@
+{
+  "fixture": "42 infantry starting behind wire vs one complete 11-man strongpoint; unchanged health/ammo",
+  "remaining_defenders": [],
+  "snapshots": [
+    {
+      "attackers": 42,
+      "defenders": 11,
+      "grenades": 0,
+      "seconds": 0,
+      "stages": {
+        "0": 42
+      }
+    },
+    {
+      "attackers": 22,
+      "defenders": 1,
+      "grenades": 17,
+      "seconds": 30,
+      "stages": {
+        "0": 7,
+        "3": 5,
+        "6": 10
+      }
+    }
+  ],
+  "soldiers": [
+    {
+      "ammo": 133,
+      "index": 0,
+      "position": "(-67.2013, 44.52405, -429.9922)",
+      "stage": 6,
+      "state": "throw"
+    },
+    {
+      "ammo": 85,
+      "index": 8,
+      "position": "(-68.17659, 43.5993, -426.9633)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 32,
+      "position": "(-66.88348, 44.6177, -430.3485)",
+      "stage": 6,
+      "state": "throw"
+    },
+    {
+      "ammo": 171,
+      "index": 34,
+      "position": "(-69.9173, 41.76079, -421.3185)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 38,
+      "position": "(-354.6643, 5.300467, -327.2404)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 39,
+      "position": "(-352.6626, 5.407743, -327.2322)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 40,
+      "position": "(-350.6611, 5.523386, -327.2282)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 41,
+      "position": "(-348.6612, 5.64305, -327.226)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 135,
+      "index": 42,
+      "position": "(-346.6574, 5.705011, -327.2184)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 43,
+      "position": "(-344.6568, 5.69755, -327.2122)",
+      "stage": 0,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 44,
+      "position": "(-342.657, 5.654319, -327.2092)",
+      "stage": 0,
+      "state": "advance"
+    }
+  ],
+  "success": true,
+  "survivors": 11
+}

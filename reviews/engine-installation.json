@@ -1,0 +1,9 @@
+{
+  "project": "https://godotengine.org",
+  "release": "https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable",
+  "version": "4.7.2-stable",
+  "download": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip",
+  "archive_sha256": "cadd3204e728a35d3f13adb7fd0d7902636b79f6b95c40c265eb73b6c35329e4",
+  "matches_github_digest": true,
+  "admin_required": false
+}

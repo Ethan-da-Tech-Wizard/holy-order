@@ -1,0 +1,73 @@
+{
+  "project": "Holy Order \u2014 The First Displacement",
+  "version": "0.1",
+  "updated_at": "2026-10-06T03:23:21.411597+00:00",
+  "ready_for_first_user_test": true,
+  "human_playtesting_completed": false,
+  "engine": "Godot 4.7.2 official Linux build; published download digest verified",
+  "desktop_launcher": "/home/ethan/pg/wyldgms/holy order/click2play.desktop",
+  "application_menu_name": "Holy Order",
+  "launch_behavior": "Start screen, then Begin and a short Ready prompt. No automatic play or shutdown.",
+  "automated_checks": {
+    "passed": 42,
+    "failed": 0,
+    "report": "/home/ethan/pg/wyldgms/holy order/reviews/encounter-tests.json"
+  },
+  "visual_checks": [
+    "start screen",
+    "opening prompt",
+    "sheltered spawn",
+    "rifle pickup",
+    "rifle subtitle",
+    "outpost",
+    "road rendezvous",
+    "tea scene",
+    "completion screen"
+  ],
+  "encounter": [
+    "sword-and-armour start near cover",
+    "isolated Italian sentry",
+    "animated Carcano pickup",
+    "choice of assault, sneak or prone approach",
+    "five additional defenders",
+    "fixed-road British patrol spawn after final kill",
+    "approach, climb aboard and subtitled tea scene",
+    "test-complete screen"
+  ],
+  "equipment": {
+    "rifle": "Carcano M91",
+    "loaded_rounds_on_pickup": 6,
+    "reserve_rounds_per_looted_body": 18,
+    "clip_type": "six-round en-bloc",
+    "lint": "one-time per body, stackable, no purpose yet",
+    "grenade": "one Breda M35 in optional outpost crate",
+    "knight": "fictional crusading order, circa 1450, plate armour"
+  },
+  "vehicle": "Morris CS8-inspired British light truck, suitable for June 1940",
+  "controls": {
+    "movement": "WASD",
+    "sprint": "Shift",
+    "aim": "RMB",
+    "charge": "Shift + RMB with melee equipped",
+    "attack": "LMB; hold/release for heavy melee",
+    "lean": "Q/E",
+    "jump_mantle": "Space",
+    "crouch": "C",
+    "prone": "Z",
+    "weapons": "1/2/3",
+    "loot": "F",
+    "reload": "R",
+    "grenade": "G",
+    "inventory": "Tab",
+    "objectives": "J",
+    "pause": "Esc",
+    "fullscreen": "F11"
+  },
+  "limits": [
+    "Original stylized prototype models and procedural animation",
+    "No voice acting; dialogue is subtitled",
+    "Keyboard and mouse only",
+    "No campaign save or multiplayer",
+    "Human balance and feel testing remains pending"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "checks": [
+    {
+      "check": "Assault reaches the rear door then stays inside bunker",
+      "ok": true
+    },
+    {
+      "check": "Cleared gun room leads back through rear exit",
+      "ok": true
+    },
+    {
+      "check": "Squad sweeps remaining strongpoint defenders",
+      "ok": true
+    },
+    {
+      "check": "Town columns keep attacking inland despite survivors in another beach sector",
+      "ok": true
+    },
+    {
+      "check": "Flamethrower burns a visible target within range",
+      "ok": true
+    },
+    {
+      "check": "Concrete stops flame damage through walls",
+      "ok": true
+    },
+    {
+      "check": "Securing village does not skip reinforcement objective",
+      "ok": true
+    },
+    {
+      "check": "Three exits plus village plus wave two wins",
+      "ok": true
+    }
+  ],
+  "route": [
+    {
+      "point": "(-9.0, 10.39102, -219.0)",
+      "stage": 1
+    },
+    {
+      "point": "(-9.0, 14.55499, -246.0)",
+      "stage": 2
+    },
+    {
+      "point": "(-24.0, 20.08427, -242.0)",
+      "stage": 3
+    },
+    {
+      "point": "(-24.0, 20.28427, -234.0)",
+      "stage": 4
+    },
+    {
+      "point": "(-25.2, 20.28427, -234.0)",
+      "stage": 4
+    }
+  ]
+}

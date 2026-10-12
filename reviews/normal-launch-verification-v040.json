@@ -1,0 +1,20 @@
+{
+  "started_at": "2026-10-06T07:42:19.338734+00:00",
+  "wrapper_pid": 60669,
+  "purpose": "Verify the normal launcher reaches the start screen before authorized shutdown",
+  "game_pid": 60670,
+  "window_address": "0x5558cb43a070",
+  "position": [
+    12,
+    42
+  ],
+  "size": [
+    941,
+    1026
+  ],
+  "log": "/home/ethan/pg/wyldgms/holy order/logs/play-ardennes-20261006-004219.log",
+  "verified_start_screen": true,
+  "screenshot": "/home/ethan/pg/wyldgms/holy order/reviews/ardennes-normal-start-v040.png",
+  "closed_cleanly": true,
+  "exit_code": 0
+}

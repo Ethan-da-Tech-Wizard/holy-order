@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "spacing": {"assault": 3.8, "support": 4.5, "entrenched": 1.5},
+  "plans": {
+    "hold": {"order": "hold", "offset": [0, 0], "description": "Stay inside the assigned perimeter; use cover, dig, shift to a reachable firing point."},
+    "support": {"order": "assault", "offset": [0, -24], "description": "Advance cautiously to a supporting line; fire while the flanking squads move."},
+    "flank_left": {"order": "assault", "offset": [-24, -8], "description": "Approach on the left, alternate covering and moving elements, then clear the objective."},
+    "flank_right": {"order": "assault", "offset": [24, -8], "description": "Approach on the right, alternate covering and moving elements, then clear the objective."},
+    "clear": {"order": "assault", "offset": [0, 0], "description": "Close on surviving contacts within the assigned defensive area."}
+  }
+}

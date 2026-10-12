@@ -1,0 +1,37 @@
+; Holy Order — The First Displacement
+config_version=5
+
+[application]
+config/name="Holy Order"
+config/version="0.8.0"
+run/main_scene="res://scenes/menu.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
+config/icon="res://assets/icon.svg"
+
+[display]
+window/size/viewport_width=1440
+window/size/viewport_height=900
+window/size/window_width_override=1280
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+window/vsync/vsync_mode=1
+
+[rendering]
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/default_filters/use_nearest_mipmap_filter=false
+anti_aliasing/quality/msaa_3d=0
+scaling_3d/scale=0.5
+environment/defaults/default_clear_color=Color(0.56, 0.58, 0.54, 1)
+lights_and_shadows/directional_shadow/size=1024
+
+[audio]
+driver/enable_input=false
+
+[physics]
+common/physics_ticks_per_second=30
+common/physics_interpolation=true
+
+[debug]
+gdscript/warnings/untyped_declaration=0
+gdscript/warnings/inferred_declaration=0

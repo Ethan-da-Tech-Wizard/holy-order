@@ -1,0 +1,274 @@
+{
+  "fixture": "42 infantry starting behind wire vs one complete 11-man strongpoint; unchanged health/ammo",
+  "remaining_defenders": [],
+  "snapshots": [
+    {
+      "attackers": 42,
+      "defenders": 13,
+      "grenades": 0,
+      "seconds": 0,
+      "stages": {
+        "0": 42
+      }
+    },
+    {
+      "attackers": 39,
+      "defenders": 2,
+      "grenades": 7,
+      "seconds": 30,
+      "stages": {
+        "3": 1,
+        "6": 38
+      }
+    }
+  ],
+  "soldiers": [
+    {
+      "ammo": 120,
+      "index": 0,
+      "position": "(-14.30839, 27.32815, -297.9426)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 82,
+      "index": 1,
+      "position": "(-23.35214, 22.58146, -250.0411)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 75,
+      "index": 2,
+      "position": "(-13.27672, 25.01367, -294.3174)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 88,
+      "index": 3,
+      "position": "(-24.22962, 22.8882, -249.9238)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 120,
+      "index": 4,
+      "position": "(-18.49989, 20.23455, -238.4001)",
+      "stage": 3,
+      "state": "advance"
+    },
+    {
+      "ammo": 123,
+      "index": 6,
+      "position": "(-9.138438, 25.88343, -308.2159)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 8,
+      "position": "(-10.77691, 23.55426, -300.6715)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 9,
+      "position": "(-11.91891, 23.053, -293.9475)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 10,
+      "position": "(-1.711599, 23.57265, -302.3368)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 83,
+      "index": 11,
+      "position": "(-23.95243, 22.94574, -250.0687)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 129,
+      "index": 12,
+      "position": "(-16.33722, 28.32213, -282.4698)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 14,
+      "position": "(-6.869631, 24.48701, -305.3896)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 165,
+      "index": 15,
+      "position": "(-24.72164, 22.94739, -249.7324)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 16,
+      "position": "(-4.352449, 23.75673, -303.1707)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 79,
+      "index": 17,
+      "position": "(-30.57854, 43.67015, -292.6412)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 119,
+      "index": 18,
+      "position": "(-5.321661, 23.77958, -303.2012)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 80,
+      "index": 19,
+      "position": "(-6.64068, 23.19271, -301.162)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 78,
+      "index": 20,
+      "position": "(-8.402987, 23.94166, -303.4738)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 81,
+      "index": 22,
+      "position": "(-11.42951, 26.66588, -308.0493)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 79,
+      "index": 23,
+      "position": "(-10.41108, 25.70364, -307.1559)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 120,
+      "index": 24,
+      "position": "(-31.90731, 43.95567, -291.2534)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 84,
+      "index": 25,
+      "position": "(-36.39745, 44.24874, -291.3151)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 82,
+      "index": 26,
+      "position": "(-1.536234, 22.71943, -297.976)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 124,
+      "index": 30,
+      "position": "(-9.871264, 24.93066, -305.9009)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 79,
+      "index": 32,
+      "position": "(-13.84965, 24.06907, -288.956)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 84,
+      "index": 33,
+      "position": "(-22.95563, 23.17946, -250.4764)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 155,
+      "index": 34,
+      "position": "(-35.88905, 42.80172, -287.0192)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 81,
+      "index": 35,
+      "position": "(-9.375851, 24.31256, -304.3687)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 125,
+      "index": 36,
+      "position": "(-7.400639, 23.96263, -303.6169)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 86,
+      "index": 37,
+      "position": "(-8.696595, 24.98783, -306.7083)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 83,
+      "index": 39,
+      "position": "(-22.95374, 23.06651, -250.4159)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 83,
+      "index": 40,
+      "position": "(-22.95231, 23.16872, -250.4716)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 81,
+      "index": 41,
+      "position": "(-3.313794, 24.52418, -305.1358)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 135,
+      "index": 42,
+      "position": "(-22.99093, 23.11107, -250.4295)",
+      "stage": 6,
+      "state": "advance"
+    },
+    {
+      "ammo": 79,
+      "index": 44,
+      "position": "(-15.21981, 25.98152, -281.6708)",
+      "stage": 6,
+      "state": "advance"
+    }
+  ],
+  "success": true,
+  "survivors": 35
+}

@@ -1,0 +1,63 @@
+{
+  "publisher": "Poly Haven",
+  "license_url": "https://polyhaven.com/license",
+  "downloaded": "2026-10-06",
+  "assets": [
+    {
+      "file": "concrete_diff.jpg",
+      "asset": "concrete_wall_008",
+      "source": "https://polyhaven.com/a/concrete_wall_008",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_008/concrete_wall_008_diff_1k.jpg",
+      "sha256": "a203166d280d3cfc6a91bbc9ffdae406eb9555b4a4f658cd92619063eb17c147",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "concrete_nor_gl.jpg",
+      "asset": "concrete_wall_008",
+      "source": "https://polyhaven.com/a/concrete_wall_008",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_wall_008/concrete_wall_008_nor_gl_1k.jpg",
+      "sha256": "83cd3fa2c7cbf4c81402386065daf8fa6f72e1f1f77e02ccb1eedb28496909ae",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "rock_diff.jpg",
+      "asset": "rocky_terrain_02",
+      "source": "https://polyhaven.com/a/rocky_terrain_02",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg",
+      "sha256": "d570c10b1d5302f4fde9e0e94f4cbab0d5e112fc3fe2b3b91c38a98bd3ddaf4b",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "rock_nor_gl.jpg",
+      "asset": "rocky_terrain_02",
+      "source": "https://polyhaven.com/a/rocky_terrain_02",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_nor_gl_1k.jpg",
+      "sha256": "f4f9d9671c660f4e509e96d5da3091887dfd557e1353e313fa2d1dc789499ffd",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "sand_diff.jpg",
+      "asset": "sand_01",
+      "source": "https://polyhaven.com/a/sand_01",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_diff_1k.jpg",
+      "sha256": "a73b90eaa6d675ef57e7d48a8cf23e1f412e353ab2e29cf73930b8ecd4e76875",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "sand_nor_gl.jpg",
+      "asset": "sand_01",
+      "source": "https://polyhaven.com/a/sand_01",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_nor_gl_1k.jpg",
+      "sha256": "73984aecdc35b1ffbc322d64b7f8d8165b06970d11f37dd47010609fcb532704",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "sand_rough.jpg",
+      "asset": "sand_01",
+      "source": "https://polyhaven.com/a/sand_01",
+      "download": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sand_01/sand_01_rough_1k.jpg",
+      "sha256": "ccb179b12c56a9032d60e4f4e2da690b3612a58e1784eb14576372690cdcd1cb",
+      "license": "CC0-1.0"
+    }
+  ]
+}

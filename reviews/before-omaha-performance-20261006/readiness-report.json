@@ -1,0 +1,138 @@
+{
+  "project": "Holy Order \u2014 The Longest Shore",
+  "version": "0.5.0",
+  "mission": "omaha",
+  "updated_at": "2026-10-06T16:31:44.940274+00:00",
+  "ready_for_user_test": true,
+  "new_build_human_playtesting_completed": false,
+  "engine": "Bundled official Godot 4.7.2",
+  "desktop_launcher": "/home/ethan/pg/wyldgms/holy order/click2play-omaha.desktop",
+  "default_launcher": "/home/ethan/pg/wyldgms/holy order/click2play.desktop",
+  "winter_launcher": "/home/ethan/pg/wyldgms/holy order/click2play-winter.desktop",
+  "desert_launcher": "/home/ethan/pg/wyldgms/holy order/click2play-desert.desktop",
+  "normal_launch": {
+    "launch_check_passed": true,
+    "desktop_window_opened": false,
+    "reason": "This execution session cannot connect to the desktop display or GPU. Headless Godot validation completed."
+  },
+  "strength": {
+    "americans_including_player_and_crews": 600,
+    "assault_personnel_including_player": 540,
+    "naval_crews": 60,
+    "germans": 100,
+    "waves": [
+      300,
+      300
+    ],
+    "landing_craft": 20,
+    "boat_brownings": 40,
+    "protected_drivers": 20,
+    "fortified_german_MGs": 32,
+    "portable_german_MG42s": 8,
+    "AI_bangalore_carriers": 20,
+    "flamethrowers": 6
+  },
+  "timing": {
+    "first_landing_seconds": 54,
+    "second_landing_seconds": 294,
+    "wave_gap_seconds": 240,
+    "return_lanes_offset_metres": 46,
+    "minimum_measured_return_vs_waiting_craft_separation_metres": 27.04528,
+    "departed_boats_disable_collision_and_rendering": true
+  },
+  "world": {
+    "playable_width_m": 2400,
+    "village_buildings": 72,
+    "road_front_ruins": 16,
+    "wire_rows": 3,
+    "wire_segments": 582,
+    "bunker_complexes": 8,
+    "surveyed_1_to_1_reconstruction": false,
+    "photorealistic_characters": false,
+    "textures": "Seven CC0 photographic texture maps from Poly Haven; publisher checksums verified."
+  },
+  "automated_checks": {
+    "mission_passed": 34,
+    "mission_total": 34,
+    "routes_weapons_objectives_passed": 7,
+    "routes_weapons_objectives_total": 7,
+    "live_inland_assault_passed": true,
+    "inland_assault_survivors": 11,
+    "winter_regression_passed": 84,
+    "winter_regression_failed": 0,
+    "launcher_checks": [
+      "omaha",
+      "ardennes",
+      "desert"
+    ],
+    "script_runtime_errors_in_final_tests": 0
+  },
+  "reports": {
+    "mission": "reviews/omaha/tests.json",
+    "routes_and_objectives": "reviews/omaha/routes-and-objectives.json",
+    "inland_combat": "reviews/omaha/inland-assault.json",
+    "ten_minute_balance": "reviews/omaha/simulation.json",
+    "winter_regression": "reviews/ardennes-tests.json",
+    "prior_winter_readiness": "reviews/ardennes-readiness-v040.json"
+  },
+  "balance_run": {
+    "simulated_seconds": 600.0,
+    "snapshot": {
+      "allies": 157,
+      "breaches": 4,
+      "departed": 20,
+      "enemies": 30,
+      "engineers": 4,
+      "foot_soldiers": 98,
+      "friendly_deaths": {
+        "explosion": 40,
+        "rifle": 402
+      },
+      "front_z": -488.693298339844,
+      "grenades": 15,
+      "median_z": -339.908081054688,
+      "penetrations": 1117,
+      "secured": 2,
+      "shots": 84676,
+      "shots_at_ai": 77970,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 98
+      },
+      "stuck": 8,
+      "time": 600.0,
+      "town": 0.0,
+      "vehicle_shots": 6567
+    },
+    "scope": "Ten-minute complete-force headless run. Executed before final bunker routing, grenade avoidance, and dense-town refinements; final routing/terrain/combat changes have separate checks and live assault fixture."
+  },
+  "GPU_benchmark": null,
+  "performance": {
+    "preset_default": "Performance",
+    "internal_resolution_scale": 0.75,
+    "alternatives": [
+      0.85,
+      1.0
+    ],
+    "key": "F6",
+    "distant_soldiers": "Low-detail animated MultiMesh instances",
+    "physics_movement": "Full physics rate, independent of camera distance",
+    "cpu_timing_note": "Headless simulation timings include concurrent verification tasks and do not establish laptop GPU frame rate."
+  },
+  "limitations": [
+    "Authored coastal sector; not a full surveyed Omaha reconstruction.",
+    "Existing soldier/weapon animation remains procedural prototype art.",
+    "Live desktop appearance, audio mix and GPU frame rate need user playtesting."
+  ],
+  "files": {
+    "scripts/omaha/actor.gd": "b7ef80a980202ad633968cec3c245d595d2d5db7b643193973f330837fe1aee7",
+    "scripts/omaha/armor.gd": "e78f272c166f4ea465fdec650fb1dbcf60c86febe9729bf84640090bb18c1c1b",
+    "scripts/omaha/audio.gd": "df62cb1d0af836748e299aa6c73022dea671ec6304b315dd83450f07bcf7e6f9",
+    "scripts/omaha/battle.gd": "362a8ab0c3d2edd7be4c32013377b83e07e3300969c8cca29b6cddb288294f40",
+    "scripts/omaha/boat.gd": "6a589889f3e8c731ce4983394ccb84d22533e875933023a5dba32a7792390e4d",
+    "scripts/omaha/interface.gd": "56866958b6229184cf932308e39f5f639511807cb90d72b3807d24e02ec50fc7",
+    "scripts/omaha/player.gd": "1a2108d9f7fd44d3037aa54a5ef0acce78844de163472bc9146265f3c3a1b900",
+    "scripts/omaha/wire.gd": "81b0689670f62f5e50266a61b25402b1205ad9345578ce513129d498f584cffc",
+    "scripts/omaha/world.gd": "97aa1a19c2682561e4ffd298e68f32ab39e72dea97848a0a78ecf9c42ed92d13"
+  }
+}

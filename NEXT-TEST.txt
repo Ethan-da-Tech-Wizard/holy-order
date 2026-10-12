@@ -1,0 +1,50 @@
+HOLY ORDER — READY FOR YOUR NEXT TEST
+Build 0.4.0 / Road of Iron
+
+Double-click click2play.desktop in this folder, then choose DEPLOY.
+F11 toggles fullscreen. The original desert mission has click2play-desert.desktop.
+
+WHAT CHANGED
+- Longer covered convoy, an open rear, and your seat at the back for a clear view.
+  Everyone keeps weapons down until dismounting.
+- Twelve German MG positions. Trucks take actual bullet and wheel damage,
+  attempt to pass obstacles, and dismount individually when stuck.
+- The final ambush depends on who actually arrives. A single arriving truck
+  gets no invented rear target; no arrivals means no authored ambush.
+- Survivors split left/right, clear the ambush hills, then work back along both
+  ridges. AI keeps its mission while reacting to nearby fire and using cover.
+- Visible grenade windup/recovery for you and AI; repeated G presses cannot
+  spam instant throws. AI rechecks nearby friendlies before release.
+- C toggles crouch; Z toggles prone. Upright boots no longer show while crawling.
+- Gentler hills, improved prone slope collision, deeper/wider shovel work,
+  and much smaller grenade craters. Close blasts can still breach timber walls.
+- Reduced repeated geometry, navigation, collision and rendering work.
+
+QUICK CONTROLS
+C crouch toggle / Z prone toggle / Q-E lean / G grenade / F interact
+4 shovel: LMB digs deeper; RMB+LMB digs wider. J orders / Tab inventory.
+You cannot shoot, throw grenades or walk around while seated in a moving truck.
+
+CHECKED BEFORE HANDOFF
+84 automated mechanics checks passed, including a four-minute autonomous battle.
+No soldier fell through terrain in that run. Real ammo, casualties and bodies
+were tracked. The ordinary launcher reached the start screen and was closed
+cleanly after verification; it did not crash.
+
+A 125-second RTX 3070 Laptop rendering sample at 1440x900 / 4x MSAA recorded:
+median 16.7 ms (about 60 FPS), 95th percentile 20.9 ms, 99th percentile 24.1 ms.
+No measured frame exceeded 65 ms in that sample. Screenshots were excluded from
+timing; other views and battle outcomes can perform differently.
+
+STILL A PROTOTYPE
+The procedural art and animations are rough. AI may hesitate around complex
+rubble. Casualty balance needs your playtest; you and the whole force can die.
+Soil supports finite pits and trenches, not tunnels or overhangs. Destruction
+is budgeted, and there is no general structural collapse simulation.
+
+Details: ARDENNES-START-HERE.txt and ARDENNES-TACTICS.txt.
+Evidence: readiness-report.json, reviews/ardennes-tests.json,
+reviews/ardennes-performance.json and reviews/ardennes-normal-start-v040.png.
+
+Requested one-time shutdown: poweroff accepted.
+The game launcher does not shut down your computer.

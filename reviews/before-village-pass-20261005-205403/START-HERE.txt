@@ -1,0 +1,114 @@
+HOLY ORDER — THE FIRST DISPLACEMENT
+Playable prototype v0.1.1 / First Contact
+
+Double-click click2play in this folder. Press BEGIN on the start screen.
+You can also search for Holy Order in the application menu.
+
+RIFLE AND VISUAL UPDATE — v0.1.1
+The Carcano now has a contoured walnut stock, slimmer receiver and barrel,
+an open rear V-notch, and a thin front blade. The front blade's top marks
+the shot's aiming point when the sights have settled. Right click eases into
+aiming, reduces mouse sensitivity and walking bob, and uses a wider field
+of view than the first prototype. The bolt cycles visibly after a shot;
+reloading lowers the rifle and shows a six-round en-bloc clip. Ammunition,
+the mission sequence and the keyboard/mouse controls remain the same.
+Armour edges and round props have smoother geometry. Desert rocks now have
+irregular shapes and a stone surface shader. Edge smoothing uses 4x MSAA.
+The cinematic direction uses warm sunlight, cooler shadows, ACES tone mapping,
+restrained highlight glow, and a light volumetric dust haze.
+This is an initial visual pass; characters, terrain, and animations still
+need substantial art work to approach the military FPS references.
+If the game was already running during an update, quit and reopen click2play
+to load the new build. Opening click2play twice only focuses the existing game.
+
+THE PREMISE
+Your fictional late-medieval crusading order believed it had found the Ark
+of the Covenant. The object was a device that scattered different groups
+across different centuries. You arrive alone near the Capuzzo frontier in
+Libya, on 14 June 1940, during the early British–Italian desert fighting.
+The small outpost and individual encounter are fictional.
+
+THE FIRST TEST
+You start behind a large rock with a sword and steel armour. A short menu
+explains the movement and melee controls. An isolated Italian sentry stands
+well ahead of the other five defenders. Defeat him to trigger a brief rifle
+pickup scene. His Carcano has six rounds loaded. Every body can be searched once for
+three six-round Carcano en-bloc clips (18 reserve rounds), plus pocket lint.
+Lint stacks, with no use yet. Compatible ammunition stacks and R reloads it.
+Choose a prone crawl, crouched sneak or sprinting melee charge.
+A single Italian grenade can be taken from the green crate on the left
+approach to the outpost. It contains no ammunition.
+Clear the remaining position using the rifle, sword, or steel gauntlets.
+The final kill spawns a stopped British light truck at a fixed point on the
+nearby dirt road. Follow the new marker and approach the patrol. They invite
+you aboard and welcome you with a very questionable cup of tea. That short
+subtitled scene ends at the test-complete screen. The map and J objective
+menu track the sentry, outpost and road rendezvous.
+
+CONTROLS
+WASD          Move
+Mouse         Look
+Left click    Fire / sword strike / punch; hold and release for heavy melee
+Right click   Aim down rifle sights; with melee + sprint, crazy charge
+Shift         Sprint
+Q / E         Lean left / right
+Space         Jump; mantle or climb reachable low cover
+C             Crouch
+Z             Toggle prone crawl
+1             Sword (rifle slung)
+2             Rifle (sword sheathed)
+3             Armoured fists (both weapons stowed)
+R             Reload from looted reserve ammunition
+F             Interact / search pockets / take grenade
+G             Throw grenade, if acquired
+Tab           Inventory
+J             Quest objectives
+Esc           Pause / resume
+F11           Fullscreen / windowed
+
+DESIGN NOTES
+The knight's full plate, sabatons and steel gauntlets are inspired by
+late-medieval equipment, around 1450. The order is fictional. The Carcano
+M91 and six-round capacity suit the Italian setting; the models are original,
+simplified silhouettes, not museum-quality replicas. British patrol models
+have broad-brimmed helmets and simplified SMLE-style rifle silhouettes.
+Steel armour does not make the player immune to 20th-century rifle fire.
+Damage values, one-hit sword/rifle takedowns and movement are game balancing.
+The Breda M35 prop uses simplified impact detonation with a game failsafe.
+The patrol vehicle is a Morris CS8-inspired early-war British light truck,
+appropriate to the June 1940 setting. Reloading conserves rounds and is an
+FPS abstraction rather than a detailed clip-handling simulation.
+
+No voice acting, multiplayer, external accounts or paid assets are needed.
+Everything is local. No system packages were installed. This prototype does
+not save campaign progress; retrying begins a fresh encounter. Mouse and
+keyboard are supported; controller mapping is not included in this version.
+
+HISTORY AND PROVENANCE
+Fort Capuzzo fell to British forces on 14 June 1940:
+https://www.awm.gov.au/collection/C1148092
+Early British desert transport:
+https://collection.nam.ac.uk/detail.php?acc=2001-06-97-1
+Carcano Model 1891 museum reference:
+https://americanhistory.si.edu/collections/object/nmah_414512
+Royal Armouries reference:
+https://royalarmouries.org/objects-and-stories/stories/arms-of-the-first-world-war
+15th-century steel gauntlet:
+https://www.metmuseum.org/art/collection/search/35847
+Plate armour associated with Rhodes and the Order of St John:
+https://collectionsonline.museumstjohn.org.uk/object-2601
+
+ENGINE AND ASSETS
+Godot 4.7.2, downloaded from the official godotengine/godot-builds release.
+The archive SHA-256 matches GitHub's published digest; details are recorded
+in reviews/engine-installation.json. Godot's MIT license is in tools/.
+All geometry, effects, icon and sound effects were authored for this project.
+DejaVu fonts were copied from this machine; their license is in assets/fonts.
+No material was downloaded from the Instagram account or copied from a game.
+
+Source: project.godot, scripts/, scenes/, assets/
+Checks: reviews/encounter-tests.json
+Sight checks: reviews/aim-checks.json
+Updated rifle previews: reviews/rifle-after-hip.png, rifle-after-sights.png
+Launch logs: logs/play-*.log
+Launcher: launch-holy-order.py

@@ -1,0 +1,7 @@
+{
+  "msaa_samples": 4,
+  "note": "Stationary render preview; not a gameplay performance benchmark.",
+  "preview_median_frame_ms": 16.664,
+  "preview_p95_frame_ms": 17.628,
+  "resolution": "(1440.0, 900.0)"
+}

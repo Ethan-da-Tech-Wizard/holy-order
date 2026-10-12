@@ -1,0 +1,256 @@
+[
+  {
+    "allies": 581,
+    "breaches": 0,
+    "departed": 0,
+    "enemies": 96,
+    "engineers": 10,
+    "foot_soldiers": 0,
+    "friendly_deaths": {
+      "rifle": 18
+    },
+    "front_z": 0,
+    "grenades": 0,
+    "median_z": 0,
+    "penetrations": 393,
+    "secured": 0,
+    "shots": 3312,
+    "shots_at_ai": 2849,
+    "shots_at_player": 0,
+    "states": {
+      "watch": 251
+    },
+    "stuck": 0,
+    "time": 45.0,
+    "town": 0.0,
+    "vehicle_shots": 463
+  },
+  {
+    "allies": 564,
+    "breaches": 0,
+    "departed": 0,
+    "enemies": 92,
+    "engineers": 10,
+    "foot_soldiers": 234,
+    "friendly_deaths": {
+      "rifle": 35
+    },
+    "front_z": 4.76707744598389,
+    "grenades": 0,
+    "median_z": 7.81494283676147,
+    "penetrations": 416,
+    "secured": 0,
+    "shots": 9897,
+    "shots_at_ai": 5548,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 234
+    },
+    "stuck": 0,
+    "time": 65.0,
+    "town": 0.0,
+    "vehicle_shots": 4349
+  },
+  {
+    "allies": 440,
+    "breaches": 0,
+    "departed": 0,
+    "enemies": 80,
+    "engineers": 0,
+    "foot_soldiers": 111,
+    "friendly_deaths": {
+      "explosion": 16,
+      "rifle": 143
+    },
+    "front_z": -211.716888427734,
+    "grenades": 0,
+    "median_z": -159.684494018555,
+    "penetrations": 481,
+    "secured": 0,
+    "shots": 24277,
+    "shots_at_ai": 19919,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 57,
+      "cover": 4,
+      "fire": 49,
+      "withdraw": 1
+    },
+    "stuck": 0,
+    "time": 120.0,
+    "town": 0.0,
+    "vehicle_shots": 4349
+  },
+  {
+    "allies": 365,
+    "breaches": 2,
+    "departed": 0,
+    "enemies": 70,
+    "engineers": 0,
+    "foot_soldiers": 36,
+    "friendly_deaths": {
+      "explosion": 16,
+      "rifle": 218
+    },
+    "front_z": -267.116607666016,
+    "grenades": 0,
+    "median_z": -227.764938354492,
+    "penetrations": 573,
+    "secured": 0,
+    "shots": 36170,
+    "shots_at_ai": 31761,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 22,
+      "cover": 2,
+      "fire": 12
+    },
+    "stuck": 0,
+    "time": 180.0,
+    "town": 0.0,
+    "vehicle_shots": 4349
+  },
+  {
+    "allies": 344,
+    "breaches": 2,
+    "departed": 10,
+    "enemies": 62,
+    "engineers": 10,
+    "foot_soldiers": 15,
+    "friendly_deaths": {
+      "explosion": 16,
+      "rifle": 239
+    },
+    "front_z": -267.116607666016,
+    "grenades": 0,
+    "median_z": -250.943832397461,
+    "penetrations": 573,
+    "secured": 0,
+    "shots": 42054,
+    "shots_at_ai": 37632,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 8,
+      "cover": 3,
+      "fire": 4,
+      "watch": 270
+    },
+    "stuck": 0,
+    "time": 240.0,
+    "town": 0.0,
+    "vehicle_shots": 4349
+  },
+  {
+    "allies": 332,
+    "breaches": 2,
+    "departed": 10,
+    "enemies": 56,
+    "engineers": 10,
+    "foot_soldiers": 7,
+    "friendly_deaths": {
+      "explosion": 16,
+      "rifle": 251
+    },
+    "front_z": -267.003326416016,
+    "grenades": 0,
+    "median_z": -265.379547119141,
+    "penetrations": 886,
+    "secured": 0,
+    "shots": 50196,
+    "shots_at_ai": 44086,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 6,
+      "fire": 1,
+      "watch": 266
+    },
+    "stuck": 0,
+    "time": 295.0,
+    "town": 0.0,
+    "vehicle_shots": 6020
+  },
+  {
+    "allies": 300,
+    "breaches": 2,
+    "departed": 10,
+    "enemies": 50,
+    "engineers": 10,
+    "foot_soldiers": 241,
+    "friendly_deaths": {
+      "explosion": 28,
+      "rifle": 271
+    },
+    "front_z": -250.947631835938,
+    "grenades": 0,
+    "median_z": -105.116096496582,
+    "penetrations": 1018,
+    "secured": 0,
+    "shots": 64394,
+    "shots_at_ai": 57719,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 208,
+      "fire": 33
+    },
+    "stuck": 1,
+    "time": 360.0,
+    "town": 0.0,
+    "vehicle_shots": 6567
+  },
+  {
+    "allies": 213,
+    "breaches": 4,
+    "departed": 20,
+    "enemies": 41,
+    "engineers": 5,
+    "foot_soldiers": 154,
+    "friendly_deaths": {
+      "explosion": 40,
+      "rifle": 346
+    },
+    "front_z": -373.908966064453,
+    "grenades": 1,
+    "median_z": -276.975463867188,
+    "penetrations": 1117,
+    "secured": 0,
+    "shots": 79548,
+    "shots_at_ai": 72851,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 137,
+      "fire": 15,
+      "throw": 2
+    },
+    "stuck": 1,
+    "time": 480.0,
+    "town": 0.0,
+    "vehicle_shots": 6567
+  },
+  {
+    "allies": 157,
+    "breaches": 4,
+    "departed": 20,
+    "enemies": 30,
+    "engineers": 4,
+    "foot_soldiers": 98,
+    "friendly_deaths": {
+      "explosion": 40,
+      "rifle": 402
+    },
+    "front_z": -488.693298339844,
+    "grenades": 15,
+    "median_z": -339.908081054688,
+    "penetrations": 1117,
+    "secured": 2,
+    "shots": 84676,
+    "shots_at_ai": 77970,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 98
+    },
+    "stuck": 8,
+    "time": 600.0,
+    "town": 0.0,
+    "vehicle_shots": 6567
+  }
+]

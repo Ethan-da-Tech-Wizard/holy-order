@@ -1,0 +1,162 @@
+HOLY ORDER — ROAD OF IRON
+Winter convoy mission, v0.4.0
+
+START
+Double-click click2play.desktop, then choose DEPLOY. The launcher opens the
+start screen; it does not automatically begin the battle or shut down the PC.
+click2play-desert.desktop opens the original First Contact mission.
+
+THIS TEST
+A fictional Ardennes encounter in winter 1944–45. Nine CCKW-style trucks carry
+107 American AI soldiers and you; twelve is the chosen load per truck, not a
+claim about maximum seating. Eight German camps hold 80 defenders and twelve
+finite-ammunition MG positions. The map has broad hills, woodland, prepared
+firing positions, timber shelters, sandbags, trenches and artillery craters.
+
+You are still the displaced armored knight, with sword, shovel, gauntlets,
+four Mk 2 grenades and a BAR: 20 loaded rounds and 120 spare rounds. No voice
+acting is needed: orders and the knight's remarks appear as subtitles.
+
+THE CONVOY
+The cargo bed has physical sides, front and roof. The rear stays open, and your
+seat is in the back row. Look, lean, crouch or go prone, but neither you nor the
+AI passengers can fire or throw grenades while aboard. The intact trip takes
+roughly a minute; damage and traffic can change both its duration and endpoint.
+
+Roadside weapons shoot real rounds into the moving convoy. Panels can be
+penetrated, passengers can die, and wheels can be damaged. One ruined wheel
+slows a truck; two disable it. Following drivers attempt to pass on a clear
+shoulder. Each truck checks its own progress: less than about ten feet over
+six seconds orders its surviving passengers to dismount. One stopped truck
+does not automatically end the entire convoy drive.
+
+The final Panzerfaust ambush depends on actual arrivals and living launchers
+with a firing line. No arriving trucks means no authored strikes; one eligible
+truck receives only the front strike. A second strike needs a distinct rear
+truck still in the kill zone. The two special projectiles guarantee their
+selected impact once fired. Their soldiers are visible and killable; they do
+not teleport or get replaced. Other fire and casualties are simulated.
+
+THE ASSAULT
+Surviving dismounted troops join balanced LEFT and RIGHT sections according to
+their positions. You can follow either. Both sections first clear the ambush
+hilltops, then work back along their own ridge through the roadside gun camps.
+The compass and J orders page show the current targets. Nearby crossfire can
+make soldiers suppress or evade without changing their assigned hilltop.
+Killing the final German completes this prototype mission.
+
+CONTROLS
+WASD / mouse       Move / look
+Left click         Fire; hold for automatic fire or a stronger melee attack
+Right click        Iron sights; Shift + RMB with sword/fists charges
+Shift              Sprint
+C                  Toggle crouch (no need to hold the key)
+Z                  Toggle prone
+Q / E              Lean
+Space              Jump / mantle on foot
+R                  Reload
+G                  Wind up and throw one grenade, then recover
+F                  Dismount when stopped; pick up a gun or search a body
+1 / 2 / 3 / 4      Sword / firearm / gauntlets / shovel
+Shovel + LMB       Dig deeper; repeat to deepen an excavation
+Shovel + RMB+LMB   Dig a wider, shallower area
+Tab / J            Field kit / orders
+Escape / F11       Pause / fullscreen
+
+AI AND TERRAIN
+Attackers alternate moving and firing, choose cover, maintain spacing, and
+retain their objectives. Under heavy fire without a visible enemy, they can
+crawl forward. Defenders remain in their encampments, move to local cover,
+lean or change stance, and dig cover when time allows. Leaders are combatants;
+living subordinates take over if they die. AI grenade throws have a windup and
+recheck for nearby friendlies before release. Weapons and grenades are finite.
+
+Hills now have broader, gentler approaches. Prone collision follows the slope,
+and first-person upright boots are hidden while crawling. Shovel work can dig
+deep, wide pits. Grenades make shallow soil scars while close explosions can
+still open traversable holes in timber cover. Very steep player-dug pits can
+still be difficult to leave; cut a wider approach with the shovel.
+
+INVENTORY AND DESTRUCTION
+One firearm at a time; swapping drops the previous gun with its loaded rounds
+and condition. Broken guns are pickable but cannot fire. Corpses, detached
+parts and dropped equipment remain for the mission. Loot transfers the actual
+remaining stores. You can carry four grenades total; excess stays on the body.
+German grenades retain their type. MG pickups use portable ammunition loads,
+with excess belt ammunition left on the ground.
+
+Spare ammunition shares a pack with 24 space units and a 7.5 kg ammunition limit.
+This is a scenario belt-and-pack allowance, not a universal historical maximum.
+Loaded ammunition is on the weapon, separate from spare pack space. Containers
+are tracked individually; a partly full magazine still occupies its full space.
+
+Feed                              Pack space each     Additional type limit
+20-round BAR magazine             3.0                 160 spare rounds
+8-round M1 en-bloc clip            1.0                 128 spare rounds
+5-round Mauser stripper clip       0.5                 120 spare rounds
+10-round G43 magazine              2.0                 120 spare rounds
+32-round MP40 magazine             3.0                 192 spare rounds
+50-round 7.92 mm MG belt            6.0                 200 spare rounds
+100-round .50 belt                15.0                 also limited by weight
+
+Space and weight limits apply across all calibers together. Different calibers
+never convert into one another. Repacking compatible cartridges from another
+feed takes an extra reload delay; detailed individual cartridge handling is
+abstracted. Empty containers are discarded. Tab lists the actual containers.
+DROP SPARE AMMO PACK places that ammunition on the ground; F recovers what fits.
+Uncollected ammunition is retained on its body or dropped bundle.
+
+
+PERFORMANCE AND LIMITS
+Bullet marks on trucks are instanced instead of rebuilding a mesh for every
+round. Accumulated wear still destroys panels; penetration and occupant damage
+remain active. Terrain edits cache vertex heights; AI routes cache corners;
+cover reservations, stationary collision updates, soldier meshes, tree draw
+distance and shadow resolution have also been adjusted to reduce work.
+
+The local RTX 3070 Laptop run at 1440x900 / 4x MSAA recorded a 16.7 ms median
+frame (about 60 FPS), 20.9 ms at the 95th percentile and 24.1 ms at the 99th.
+The 125-second rear-seat/foot-combat sample had no measured frame above 65 ms.
+It excludes screenshot readbacks and does not cover every possible viewpoint.
+Details: reviews/ardennes-performance.json.
+
+This remains a procedural prototype with simplified models and animations.
+Destruction is finite and budgeted: soil supports pits/trenches, not tunnels
+or overhangs; there is no general structural-engineering collapse simulation.
+AI can still hesitate in complex rubble, and automated tests do not establish
+human-level tactics or guarantee victory. Convoy casualties and difficulty
+need player testing. No multiplayer, campaign saves or controller mapping.
+
+See NEXT-TEST.txt for the handoff, ARDENNES-TACTICS.txt for the AI description,
+and reviews/ardennes-tests.json for the actual mechanics results.
+
+HISTORICAL REFERENCES (primary sources; no third-party game-asset downloads)
+Battle dates and Ardennes setting:
+https://www.nationalww2museum.org/war/topics/battle-bulge
+
+CCKW 2½-ton 6×6 transport and mounted Browning armament:
+https://www.nationalww2museum.org/visit/museum-campus/us-freedom-pavilion/vehicles-war/cckw-hard-top
+
+WWII twelve-person US rifle squad and BAR team:
+https://www.armyupress.army.mil/Journals/NCO-Journal/Archives/2018/March/Infantry-Squad-Part-1/link/
+
+BAR, including its twenty-round magazine:
+https://armyhistory.org/browning-automatic-rifle/
+https://collection.nam.ac.uk/detail.php?acc=1979-10-60-1
+
+Gewehr 43 collection record:
+https://collection.nam.ac.uk/detail.php?acc=1963-12-251--90
+
+MG 34/42 ammunition belt collection record:
+https://www.awm.gov.au/collection/C1023548
+
+Panzerfaust 60 collection record:
+https://www.celler-garnisonmuseum.de/items/show/32
+
+US winter uniform context:
+https://www.war.gov/Multimedia/Experience/Common-Threads/Common-Threads-Army/
+
+The title's knight and time displacement are fictional. The winter encounter is
+not presented as a reconstruction of a named historical ambush. Procedural
+visuals and generated audio belong to this project. The bundled Godot engine
+and the existing font files retain their accompanying licenses.

@@ -1,0 +1,94 @@
+{
+  "checks": [
+    {
+      "check": "Front sight coincides with screen aim point while standing",
+      "passed": true
+    },
+    {
+      "check": "Rear notch and front blade share the sight line while standing",
+      "passed": true
+    },
+    {
+      "check": "Aimed shot hits a 28 mm target at 25 m while standing",
+      "passed": true
+    },
+    {
+      "check": "Front sight coincides with screen aim point while crouched",
+      "passed": true
+    },
+    {
+      "check": "Rear notch and front blade share the sight line while crouched",
+      "passed": true
+    },
+    {
+      "check": "Aimed shot hits a 28 mm target at 25 m while crouched",
+      "passed": true
+    },
+    {
+      "check": "Front sight coincides with screen aim point while prone",
+      "passed": true
+    },
+    {
+      "check": "Rear notch and front blade share the sight line while prone",
+      "passed": true
+    },
+    {
+      "check": "Aimed shot hits a 28 mm target at 25 m while prone",
+      "passed": true
+    },
+    {
+      "check": "Front sight coincides with screen aim point while lean left",
+      "passed": true
+    },
+    {
+      "check": "Rear notch and front blade share the sight line while lean left",
+      "passed": true
+    },
+    {
+      "check": "Aimed shot hits a 28 mm target at 25 m while lean left",
+      "passed": true
+    },
+    {
+      "check": "Front sight coincides with screen aim point while lean right",
+      "passed": true
+    },
+    {
+      "check": "Rear notch and front blade share the sight line while lean right",
+      "passed": true
+    },
+    {
+      "check": "Aimed shot hits a 28 mm target at 25 m while lean right",
+      "passed": true
+    },
+    {
+      "check": "Recoil returns to the original sight alignment",
+      "passed": true
+    },
+    {
+      "check": "Reload lowers the sights and displays the en-bloc clip",
+      "passed": true
+    },
+    {
+      "check": "Animated reload preserves ammunition accounting",
+      "passed": true
+    },
+    {
+      "check": "Holding aim reacquires the sights after reloading",
+      "passed": true
+    },
+    {
+      "check": "Aim transition settles consistently at 30 FPS",
+      "passed": true
+    },
+    {
+      "check": "Aim transition settles consistently at 60 FPS",
+      "passed": true
+    },
+    {
+      "check": "Aim transition settles consistently at 144 FPS",
+      "passed": true
+    }
+  ],
+  "failed": 0,
+  "passed": 22
+}

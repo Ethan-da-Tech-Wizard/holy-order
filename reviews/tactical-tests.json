@@ -1,0 +1,186 @@
+{
+  "checks": [
+    {
+      "check": "Six actors wait safely at the title screen",
+      "passed": true
+    },
+    {
+      "check": "Exactly two village soldiers are assigned assault roles",
+      "passed": true
+    },
+    {
+      "check": "Three defenders include one designated MG gunner",
+      "passed": true
+    },
+    {
+      "check": "Navigation graph builds from the village collision",
+      "passed": true
+    },
+    {
+      "check": "All seven houses have usable hinged doors",
+      "passed": true
+    },
+    {
+      "check": "Assault route reaches the isolated checkpoint around buildings",
+      "passed": true
+    },
+    {
+      "check": "A quiet sentry melee takedown does not alert the village",
+      "passed": true
+    },
+    {
+      "check": "A sentry rifle report reaches all five village soldiers",
+      "passed": true
+    },
+    {
+      "check": "Hearing gunfire does not create visual target contact",
+      "passed": true
+    },
+    {
+      "check": "Assault soldiers investigate the sound direction",
+      "passed": true
+    },
+    {
+      "check": "Defenders select valid occluded cover positions",
+      "passed": true
+    },
+    {
+      "check": "Unseen player movement does not update an enemy's remembered position",
+      "passed": true
+    },
+    {
+      "check": "A near miss suppresses a soldier and forces cover re-evaluation",
+      "passed": true
+    },
+    {
+      "check": "A distant gunshot lets an already sheltered defender continue digging",
+      "passed": true
+    },
+    {
+      "check": "Very close footsteps interrupt digging and tighten the search",
+      "passed": true
+    },
+    {
+      "check": "Assault pair alternate movement and covering roles",
+      "passed": true
+    },
+    {
+      "check": "The next bound exchanges the assault pair's roles",
+      "passed": true
+    },
+    {
+      "check": "Enemy rifle shots consume six actual loaded rounds",
+      "passed": true
+    },
+    {
+      "check": "An empty enemy rifle cannot fire a seventh round",
+      "passed": true
+    },
+    {
+      "check": "Enemy reload transfers a real six-round clip from reserve",
+      "passed": true
+    },
+    {
+      "check": "Enemy cannot fire an aimed rifle shot through an intact wall",
+      "passed": true
+    },
+    {
+      "check": "A soldier with no rifle ammunition resorts to a knife",
+      "passed": true
+    },
+    {
+      "check": "Breda M37 starts with one 20-round tray plus three in its box",
+      "passed": true
+    },
+    {
+      "check": "Mounted gun exhausts exactly 80 rounds and empties its adjacent box",
+      "passed": true
+    },
+    {
+      "check": "An empty mounted gun cannot fabricate more ammunition",
+      "passed": true
+    },
+    {
+      "check": "Dry MG gunner dismounts and retains his separate Carcano inventory",
+      "passed": true
+    },
+    {
+      "check": "Corpse loot transfers both remaining reserve and loaded rounds, once",
+      "passed": true
+    },
+    {
+      "check": "Looting a soldier provides the entrenching tool",
+      "passed": true
+    },
+    {
+      "check": "A shot-damaged player rifle breaks and is stowed",
+      "passed": true
+    },
+    {
+      "check": "Recovering an already stripped corpse rifle cannot duplicate its cartridges",
+      "passed": true
+    },
+    {
+      "check": "Closed timber door blocks the doorway",
+      "passed": true
+    },
+    {
+      "check": "Opening the door creates a traversable aperture",
+      "passed": true
+    },
+    {
+      "check": "The same door closes again",
+      "passed": true
+    },
+    {
+      "check": "Masonry initially blocks a firing and traversal route",
+      "passed": true
+    },
+    {
+      "check": "A demolition breach removes actual wall collision while preserving its sides",
+      "passed": true
+    },
+    {
+      "check": "The same rifle hit breaches timber before it damages rock",
+      "passed": true
+    },
+    {
+      "check": "Digging creates a real trench floor below the original terrain",
+      "passed": true
+    },
+    {
+      "check": "Optional engineer cache enforces one satchel carried at a time",
+      "passed": true
+    },
+    {
+      "check": "A satchel can be placed on real nearby geometry",
+      "passed": true
+    },
+    {
+      "check": "Recovering an unused satchel conserves the inventory",
+      "passed": true
+    },
+    {
+      "check": "Lobbed satchel lands and stays available for wired detonation",
+      "passed": true
+    },
+    {
+      "check": "Moving beyond the available cable disables remote detonation",
+      "passed": true
+    },
+    {
+      "check": "Friendly AI uses the same controller but acquires hostile soldiers",
+      "passed": true
+    },
+    {
+      "check": "Sentry pickup preserves fired rounds, existing reserves and rifle damage",
+      "passed": true
+    },
+    {
+      "check": "Loot physically transfers the sentry's remaining reserve inventory",
+      "passed": true
+    }
+  ],
+  "failed": 0,
+  "passed": 45
+}

@@ -1,0 +1,77 @@
+HOLY ORDER 0.6 — ONE LAUNCHER / LIGHTER BATTLES
+
+START HERE
+Close an already-running older game, then open click2play.desktop. Choose
+Winter, Desert or Omaha. Esc > Mission Menu returns to the selector. Only one
+mission is loaded at a time. A shared launch lock prevents separate shortcuts
+from starting simultaneous copies. Installed legacy shortcuts now open this
+same menu, highlighting their previous mission. The duplicate click2play files
+in this game folder were archived in reviews/before-unified-performance-20261006.
+No external software, engine or asset download was performed for this update.
+
+MAPS
+Winter's playable width: 348 -> 180 metres; eight camps closer to the road.
+Winter terrain chunks: 608 -> 304; fewer trees and rocks.
+Omaha terrain width: 1,152 -> 576 metres; boat frontage: 360 -> 216 metres.
+Omaha terrain chunks: 360 -> 168; wire sections: 258 -> 156.
+The full 600-American / 100-German force, 20 boats, 32 defensive MG positions,
+two waves and four-minute landing gap remain. The village now has 48 houses
+and eight road cottages. The first-wave boats clear before wave two arrives.
+
+GRAPHICS AND SIMULATION
+Low / Max FPS is the default: 50% 3D resolution, no MSAA, no sun shadows,
+no SSAO or volumetric fog, 450-metre camera limit, cheaper effects, fewer
+full-detail soldiers and batched building / vehicle / distant soldier visuals.
+The UI renders at full resolution. The existing engine uses its Mobile renderer.
+F6 cycles Low (50%), Standard (75%) and High (100%, short sun shadows).
+F10 hides or shows the FPS counter. Frames are capped at 60.
+
+Fixed simulation is 30 Hz in Winter and Desert, and 20 Hz in Low Omaha (30 Hz
+in Standard/High). Physics interpolation fills the rendered movement between
+ticks. Mouse rotation and weapon animation run on rendered frames. Stable
+soldier-instance slots prevent interpolating from one soldier into another.
+AI decisions are distributed across rendered frames; movement and bullets still
+run throughout the battle. Gunshot audio is pooled, bullet marks are bounded,
+and small-arms hits no longer request expensive mesh booleans. The equipment
+collision and damage behavior remain intact.
+
+GRENADES AND WEAPONS
+Grenades make modest shallow soil scars and localized holes in thin wood,
+sandbags and town walls. Remaining pieces retain collision; thick bunker concrete
+and winter truck armor stay strong. Small loose slivers are removed so a breach
+can be crouched through. Only nearby terrain cells gain finer geometry after a
+cut, and geometry updates are queued to limit bursts of expensive work.
+Automatic weapons retain fractional shot timing between ticks. Representative
+historical automatic rates and the separate semi-auto / manual rifle timing are
+listed, with references, in WEAPON-RATES.txt.
+The knight still starts with 300 health in all missions. Winter's trucks retain
+the 4,500-health chassis, protected wheels and reinforced passenger compartment.
+
+CPU COMPARISON
+An isolated 45-second post-landing replay took 56.7 wall seconds before
+and 24.5 after (56.8% less time). Both used the same fixed seed and
+force size, 60 simulated render frames/sec, and the bundled engine headlessly.
+Median render-loop interval: 19.45 -> 2.46 ms; 95th percentile:
+40.09 -> 35.05 ms. Tick rate and battle outcomes differ as intended.
+These are CPU-side measurements, NOT desktop FPS. Expensive frames still occur.
+The new graphics preset cannot be GPU-benchmarked from this restricted session.
+See reviews/performance-update.json for both complete reports and limitations.
+
+VALIDATION
+Winter: 85 mechanics checks plus a four-minute live battle; American victory.
+Omaha: 42 mechanics checks; seven route/objective checks; a live 42-versus-11
+bunker assault; six minutes of full-scale combat through both landings.
+At six minutes: six wire breaches, three strongpoints secured, 116 assault
+soldiers beyond all wire, and all 20 craft departed.
+Shared menu / memory lifecycle / cadence / grenade checks: 52 passed.
+Survivability and vehicle batching: 10 passed.
+Desert encounter / cinematics: 42 passed; sight alignment / reload: 22 passed.
+Launcher routing and singleton-lock checks: three passed.
+
+MEMORY
+RAM holds the running game, world and simulation data. VRAM holds graphics data
+such as textures, meshes and render buffers. AI, targeting and collisions also
+cost CPU time, which is why simply reducing textures is not enough for hundreds
+of soldiers. One loaded mission and fewer terrain/visual resources reduce both
+memory pressure and ongoing work. Recent desktop logs identify the RTX 3070
+Laptop GPU; live VRAM usage is unavailable in this execution session.

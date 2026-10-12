@@ -1,0 +1,86 @@
+{
+  "combat": {
+    "frames": 3867,
+    "median_ms": 16.665,
+    "p95_ms": 20.856,
+    "p99_ms": 23.962
+  },
+  "median_ms": 16.654,
+  "msaa": "4x",
+  "note": "125-second live autonomous run; passenger-height rear view then camera following dismounted troops. No other test/game instance. Excludes screenshot readbacks and first 3 seconds; does not establish performance at every player viewpoint.",
+  "observed_frames": 7276,
+  "other_game_open": false,
+  "p95_ms": 20.875,
+  "p99_ms": 24.063,
+  "resolution": "1440x900",
+  "ride": {
+    "frames": 3409,
+    "median_ms": 16.63,
+    "p95_ms": 20.904,
+    "p99_ms": 24.133
+  },
+  "samples": [
+    {
+      "allies": 106,
+      "bodies": 1,
+      "deaths": {
+        "rifle": 1
+      },
+      "draw_calls": 714.0,
+      "germans": 80,
+      "primitives": 966607.0,
+      "second": 10,
+      "shots": 132
+    },
+    {
+      "allies": 97,
+      "bodies": 10,
+      "deaths": {
+        "rifle": 10
+      },
+      "draw_calls": 1728.0,
+      "germans": 80,
+      "primitives": 1999969.0,
+      "second": 40,
+      "shots": 1174
+    },
+    {
+      "allies": 73,
+      "bodies": 39,
+      "deaths": {
+        "rifle": 39
+      },
+      "draw_calls": 1328.0,
+      "germans": 75,
+      "primitives": 1263632.0,
+      "second": 70,
+      "shots": 2454
+    },
+    {
+      "allies": 47,
+      "bodies": 87,
+      "deaths": {
+        "explosion": 17,
+        "rifle": 70
+      },
+      "draw_calls": 476.0,
+      "germans": 53,
+      "primitives": 282497.0,
+      "second": 100,
+      "shots": 3391
+    },
+    {
+      "allies": 28,
+      "bodies": 126,
+      "deaths": {
+        "explosion": 38,
+        "rifle": 88
+      },
+      "draw_calls": 1186.0,
+      "germans": 33,
+      "primitives": 765918.0,
+      "second": 120,
+      "shots": 3742
+    }
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "checks": [
+    {
+      "check": "600 Americans including player; 100 Germans",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Two complete 300-person waves",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "20 craft, 40 Brownings, 20 protected drivers",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "32 fortified MGs and 8 portable MG42s",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "All soldiers carry finite ammunition and grenades",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Scarce AI-only Bangalore carriers",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Flamethrowers, BARs and carbines present",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Player Garand, grenades, shovel, sword and fists",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Player starts in rear row of packed craft",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Packed craft locks walking before ramp opens",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "No weapon use while packed aboard",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Reserve craft circle offshore",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Ramps stay up until beach arrival",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "First wave arrives together; second still offshore",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Front troops leave before player",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "All assault passengers exit through ramps",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Player exits into shallow water",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Returning wave uses separate clear lanes",
+      "data": 27.045280456543,
+      "ok": true
+    },
+    {
+      "check": "First-wave craft leave scene before second approach",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Second wave does not land early",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Second landing exactly 240 seconds after first",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Fresh hull initially stops rifle rounds",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Sustained fire makes individual hull panel penetrable",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Engineer deploys one carried Bangalore",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "A second charge cannot duplicate an armed breach",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Charge creates one local opening",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Three wire lines, cover, trenches, town",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Nearest detected AI selected ahead of player",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Quiet prone player can approach from behind",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Firing gives away a hidden player",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Detection never sees through concrete",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Fortified guns have physically open firing ports",
+      "data": 32,
+      "ok": true
+    },
+    {
+      "check": "Shovel changes collision terrain height",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Distant troops retain full movement speed",
+      "data": 3.93042755126953,
+      "ok": true
+    }
+  ],
+  "passed": 34,
+  "total": 34
+}

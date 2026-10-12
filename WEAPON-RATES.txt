@@ -1,0 +1,47 @@
+HOLY ORDER 0.6 — WEAPON TIMING
+
+Automatic cyclic rates, while a burst is firing:
+  M1918A2 BAR:       375 rounds/minute (its slow automatic setting)
+  Browning M1919A4:  500 rounds/minute
+  Browning M2 HB:    500 rounds/minute
+  MP 40:            500 rounds/minute
+  MG 34:            800 rounds/minute
+  MG 42:          1,200 rounds/minute
+  Breda Modello 37:  450 rounds/minute
+
+These are representative rates within the documented ranges, not sustained
+rates including pauses and reloads. AI still fires bursts, aims, takes cover,
+reloads and consumes actual ammunition. Fractional shot time now carries into
+the next simulation tick instead of being discarded, preventing a lower frame
+rate from quietly slowing every automatic weapon.
+
+Semiautomatic rifles do not have one fixed automatic rate. Garand and M1 Carbine
+accept separate trigger presses up to five per second; the G43 accepts four.
+These are gameplay trigger limits, not historical measured cyclic rates.
+AI aiming delays remain separate (1.0 / 0.9 / 1.1 seconds respectively).
+
+Kar98k and Carcano are manually cycled: a two-second minimum between shots,
+with further AI aiming time and real reload pauses. Manual cycling depends on
+the operator; these are representative animation timings, not an exact physical
+constant for every shooter. The flamethrower uses damage/fuel pulses at 0.16 s,
+not a fictional rounds-per-minute specification. Grenades, the sword, fists and
+the shovel retain their windups and recovery times.
+
+Historical references used for the automatic rates:
+- US War Department TM-E 30-451, Handbook on German Military Forces, 1945,
+  Chapter VII, small arms: MP 40, MG 34 and MG 42.
+  https://www.ibiblio.org/hyperwar/Germany/HB/HB-7.html
+- National Army Museum MG42 collection entry, documented 1,200–1,500 rpm.
+  https://collection.nam.ac.uk/detail.php?acc=1964-05-60-12
+- US Army FM 17-20, 1957, small-arms characteristics (Browning .30 and .50).
+  https://generalstaff.org/MAN/USA/FM017-20_1957.pdf
+- US War Department FM 23-15, Browning Automatic Rifle M1918A2.
+  https://www.90thidpg.us/Reference/Manuals/FM%2023-15.pdf
+  Army Historical Foundation's explanation of the two automatic settings:
+  https://armyhistory.org/browning-automatic-rifle/
+- US Intelligence Bulletin, November 1942, Weapons Most Frequently Used (Italy),
+  Breda Model 37: 450 rpm maximum, 20-round charger.
+  https://lonesentry.com/articles/it_weapons/index.html
+
+Validation: tests/unified_test.gd exercises actual AI weapon firing at 20, 30, 60
+and 120 simulation ticks/sec and checks both cadence and ammunition accounting.

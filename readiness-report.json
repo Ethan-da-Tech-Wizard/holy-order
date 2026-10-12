@@ -1,0 +1,310 @@
+{
+  "project": "Holy Order \u2014 Winter, Desert and Omaha",
+  "version": "0.8.0",
+  "updated_at": "2026-10-06T22:09:22.283260+00:00",
+  "mission": "menu",
+  "ready_for_user_test": true,
+  "new_build_human_playtesting_completed": false,
+  "engine": "Bundled Godot 4.7.2",
+  "default_launcher": "/home/ethan/pg/wyldgms/holy order/click2play.desktop",
+  "normal_launch": {
+    "desktop_window_opened": false,
+    "reason": "Desktop/GPU access is unavailable in this execution session. Restart the existing game to load modified scripts, then use the shared menu."
+  },
+  "strength": {
+    "americans_including_player_and_crews": 1200,
+    "assault_personnel_including_player": 1080,
+    "naval_crews": 120,
+    "waves": [
+      600,
+      600
+    ],
+    "landing_craft": 40,
+    "boat_brownings": 80,
+    "protected_drivers": 40,
+    "beach_germans": 100,
+    "town_germans": 150,
+    "germans_total": 250,
+    "fortified_beach_MGs": 32,
+    "fortified_town_MGs": 42,
+    "portable_beach_MG42s": 8,
+    "AI_bangalore_carriers": 120,
+    "AI_bangalore_sections_per_carrier": 3,
+    "flamethrowers": 14,
+    "panzer_IVs": 3,
+    "AI_only_bazooka_teams": 8,
+    "rockets_per_team": 6
+  },
+  "timing": {
+    "first_landing_seconds": 32,
+    "second_landing_seconds": 152,
+    "wave_gap_seconds": 120,
+    "approach_skip_ends_at_seconds": 31.4,
+    "manual_player_ramp_exit": true,
+    "boat_player_departure_deadline_after_landing_seconds": 36,
+    "first_wave_clear_before_second_approach": true
+  },
+  "player": {
+    "max_health_all_missions": 300,
+    "unlimited_sprint_all_missions": true,
+    "bazooka_pickup": false,
+    "starting_omaha_weapon": "garand",
+    "starting_loaded_rounds": 8,
+    "starting_spare_rounds": 96,
+    "grenades": 4,
+    "other_equipment": [
+      "sword",
+      "fists",
+      "shovel"
+    ],
+    "revised_rifle_hands_all_missions": true
+  },
+  "town": {
+    "houses": 24,
+    "occupied_levels_per_house": 3,
+    "indoor_stations": 96,
+    "street_stations": 54,
+    "procedural_facades_roofs_and_paving": true,
+    "physical_stairs_and_window_apertures": true,
+    "navigation": "AStar street grid avoids houses/barricades; interior routes climb/descend stairs; nearby team members use clear direct routes. Bluff transitions are traversable. Inland columns prioritize town defenders."
+  },
+  "tanks": {
+    "town_z_bounds": [
+      -520,
+      -350
+    ],
+    "town_x_bounds": [
+      -152,
+      152
+    ],
+    "hull_health": 420,
+    "track_health_each": 460,
+    "finite_shells_each": 32,
+    "finite_MG_rounds_each": 1600,
+    "rifles_and_hand_grenades_cannot_drain_hull": true,
+    "multiple_grenades_or_many_track_hits_required": true,
+    "immobilized_tanks_can_fire": true,
+    "rocket_hull_damage_by_aspect": {
+      "front": 92,
+      "side": 150,
+      "rear": 180
+    },
+    "note": "Fictional gameplay armor/damage approximations, not an engineering penetration model."
+  },
+  "bazookas": {
+    "AI_only": true,
+    "carrier_retains_rifle": true,
+    "exclusive_loader_per_carrier": true,
+    "loader_reload_seconds": 6.8,
+    "loader_max_reload_distance_metres": 2.8,
+    "casualty_replacement_and_recovery": true,
+    "no_ammunition_regeneration": true,
+    "loader_can_spot_armor": true,
+    "clear_fire_and_backblast_required": true
+  },
+  "destruction": {
+    "local_bullet_holes_in_vulnerable_cover": true,
+    "grenade_wall_and_terrain_damage": true,
+    "stronger_shell_and_rocket_structure_damage": true,
+    "support_capacity_and_support_footprint_collapse": true,
+    "collapse_kills_occupants": true,
+    "rubble_pieces_per_collapse": 8,
+    "bounded_geometry_queue": true,
+    "reinforced_bunker_protection_retained": true
+  },
+  "performance": {
+    "default": "LOW / MAX FPS",
+    "omaha_resolution_scale": 0.4,
+    "other_resolution_scale": 0.5,
+    "omaha_low_physics_hz": 20,
+    "physics_interpolation": true,
+    "near_detailed_infantry_limit": 16,
+    "terrain_chunks": 180,
+    "wire_sections": 156,
+    "town_static_visuals_reconstructed_only_on_damage": true,
+    "CPU_comparison": {
+      "mode": "Serial headless CPU comparison; not laptop GPU FPS",
+      "baseline_report": "reviews/omaha/performance-1200-optimized.json",
+      "current_report": "reviews/omaha/performance-town-armor-final.json",
+      "simulated_seconds": 45.0499999999974,
+      "old_wall_seconds": 24.467651,
+      "new_wall_seconds": 25.197557,
+      "wall_change_percent": 2.98,
+      "old_process_interval_p95_ms": 23.611,
+      "new_process_interval_p95_ms": 26.399,
+      "note": "Expanded force/map and altered combat consume different work. This is an indicative comparison, not an identical-event replay or a measured FPS gain. The earlier performance-town-armor.json candidate was not isolated; use this final serial run."
+    },
+    "GPU_benchmark": null
+  },
+  "validation": {
+    "version": "0.8.0",
+    "checks": {
+      "omaha_mechanics": {
+        "passed": 43,
+        "total": 43,
+        "report": "reviews/omaha/tests.json"
+      },
+      "scale_collision_loot": {
+        "passed": 19,
+        "total": 19,
+        "report": "reviews/omaha/double-wave-checks.json"
+      },
+      "town_armor_bazooka_stairs_sights": {
+        "passed": 34,
+        "total": 34,
+        "report": "reviews/omaha/town-armor-checks.json"
+      },
+      "routing_objectives": {
+        "passed": 8,
+        "total": 8,
+        "report": "reviews/omaha/routes-and-objectives.json"
+      },
+      "shared_menu_fire_cadence_sprint": {
+        "passed": 58,
+        "total": 58,
+        "report": "reviews/unified-tests.json"
+      },
+      "winter_regression": {
+        "passed": 85,
+        "total": 85,
+        "report": "reviews/ardennes-tests.json"
+      },
+      "survivability": {
+        "passed": 10,
+        "total": 10,
+        "report": "reviews/survivability-tests.json"
+      },
+      "desert_sights_and_reload": {
+        "passed": 22,
+        "total": 22,
+        "report": "reviews/aim-checks.json"
+      },
+      "launcher_singleton": {
+        "passed": 3,
+        "total": 3,
+        "report": "tests/launcher_test.py"
+      }
+    },
+    "assertions_passed": 282,
+    "assertions_total": 282,
+    "strongpoint_assault": {
+      "success": true,
+      "report": "reviews/omaha/inland-assault.json"
+    },
+    "town_approach_assault": {
+      "report": "reviews/omaha/town-assault.json",
+      "survivors_passed_old_slope_choke": true,
+      "scope": "246 infantry at town approach versus 150 defenders and three tanks; no player; route/combat diagnostic, not a victory assertion."
+    },
+    "full_battle": {
+      "report": "reviews/omaha/simulation.json",
+      "simulated_seconds": 600,
+      "boats_departed": 40,
+      "rockets_fired": 31,
+      "tanks_destroyed": 1,
+      "note": "Full run exposed inland troops backtracking toward another beach sector; final targeting fix is covered by routing_objectives. This observer run is not a player victory test."
+    },
+    "errors_in_final_check_logs": false
+  },
+  "limitations": [
+    "Rendered appearance and laptop FPS have not been checked on the desktop GPU.",
+    "Visuals are procedural/stylized, not photographic reconstruction.",
+    "Full-battle observer diagnostics do not prove player victory; protect the finite AI-only launcher crews."
+  ],
+  "software_or_asset_downloads_this_update": false,
+  "backup": "reviews/before-town-armor-20261006",
+  "notes": "TOWN-ARMOR-UPDATE.txt",
+  "files": {
+    "DOUBLE-WAVE-UPDATE.txt": "44d56870a682aa68e4fa2bdaa5010b574348a43a96e5383391913f0c76385e07",
+    "OMAHA-START-HERE.txt": "95d6b74417132a5cb7b07672e655549662d5d580d7b946d8ee52d6f9f09a4c9d",
+    "TOWN-ARMOR-UPDATE.txt": "26181a5c315cc5b9b227c1bcf6761cd2ab8bf27b74d5d73682a0eab5d5971905",
+    "WEAPON-RATES.txt": "6512ffcaf3372786e93fdd11ffec41e05390dcddcadcf5c1f25f79951ca85b85",
+    "assets/omaha/coast.gdshader": "56b9db8ae3d2a20b2cd7dac211e94284d04e10a49175c74c289ea7cb08982fbc",
+    "assets/omaha/distant_soldier.gdshader": "956f9c04a133e1c952dfadb18ce7dac4c2c23a06a57482edfdb20879937b3ce3",
+    "assets/omaha/sea.gdshader": "8379491fe167034802f30a482417803eea79e7f6c63300c4ab55dd51148038ad",
+    "assets/omaha/town_surface.gdshader": "2eada8cd52d9340f79cc301eb36f1e9e13c6f680836cc3df321aa8c6589498c4",
+    "assets/omaha/weapon_finish.gdshader": "9d9ca04f58bb833a3a5e27f370778cad47befed3cb5e92944ee8ace2d0dd3151",
+    "click2play.desktop": "121be402b9011d862e2ee5064ed28f6ce8b8311f580dd5b9107f843877837efc",
+    "launch-holy-order.py": "828cb30cd082f13e7b67bb16803a0b1f52131eb2588d0a071f169f65c84d9155",
+    "project.godot": "8eff33470ffc5a7a1baf5595824203f97a34edfb105bd10420a987c9c5a02664",
+    "scenes/ardennes.tscn": "ec91a748b485a40a8434a7957d192b57fe913e1023b12fbbd44be22721a3a449",
+    "scenes/main.tscn": "9b08d0ba6f9fc37bd9df7ccf8ab4688e09dd39a04d73a1517c482b42bf5c3c75",
+    "scenes/menu.tscn": "b2adc3f5c3a1b31c93d623c04b66fa8d04c77ae968100fca207a6b97a5fde9aa",
+    "scenes/omaha.tscn": "d85251dd9e0c732d98bf5a62ad4e2f5ba94685ca5453c5e4d95dda595788dc10",
+    "scripts/ardennes/actor.gd": "3b28bfdebbaef10c4c7ad593336799dc6622f0068303d4ef7b9e2e74c4c972d1",
+    "scripts/ardennes/ammo_bundle.gd": "b07c2d5399adc8f9a225f24ad5f7a09b5aa23282309e08385e3ac54842a59ecc",
+    "scripts/ardennes/ammo_pack.gd": "33ef522f0f891b1b26bf6ec7d042fffd570082ddf35b374bac06a39c691d35a7",
+    "scripts/ardennes/armored_panel.gd": "ae10c7149e165ceb15fe2df49ead802652617de97acb50dd29d83ddaa5a7084c",
+    "scripts/ardennes/audio.gd": "a5d27de99af91f12e3a2703afb3adf576f87dd3aefca512ea701e667a167ac2a",
+    "scripts/ardennes/battle.gd": "0468be5599cebdc949f610beba322c7120c618e9738c19f8e65df7e035267e22",
+    "scripts/ardennes/corpse.gd": "7c217e37cb97e313ee3d47b8556bae7c9fbf897cd53b0fa82c4c07029699d097",
+    "scripts/ardennes/corpse_part.gd": "fc2a41c69541d0404706bc92c5a7b78eeb146d3e0e52df5550463b09d8b741d3",
+    "scripts/ardennes/dropped_weapon.gd": "9b7401040584cd02de1779340db07a89760861ddb28ba640ba9408afaffc3ee7",
+    "scripts/ardennes/interface.gd": "acc1cc7442e5b7a5a6cfcf4ae3e7b4f11dfa3faecb4110953c69f83693c14f8c",
+    "scripts/ardennes/player.gd": "c405c439824a4c5e7ee688facb661a1d0868c9e479f959e8c2c27ed7464b6c44",
+    "scripts/ardennes/prop.gd": "754ee104f769ce672ee2cb950663cd02258536533a9a79b12de324f67c12ce25",
+    "scripts/ardennes/tactics.gd": "1bd03863d459fc86692ab976ddc9dee24ed853dd6989b2e3a0fb5a59c0571e31",
+    "scripts/ardennes/truck.gd": "91ab0488ad3b610bfad7eed7e15becafeaf6dd85ec4019783afee338be80bfb7",
+    "scripts/ardennes/weapons.gd": "57dc4226db854e43820eedaba8b0209e36e0d314a8fcf2a8dba01839d32db583",
+    "scripts/ardennes/world.gd": "9ca46697843f50d9122430040ab818d60d99df6b08307e614403a9121f318052",
+    "scripts/art.gd": "dc0d56e58243099cfd19c59d46c2a33ffa13b848d1b109374e5ea58d2d475cba",
+    "scripts/audio.gd": "d5b7b6c0fdd609a6752c41f1014a1972bf71dac833aee0065fa2ed6ce208ac6d",
+    "scripts/breakable.gd": "f2bc722d2a456296155e97901469758815bd9cf0aaf969dc568545c410892ce4",
+    "scripts/carcano_model.gd": "f769e8d691661c6e026b7b675809eade630f98421c5488fa1ea6aab3d2463908",
+    "scripts/demolition.gd": "3ba799403ab8b15d2b736094ce460d9d5915cca14c4781e5fed0a56fe3fc37ba",
+    "scripts/enemy.gd": "6f5371d84032e2d23cedbff60e82992e949a7d041676e3a09077a729336f42ac",
+    "scripts/equipment_hitbox.gd": "7435f35b5d2486ed111077866dcb735d780c8292a0df6957bd29e38e1d22c9fe",
+    "scripts/field_door.gd": "aab5a9ef21f3d604be42d0e143dc3d331bef93a068219847bc304b1676fb3d44",
+    "scripts/field_navigation.gd": "3ba5b451d5b0bfa82436c12a4b3a666bb5f0a1176bf356cc938bf9c32e7b9249",
+    "scripts/game.gd": "2557e161fcbdf04c8e1860c969128e0823e5e43dcc9a990a6335aa10e891bf48",
+    "scripts/graphics.gd": "44348b66fcef2ee13b3b375d1be38082a062b5f5fd8eeba3cd5452bf5948597f",
+    "scripts/interface.gd": "f66b3174f4d5277b5170794b72db93b86baf416b1504d94ac4c49d33810837af",
+    "scripts/menu.gd": "140dc41239d135ed31603ebd48e07f412607a1daa780da399c66cdc94c1875ee",
+    "scripts/mg_nest.gd": "4f3c4554ce693097ff4506edd53af68c1cccfd01766f0bcfddf15921f77a0912",
+    "scripts/omaha/actor.gd": "9477c7912368f463601a77713b0382adb0d733e962703f5e191b929f896aaa9b",
+    "scripts/omaha/armor.gd": "d481d884853cc7df106456750a6a60d9e7537c4e7636c90e6a665783b95b77bf",
+    "scripts/omaha/audio.gd": "123af27c34c617faab2c04c18359bf59e11fae2237420e2bdfe147ff42a5cf80",
+    "scripts/omaha/battle.gd": "3fdf534b07a082142240d7132335e652441acc882c7a4d99fd48b5a47abc06db",
+    "scripts/omaha/boat.gd": "6f760eebae3289c04cbd184c7d3712ed54f5d02e7ae886f21f6359273d389f2f",
+    "scripts/omaha/interface.gd": "61a1c9c8ece8100e0dadae015362c0d6c97c25bfae1e74cc29d8294743918319",
+    "scripts/omaha/layout.gd": "ef6257049e920ddbbb15425599f4885928b845f3d8478921eb66011547ff4944",
+    "scripts/omaha/player.gd": "eb1fb672dbc6a382f6e01035f4372faec5cc9a4a2e8bde967b468d1ec07df3d8",
+    "scripts/omaha/rocket_team.gd": "8555cce89e89bf3ff6ef70dc71c4b5ae308a64854a91719d953e1d4df8a6920e",
+    "scripts/omaha/tank.gd": "5570a5da349caa2d19b7266fae6073b48d83afac613d2232c5a9d404827b7adf",
+    "scripts/omaha/tank_part.gd": "d9ea27fa71c5694f097e28794e631e5f7554a0be3d09cb731c1c9dc3101cdcf5",
+    "scripts/omaha/town_house.gd": "31dd00f0d37bfc09d65857cc2e7642d2547db00760a068acb9447c18afc250e0",
+    "scripts/omaha/wire.gd": "559a67ce67bfd9eb6ec5338d0dc296b89eacb762ade2b4bfdc04f3de81c5bd37",
+    "scripts/omaha/world.gd": "134833d7fa2919105ac2dcb4222e2b299fd468151e7c6187d9a41e6b7b610a2b",
+    "scripts/performance_overlay.gd": "f6a826a2290a9e8e9d87d8e92d16588351679014c16da29667dfec075cb7ca62",
+    "scripts/player.gd": "fd500db8174bb609529cc6379e4b8cd50952e439e8eebb68ee4709e9878f03bb",
+    "scripts/player_stats.gd": "6bf2f2966e45384379d68352419a2bbfbebe5951f82330e5eb8ad8dfb9c0990a",
+    "scripts/vehicle_visuals.gd": "29bdd81d60ce1153e552120454818223861969336eb1056c0e8f6b94f81d30fa",
+    "scripts/view_smoothing.gd": "127c2b620026c497bd199313ed0198f9c0e3dadfdcc2106ab893ef9043ed7f41",
+    "scripts/village.gd": "4bacc729aac1a363ee069b96202221dce662c89187d661e472f6a3d5251e2e30",
+    "scripts/world.gd": "f5b7e0e6df28d3e7dd995bac741278404447de25efd3114365b8911f9c756f49",
+    "tests/ai_simulation.gd": "e20b93ea4db4d0c79a9dcfd7dae1bb9fad821632115e8be3b2197d7ca5837582",
+    "tests/aim_check.gd": "1d63a78d07b9929507b169f4768811af84bd1fdf9b078a8ddaa09469b30e07e1",
+    "tests/ardennes_benchmark.gd": "913b167aec227a2e0dff61515827459f1e1a6921f7cb5699b6c074d7588eed9c",
+    "tests/ardennes_ground_probe.gd": "56cd44f836bafba153d32a0b8c80e1076c36254179d1b17a71bfacc6a969fcd7",
+    "tests/ardennes_review.gd": "58ccf969e6efa4afdf649af4bdf64767c460424c090e2f014ba71a6599a6ec08",
+    "tests/ardennes_test.gd": "1274a5ab8eba4da88e1d379821e674fb394671e9858e542fbe7a9b6e2353f442",
+    "tests/breach_review.gd": "450b49f0e1209d3157660553d7a8234ea764125f480d3ae25df03a2b7f60bd76",
+    "tests/destruction_smoke.gd": "a9942f88c35aeb086d900ed4545cfad0ec6dbfe93c4742eee75bfae6bf77d9b9",
+    "tests/encounter_test.gd": "6f36496b021697458f1283e0a2a74cf3d80228506d63106f235f14972355543e",
+    "tests/inspect_api.gd": "365e32ca5d5624f448218931fedd4bd344f0eb5d408445b53cfb36a4acf00c9a",
+    "tests/launcher_test.py": "ebde1d7e149554df56a1b8f01d18f0513d72573f63f53093b90400bc7d22b2cc",
+    "tests/omaha_assault.gd": "db7cad13f53313e3315289736b2ad711303727af0411ea89d231b9a226c542f9",
+    "tests/omaha_performance.gd": "8fd99e82e8b7cce6e16bd63a77eb6a8a0b1fe429713eeb6020e14339a353f9f5",
+    "tests/omaha_routes.gd": "bfdc23cc0d239d17322a6dfe38f0ef3eb8d1ef68aa9e2cd614362f69706c379d",
+    "tests/omaha_scale.gd": "441053571cdaf4e85adfe118335a36fdc0ac32e1205b66df2824bc644fdbcb42",
+    "tests/omaha_simulation.gd": "dbeedec20eb7fafc6cad807c7a9f6e52df948c97da0c3de8299bd851e03d0c60",
+    "tests/omaha_test.gd": "275ea1b1de38bab91f9edbcb6d3c33473c1c41de3aae79e33d08eea843f8d517",
+    "tests/omaha_town.gd": "a09112b562c6f50e2f269f0f5f2cb370d56b6f6468bf682f3a46275d3a71611e",
+    "tests/omaha_town_assault.gd": "349b45730ee0c6f70c69309dd599259cb6fc10453816b42543d4d23a5f970e69",
+    "tests/survivability_test.gd": "d362376aa31ab3eec20d3d970315442c29285ead0cfae1c02779e2a7bbbf7442",
+    "tests/tactics_test.gd": "a3eace1a38748b5f9c41b81a7e5be2200edc56cb87cea4d9a12a0297d220c4e0",
+    "tests/unified_test.gd": "24c793989b22d6aef7318c771cfa814adf88322c2ea47a1564afc5fd8721d2e9",
+    "tests/visual_check.gd": "b3cc865696fc1bcfb3c126c4b8a0ce6d3e3ccf21171e3d8a9ed93f96b24d7617",
+    "tests/weapon_review.gd": "dfa3b3e9e7cd39e390e94a9f1d3864262689df4c461f3e897ea4dd1e98745168"
+  }
+}

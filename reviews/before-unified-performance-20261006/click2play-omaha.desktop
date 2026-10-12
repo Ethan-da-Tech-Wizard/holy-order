@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Holy Order — Omaha
+Comment=Play Holy Order — The Longest Shore
+Exec=/usr/bin/python3 "/home/ethan/pg/wyldgms/holy order/launch-holy-order.py" --mission omaha
+Path=/home/ethan/pg/wyldgms/holy order
+Icon=/home/ethan/pg/wyldgms/holy order/assets/icon.svg
+Terminal=false
+StartupNotify=false
+Categories=Game;
+Keywords=Holy;Order;Knight;FPS;Omaha;Normandy;

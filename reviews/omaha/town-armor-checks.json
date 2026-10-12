@@ -1,0 +1,184 @@
+{
+  "checks": [
+    {
+      "check": "100 beach defenders plus 150 staged town defenders",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "24 occupied three-level houses and 150 defended stations",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Three tanks, eight AI-only launchers, ordinary rifles retained",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Skip ends cinematic before arrival and leaves player aboard",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "All 96 indoor stations have physical firing apertures",
+      "data": 96,
+      "ok": true
+    },
+    {
+      "check": "Upper floors have supporting collision",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Infantry can walk from street to attic through the stairwell",
+      "data": {
+        "goal": "(-5.800003, 6.43, -11.39999)",
+        "position": "(-6.094963, 6.400131, -11.28665)",
+        "route": "[(-95.0, 47.34, -411.0), (-94.0, 47.3, -410.0), (-95.0, 47.34, -411.0), (-95.0, 47.34, -411.0), (-95.0, 47.34, -416.0), (-89.9, 47.33, -419.8), (-86.45, 47.33, -420.5), (-86.45, 50.53, -431.5), (-89.9, 50.53, -432.2), (-89.9, 50.53, -419.8), (-86.45, 50.53, -420.5), (-86.45, 53.73, -431.5), (-89.9, 53.73, -432.2), (-100.8, 53.73, -437.4)]"
+      },
+      "ok": true
+    },
+    {
+      "check": "Infantry can descend both flights and exit into the street",
+      "data": "(-0.017593, 0.025002, -24.57312)",
+      "ok": true
+    },
+    {
+      "check": "All three bluff draws connect to the town without an impassable slope",
+      "data": [
+        "(-76.00003, 47.325, -364.524)",
+        "(0.0, 47.325, -364.5122)",
+        "(76.00003, 47.325, -364.524)"
+      ],
+      "ok": true
+    },
+    {
+      "check": "Exactly one eligible rifleman is nominated loader",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Loader must be physically beside carrier to reload",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Nearby loader reloads without fabricating reserve ammunition",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "A dead loader is released and replaced once",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Carrier casualty drops launcher and releases old helper",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Recovered launcher has one new carrier and one distinct loader",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "No helper belongs to multiple launcher teams",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Hundreds of ordinary hull hits cannot destroy tank",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "One close grenade damages but cannot break fresh tracks or hull",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Repeated grenades disable tracks without killing the tank",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "A short rifle burst cannot knock out the tracks",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Sustained small-arms fire can eventually sever a track",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "HEAT hit damages hull while wreck requires multiple hits",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Repeated penetrating rockets destroy tank",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "A team launches a physical rocket at visible armour",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Swept rocket collides with tank and damages its hull",
+      "data": 328.0,
+      "ok": true
+    },
+    {
+      "check": "Tank acquires a nearer detected soldier ahead of the player",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "A tank with broken tracks can still fire its cannon",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Tank drives on town streets while staying behind beach defences",
+      "data": "(114.0, 47.33, -358.7992)",
+      "ok": true
+    },
+    {
+      "check": "House wall blocks shots before damage",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Accumulated bullets open a real small local hole",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Grenades breach local masonry without automatically collapsing house",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Unsupported structure collapses and kills its upstairs occupant",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "All eleven firearm models have distinct geometry",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Every firearm aligns front and rear sights with screen centre",
+      "data": null,
+      "ok": true
+    }
+  ],
+  "passed": 34,
+  "total": 34
+}

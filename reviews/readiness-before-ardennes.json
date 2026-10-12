@@ -1,0 +1,95 @@
+{
+  "project": "Holy Order \u2014 The First Displacement",
+  "version": "0.2.0",
+  "updated_at": "2026-10-06T04:57:17.351783+00:00",
+  "ready_for_user_test": true,
+  "new_build_human_playtesting_completed": false,
+  "engine": "Official native Godot 4.7.2, Arch Linux / Wayland, NVIDIA RTX 3070 Laptop",
+  "desktop_launcher": "/home/ethan/pg/wyldgms/holy order/click2play.desktop",
+  "launch_behavior": "Start screen. Begin then Ready. No automatic shutdown.",
+  "normal_launch": {
+    "wrapper_pid": 54997,
+    "game_pid": 54999,
+    "log": "/home/ethan/pg/wyldgms/holy order/logs/play-20261005-215635.log",
+    "starts_at": "title",
+    "status": "running",
+    "automatic_shutdown": false
+  },
+  "launch_screenshot": "/home/ethan/pg/wyldgms/holy order/reviews/village-launch-screen.png",
+  "automated_checks": {
+    "passed": 117,
+    "failed": 0,
+    "suites": {
+      "mission": {
+        "passed": 42,
+        "failed": 0,
+        "report": "/home/ethan/pg/wyldgms/holy order/reviews/encounter-tests.json"
+      },
+      "sights": {
+        "passed": 22,
+        "failed": 0,
+        "report": "/home/ethan/pg/wyldgms/holy order/reviews/aim-checks.json"
+      },
+      "tactics": {
+        "passed": 45,
+        "failed": 0,
+        "report": "/home/ethan/pg/wyldgms/holy order/reviews/tactical-tests.json"
+      },
+      "GPU_destruction": {
+        "passed": 8,
+        "failed": 0,
+        "report": "/home/ethan/pg/wyldgms/holy order/reviews/breach-review.json"
+      }
+    }
+  },
+  "live_AI_simulation": {
+    "assault_advanced": true,
+    "defenders_dug": true,
+    "mg_manned": true,
+    "mg_shots": 80
+  },
+  "live_AI_report": "/home/ethan/pg/wyldgms/holy order/reviews/ai-simulation.json",
+  "encounter": {
+    "isolated_sentry": 1,
+    "village_assault": 2,
+    "village_defenders": 3,
+    "MG_gunner_included_in_defenders": true,
+    "houses_with_openable_doors": 7,
+    "end": "British roadside patrol and subtitled tea scene"
+  },
+  "systems": [
+    "Sight-confirmed shooting, uncertain sound investigation, squad contact reports",
+    "Alternating assault movement, cover selection, defensive digging and near-miss suppression",
+    "Finite shared combat/loot inventory, reloads, knives and weapon breakage",
+    "Breda M37: 20 loaded rounds plus three 20-round reserve feed trays, gunner falls back to rifle",
+    "Local mesh/collision destruction, ground excavation, material resistance, dynamic ground navigation",
+    "Optional one-at-a-time wired demolition satchel: place, lob, recover, detonate, finite cable",
+    "Openable and breakable doors, mantling, roof ramps",
+    "Shared tactical controller for friendly actors; patrol appears after the combat"
+  ],
+  "controls_added": {
+    "4": "Entrenching tool",
+    "5": "Demolition satchel / detonator",
+    "satchel_LMB": "Place",
+    "satchel_RMB": "Lob",
+    "B": "Detonate connected charge",
+    "F": "Doors, loot, MG mount/dismount, recover charge"
+  },
+  "historical_notes": [
+    "Carcano uses six-round en-bloc clips, not five-round stripper clips",
+    "Breda M37 uses 20-round rigid trays and different ammunition from the Carcano",
+    "Fictional village near Capuzzo, 14 June 1940; period-informed stone/plaster architecture",
+    "Morris CS8-inspired British truck",
+    "Demolition prop is period-style; exact June 1940 Italian issued kit not established. Carry and cable limits are game rules."
+  ],
+  "limitations": [
+    "Original simplified prototype art and animations; not AAA production quality",
+    "Local geometric destruction is not general structural collapse or a structural-engineering simulation",
+    "Finite encounter boundary and 24-metre solid ground depth",
+    "No automatic timer on demolition satchels; they use the game cable and detonator",
+    "Tactical balance and feel still need human testing",
+    "Friendly combat controller is verified but the normal British patrol arrives after hostiles are cleared",
+    "No multiplayer, campaign save, voice acting or controller mapping"
+  ],
+  "notes": "/home/ethan/pg/wyldgms/holy order/START-HERE.txt"
+}

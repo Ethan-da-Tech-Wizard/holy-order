@@ -1,0 +1,32 @@
+[
+  {
+    "test": "desert_encounter",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 42
+  },
+  {
+    "test": "aim_check",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 22
+  },
+  {
+    "test": "destruction_smoke",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 0
+  },
+  {
+    "test": "omaha_test",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 42
+  },
+  {
+    "test": "survivability_test",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 10
+  }
+]

@@ -1,0 +1,208 @@
+{
+  "project": "Holy Order \u2014 Road of Iron",
+  "version": "0.4.0",
+  "updated_at": "2026-10-06T07:47:38.148322+00:00",
+  "ready_for_user_test": true,
+  "new_build_human_playtesting_completed": false,
+  "engine": "Official native Godot 4.7.2, Arch Linux / Wayland, NVIDIA RTX 3070 Laptop",
+  "desktop_launcher": "/home/ethan/pg/wyldgms/holy order/click2play.desktop",
+  "desert_launcher": "/home/ethan/pg/wyldgms/holy order/click2play-desert.desktop",
+  "launch_behavior": "Normal launch opens the start screen. Deploy or Enter begins. No automatic shutdown in the launcher.",
+  "normal_launch": {
+    "wrapper_pid": 60669,
+    "game_pid": 60670,
+    "log": "/home/ethan/pg/wyldgms/holy order/logs/play-ardennes-20261006-004219.log",
+    "starts_at": "title",
+    "mission": "ardennes",
+    "status": "exited",
+    "automatic_shutdown": false,
+    "exit_code": 0,
+    "verified_start_screen": true,
+    "closed_cleanly": true,
+    "screenshot": "/home/ethan/pg/wyldgms/holy order/reviews/ardennes-normal-start-v040.png"
+  },
+  "automated_checks": {
+    "passed": 84,
+    "failed": 0,
+    "report": "/home/ethan/pg/wyldgms/holy order/reviews/ardennes-tests.json",
+    "original_desert_menu_smoke": "passed",
+    "both_launchers_checked": true,
+    "desktop_entries_valid": true
+  },
+  "GPU_benchmark": {
+    "combat": {
+      "frames": 3867,
+      "median_ms": 16.665,
+      "p95_ms": 20.856,
+      "p99_ms": 23.962
+    },
+    "median_ms": 16.654,
+    "msaa": "4x",
+    "note": "125-second live autonomous run; passenger-height rear view then camera following dismounted troops. No other test/game instance. Excludes screenshot readbacks and first 3 seconds; does not establish performance at every player viewpoint.",
+    "observed_frames": 7276,
+    "other_game_open": false,
+    "p95_ms": 20.875,
+    "p99_ms": 24.063,
+    "resolution": "1440x900",
+    "ride": {
+      "frames": 3409,
+      "median_ms": 16.63,
+      "p95_ms": 20.904,
+      "p99_ms": 24.133
+    },
+    "samples": [
+      {
+        "allies": 106,
+        "bodies": 1,
+        "deaths": {
+          "rifle": 1
+        },
+        "draw_calls": 714.0,
+        "germans": 80,
+        "primitives": 966607.0,
+        "second": 10,
+        "shots": 132
+      },
+      {
+        "allies": 97,
+        "bodies": 10,
+        "deaths": {
+          "rifle": 10
+        },
+        "draw_calls": 1728.0,
+        "germans": 80,
+        "primitives": 1999969.0,
+        "second": 40,
+        "shots": 1174
+      },
+      {
+        "allies": 73,
+        "bodies": 39,
+        "deaths": {
+          "rifle": 39
+        },
+        "draw_calls": 1328.0,
+        "germans": 75,
+        "primitives": 1263632.0,
+        "second": 70,
+        "shots": 2454
+      },
+      {
+        "allies": 47,
+        "bodies": 87,
+        "deaths": {
+          "explosion": 17,
+          "rifle": 70
+        },
+        "draw_calls": 476.0,
+        "germans": 53,
+        "primitives": 282497.0,
+        "second": 100,
+        "shots": 3391
+      },
+      {
+        "allies": 28,
+        "bodies": 126,
+        "deaths": {
+          "explosion": 38,
+          "rifle": 88
+        },
+        "draw_calls": 1186.0,
+        "germans": 33,
+        "primitives": 765918.0,
+        "second": 120,
+        "shots": 3742
+      }
+    ],
+    "report": "/home/ethan/pg/wyldgms/holy order/reviews/ardennes-performance.json"
+  },
+  "autonomous_simulation_final": {
+    "allied_deaths": {
+      "explosion": 6,
+      "rifle": 94
+    },
+    "allies": 7,
+    "cuts": 644,
+    "deaths": {
+      "explosion": 32,
+      "rifle": 117
+    },
+    "germans": 31,
+    "grenades": 65,
+    "phase": "playing",
+    "queued_cuts": 0,
+    "second": 240,
+    "shots": 4734,
+    "states": {
+      "advance": 4,
+      "cover": 15,
+      "fire": 7,
+      "mounted": 6,
+      "relocate": 6
+    },
+    "travelled": 8699.66096889746
+  },
+  "encounter": {
+    "trucks": 9,
+    "allied_AI_at_start": 107,
+    "player_seats": 1,
+    "germans": 80,
+    "MG_positions": 12,
+    "defensive_camps": 8,
+    "left_route": [
+      6,
+      4,
+      2,
+      0
+    ],
+    "right_route": [
+      7,
+      5,
+      3,
+      1
+    ],
+    "authored_vehicle_hits": "0\u20132, conditional on actual occupied arrivals and living launchers"
+  },
+  "inventory": {
+    "firearm_slots": 1,
+    "maximum_grenades": 4,
+    "spare_ammo_pack_space": 24,
+    "spare_ammo_weight_kg": 7.5,
+    "finite_shared_combat_and_loot": true
+  },
+  "systems": [
+    "Covered cargo beds with open rears; seated passengers cannot fire or throw grenades",
+    "Independent convoy movement, wheel damage, passing attempts and per-truck stuck detection",
+    "Conditional final Panzerfaust ambush; no absent-vehicle substitute or invulnerable launchers",
+    "Balanced initial left/right assignment, command succession and independent ridge backtracking after the ambush hills",
+    "Mission-oriented assault/defense AI with cover reservations, stance changes, suppression and finite supplies",
+    "Animated player/AI grenade windup, release and recovery; AI rechecks friendly safety",
+    "Toggle crouch and corrected first-person prone boots; slope-aligned NPC prone collision",
+    "Gentler graded hills, cached terrain deformation, deeper/wider digging and shallow grenade soil damage",
+    "Persistent bodies and breakable weapons; finite pack and grenade limits retained",
+    "Batched truck bullet marks, reduced soldier geometry, tree distance limits and cached/throttled AI work"
+  ],
+  "limitations": [
+    "Original procedural prototype art and simplified animations; not AAA production assets",
+    "Finite, budgeted destruction; heightfield pits/trenches but no excavation tunnels or overhangs",
+    "No general structural-engineering collapse simulation",
+    "Coarse navigation and simple local steering may hesitate around rubble; automated tests do not guarantee AI victory",
+    "Convoy casualties and difficulty need human testing; player and allies can die in transit",
+    "Recorded GPU sample is not a guarantee for all viewpoints or outcomes",
+    "No campaign saves, multiplayer, voice acting or controller mapping"
+  ],
+  "notes": "/home/ethan/pg/wyldgms/holy order/NEXT-TEST.txt",
+  "controls": "/home/ethan/pg/wyldgms/holy order/ARDENNES-START-HERE.txt",
+  "tactics": "/home/ethan/pg/wyldgms/holy order/ARDENNES-TACTICS.txt",
+  "backup": "/home/ethan/pg/wyldgms/holy order/reviews/before-convoy-revision-20261005-235817",
+  "shutdown_request": {
+    "authorized_by_user": true,
+    "command": "poweroff",
+    "terminal": "kitty",
+    "status": "poweroff accepted",
+    "one_time_only": true,
+    "log": "/home/ethan/pg/wyldgms/holy order/logs/requested-poweroff.log",
+    "requested_at": "2026-10-06T07:49:04.779896+00:00",
+    "exit_code": 0
+  }
+}

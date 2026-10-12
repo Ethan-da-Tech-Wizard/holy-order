@@ -1,0 +1,22 @@
+{
+  "allies": 399,
+  "breaches": 1,
+  "enemies": 76,
+  "frames": 1351,
+  "median_ms": 21.525,
+  "mode": "headless CPU frame intervals; not desktop FPS",
+  "nodes": 25604,
+  "p95_ms": 41.411,
+  "p99_ms": 45.931,
+  "physics_hz": 30,
+  "render_frames": 2701,
+  "render_median_ms": 6.611,
+  "render_p95_ms": 38.313,
+  "render_p99_ms": 43.153,
+  "seconds": 45.0333333333308,
+  "shots": 15548,
+  "terrain_chunks": 168,
+  "wall_seconds": 33.227338,
+  "wire_sections": 156,
+  "wire_triangles_per_section": 1120
+}
