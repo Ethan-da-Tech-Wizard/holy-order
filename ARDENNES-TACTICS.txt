@@ -1,0 +1,81 @@
+HOLY ORDER / REUSABLE WINTER ENCOUNTER PLANS — v0.4.0
+
+This describes the game's AI implementation, not a real-world field manual.
+
+MISSION STRUCTURE
+Surviving dismounted Americans are assigned to LEFT / RIGHT groups. New
+arrivals are sorted by their position relative to the road and fill the less
+populated group to keep the initial split balanced. Each group has four squad
+slots. Casualties can subsequently unbalance the groups. The player is free
+to choose a side.
+
+LEFT  starts at camp 6, then backtracks through 4, 2, 0.
+RIGHT starts at camp 7, then backtracks through 5, 3, 1.
+Both initial ambush hills must be clear before either group starts backtracking.
+After that, the two groups progress independently. Their route remains fixed;
+they can use the road or cover on the way without swapping objectives merely
+because a shot came from the opposite side.
+
+The commander, group leaders and squad leaders are ordinary combat actors.
+Living subordinates inherit a vacant role. All Germans hold their encampments;
+all American foot troops have assault orders. No player input is needed to
+activate the command system or keep the mission moving.
+
+REUSABLE PLANS
+scripts/ardennes/tactical_plans.json holds plan names, approach distances and
+spacing values read by tactics.gd and battle.gd. Area geometry and navigation
+remain in world.gd. The plan is selected before individual pathfinding.
+
+hold         Remain inside the local defended perimeter. Find cover, entrench,
+             lean, shift to a firing position, or crawl under pressure.
+support      Move toward the assigned hill with alternating firing/moving turns.
+flank_left   Take the left section's approach while retaining the same objective.
+flank_right  Take the right section's approach with shared movement behavior.
+clear        Close on the assigned camp from a shorter approach distance.
+
+SENSING AND MOVEMENT
+Sight identifies actual actors. Gunshots communicate an uncertain location;
+leaders can relay contact positions, not an unseen target through terrain.
+Nearby incoming rounds and hits increase threat pressure. Movement plans react
+to that pressure without replacing the mission destination.
+
+Attacking troops alternate short movement bounds with firing. Cover selection
+prefers progress toward the objective. Heavily suppressed troops without a
+visible opponent crawl toward the mission instead of freezing at a noise
+location. Stance changes affect both the model and the collision volume.
+Local steering, obstacle steps, route refreshes and separation help movement.
+
+Defenders use shorter local movements and never deliberately chase outside
+their guard perimeter. Idle defenders can dig several shovel strokes to make
+wider/deeper cover. Nearby terrain changes invalidate affected cover choices
+and route caches. A two-meter navigation grid is still an approximation; rubble
+and narrow gaps can cause hesitation. This is not human tactical judgment.
+
+FIRING AND INVENTORY
+Friendly-fire checks include the bullet dispersion cone and a short movement
+prediction. Blocked fire causes a retry delay and can prompt repositioning.
+Grenade targets are checked for friendlies at selection and again after the
+visible throw windup. These checks reduce accidents; teammates are not immune.
+Suppression shots are limited and require a recent contact. Actual loaded
+rounds, reserves, reload intervals, weapon condition and grenades are consumed.
+Empty MGs switch to a separately tracked personal-rifle supply, never a refill.
+
+CONVOY AND AUTHORING EXCEPTIONS
+No passenger can fire, including the old mounted-gunner slots. Cargo side/front
+curtains and roof are physical; the open rear provides a view. Trucks react to
+wheel damage, spacing and local obstacles independently. A six-second movement
+window detects trucks that cannot make about ten feet of progress and unloads
+them. Passing is attempted only when a neighboring lane is clear.
+
+The two reserved Panzerfaust soldiers are visible, finite-ammo and killable.
+A front/rear strike requires an actual occupied arrival and a living shooter
+with range and line of sight. No arrivals skips the sequence; one arrival has
+no invented rear target. The rear condition is rechecked before its delayed
+shot. Only those selected projectiles have authored guaranteed impacts.
+Everything else, including transit casualties, runs through the battle system.
+
+VALIDATION
+reviews/ardennes-tests.json: mechanics and a four-minute autonomous simulation.
+reviews/ardennes-performance.json: timed GPU rendering and its limitations.
+reviews/ardennes-*.png: start screen, truck view, posture, weapon and combat views.
+logs/: execution logs. Tests do not guarantee AI victory or final game balance.

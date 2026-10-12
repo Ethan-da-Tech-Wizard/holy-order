@@ -1,0 +1,76 @@
+HOLY ORDER / REUSABLE WINTER ENCOUNTER PLANS
+
+This document describes the game's authored AI, not a real-world field manual.
+
+AREA ORDER
+1. ROADBLOCK: positions 0–2, the convoy ambush and its nearby defenses.
+2. FIR RIDGE: positions 3–5, higher forest approaches and sheltered gun sites.
+3. UPPER DUGOUTS: positions 6–7, the last prepared defensive area.
+
+Area anchors, prepared platforms and trench geometry are in
+scripts/ardennes/world.gd. Firing positions face the road approach. Infantry
+slots are placed relative to each emplacement's facing, with flank and rear
+positions instead of an arbitrary cluster of spawn points.
+
+COMMAND
+The commander owns the current sector. Three maneuver groups each direct three
+squads. A squad leader is also a combat actor. On a leader's death, a living
+subordinate inherits the command role. Groups select different uncleared areas
+inside the active sector where possible. When that sector is cleared, the next
+sector is announced and assigned. No player command or kill is required to
+activate this system.
+
+QUICK PLAN SELECTION
+scripts/ardennes/tactical_plans.json contains named reusable plans:
+
+hold         Remain within the defended perimeter; choose cover, dig, shift
+             to a reachable firing point. Threats do not cancel the boundary.
+support      Assault order with cautious movement. Move to a supporting line
+             and cover other elements. It is not a permanent hold order.
+flank_left   Select the area's left approach, using alternating moving and
+             firing elements and cover when available.
+flank_right  Select the area's right approach with the same shared behavior.
+clear        Close on surviving contacts in the assigned area.
+
+scripts/ardennes/tactics.gd chooses these plans and creates formation goals.
+This separates a plan's purpose from the actor's individual pathfinding.
+Formation spacing, fixed area geometry and approach offsets are reused on
+subsequent orders; the AI still computes a path around current obstacles.
+
+PERCEPTION AND FIRING
+Line of sight identifies a target. Gunshots provide an uncertain location;
+leaders share that contact within their group. Distant shots outside an
+American squad's assigned sector do not continually cancel its mission.
+Nearby threats and visible enemies can still demand a response.
+
+Holding and assault temperament are separate. A hold actor is constrained to
+its perimeter even when threatened. Cautious assault actors do advance, but
+use slower bounds. Cover reservations discourage squads from piling into the
+same point. Moving actors maintain separation; entrenched actors may be closer.
+
+Before firing, actors check both the center line and the dispersion cone for
+allies, including a short prediction of their movement. Repeated blocked shots
+prompt repositioning. Grenade selection checks current and predicted friendly
+positions near the target. These checks reduce accidents, but the damage code
+does not exempt teammates.
+
+Each weapon has a real loaded count, reserve, reload interval and condition.
+Each soldier begins with two grenades. Empty or damaged weapons do not create
+new ammunition. Mounted gunners have finite personal-rifle backup ammunition.
+A truck M2 gunner who cannot see an engagement for a while can leave the mounted
+weapon and continue with the personal rifle. M2s never become handheld rifles.
+Mounted weapon reserve loads represent supplies at the position or vehicle;
+they are not an individual infantry backpack allowance.
+
+AUTHORING EXCEPTIONS
+The opening has two concealed Panzerfaust performers and two guaranteed vehicle
+impacts. Only those projectiles are authored hits. The infantry battle, other
+rockets, bullets, grenade decisions and casualties are simulated. If a truck is
+lost early, the convoy can stop early and bring the end strikes forward.
+
+VALIDATION
+reviews/ardennes-tests.json records mechanics and a seeded autonomous battle.
+reviews/ardennes-performance.json records a live GPU run, resolution and timing.
+Screenshots and logs are in reviews/ and logs/. The tests observe AI without
+having the player shoot or issue orders. They do not prove human-level tactics
+or guarantee that the Americans will win any particular run.

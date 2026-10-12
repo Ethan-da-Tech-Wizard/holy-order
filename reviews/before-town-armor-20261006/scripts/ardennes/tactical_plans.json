@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "spacing": {
+    "column": 3.1,
+    "row": 2.8,
+    "squad_lateral": 5.5,
+    "separation": 2.7,
+    "entrenched": 1.35
+  },
+  "plans": {
+    "hold": {
+      "order": "hold",
+      "approach_distance": 0,
+      "description": "Remain within the encampment; select local cover, dig and shift firing positions."
+    },
+    "support": {
+      "order": "assault",
+      "approach_distance": 10,
+      "description": "Advance on the assigned hill with alternating firing and moving elements."
+    },
+    "flank_left": {
+      "order": "assault",
+      "approach_distance": 4,
+      "description": "Use the left-wing approach; nearby crossfire does not replace the objective."
+    },
+    "flank_right": {
+      "order": "assault",
+      "approach_distance": 4,
+      "description": "Use the right-wing approach; nearby crossfire does not replace the objective."
+    },
+    "clear": {
+      "order": "assault",
+      "approach_distance": 4,
+      "description": "Close on the assigned camp while maintaining spacing and finite ammunition."
+    }
+  }
+}

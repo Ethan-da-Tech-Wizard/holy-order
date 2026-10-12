@@ -1,0 +1,551 @@
+{
+  "checks": [
+    {
+      "check": "Winter mission opens at its start screen",
+      "passed": true
+    },
+    {
+      "check": "Nine trucks carry 107 allied actors plus the player against 80 Germans",
+      "passed": true
+    },
+    {
+      "check": "Convoy seating contains twelve people per planned squad load",
+      "passed": true
+    },
+    {
+      "check": "Twelve road-facing machine guns have actual finite-inventory gunners",
+      "passed": true
+    },
+    {
+      "check": "All convoy troops are seated infantry with no firing exception",
+      "passed": true
+    },
+    {
+      "check": "Every soldier starts with finite ammunition and at least two grenades",
+      "passed": true
+    },
+    {
+      "check": "Player begins with a twenty-round BAR, reserve ammunition, sword and shovel",
+      "passed": true
+    },
+    {
+      "check": "The winter battlefield has hilly terrain chunks and hundreds of cover sites",
+      "passed": true
+    },
+    {
+      "check": "Reusable area plans and two mission wings are initialized",
+      "passed": true
+    },
+    {
+      "check": "Bots refuse a shot whose dispersion cone contains a friendly",
+      "passed": true
+    },
+    {
+      "check": "A clear hostile firing lane is permitted",
+      "passed": true
+    },
+    {
+      "check": "Actual bullets can wound allies despite preventive fire discipline",
+      "passed": true
+    },
+    {
+      "check": "Bots reject a grenade target beside allies",
+      "passed": true
+    },
+    {
+      "check": "BAR fire consumes one physical magazine round",
+      "passed": true
+    },
+    {
+      "check": "A broken dropped rifle is still pickable and occupies the single firearm slot",
+      "passed": true
+    },
+    {
+      "check": "Broken guns cannot fire",
+      "passed": true
+    },
+    {
+      "check": "Swapping drops the previous gun with its exact remaining loaded rounds",
+      "passed": true
+    },
+    {
+      "check": "German gun pickup does not convert the BAR's .30-06 reserve",
+      "passed": true
+    },
+    {
+      "check": "Reload consumes only the new gun's compatible reserve",
+      "passed": true
+    },
+    {
+      "check": "A death creates a persistent articulated body",
+      "passed": true
+    },
+    {
+      "check": "Death drops the gun with its remaining magazine",
+      "passed": true
+    },
+    {
+      "check": "Further bullet damage can detach a body part",
+      "passed": true
+    },
+    {
+      "check": "An explosion can dismember persistent remains",
+      "passed": true
+    },
+    {
+      "check": "Body loot transfers only actual remaining reserve and grenades",
+      "passed": true
+    },
+    {
+      "check": "Looted German grenades retain their type within the shared four-grenade limit",
+      "passed": true
+    },
+    {
+      "check": "The same corpse cannot duplicate loot",
+      "passed": true
+    },
+    {
+      "check": "BAR magazines fill the finite pack at eight spare magazines",
+      "passed": true
+    },
+    {
+      "check": "Excess ammo and grenades remain on a body when the player's kit is full",
+      "passed": true
+    },
+    {
+      "check": "Stripper clips use less pack space, while a partial BAR magazine still uses a full slot",
+      "passed": true
+    },
+    {
+      "check": "Mixed calibers share both the pack's space and weight limits",
+      "passed": true
+    },
+    {
+      "check": "Bodies and detached parts remain in the scene",
+      "passed": true
+    },
+    {
+      "check": "Command passes to a living subordinate when the commander is killed",
+      "passed": true
+    },
+    {
+      "check": "A hold-area soldier cannot leave its assigned perimeter",
+      "passed": true
+    },
+    {
+      "check": "Every dismounted survivor is assigned to a balanced left or right wing",
+      "passed": true
+    },
+    {
+      "check": "Both wings begin by clearing the ambush hilltops",
+      "passed": true
+    },
+    {
+      "check": "Clearing both ambush hills sends each wing back down its own ridge",
+      "passed": true
+    },
+    {
+      "check": "Hilltop completion produces a navigation notification",
+      "passed": true
+    },
+    {
+      "check": "Digging makes a bounded physical pit without removing the terrain chunk",
+      "passed": true
+    },
+    {
+      "check": "Crouch remains selected after releasing the key",
+      "passed": true
+    },
+    {
+      "check": "Pressing crouch again returns to standing",
+      "passed": true
+    },
+    {
+      "check": "Prone first-person view hides the upright boot geometry",
+      "passed": true
+    },
+    {
+      "check": "Grenade key spam starts only one windup and cannot spawn instant throws",
+      "passed": true
+    },
+    {
+      "check": "The throw releases and consumes exactly one grenade",
+      "passed": true
+    },
+    {
+      "check": "Grenade recovery prevents an immediate second throw",
+      "passed": true
+    },
+    {
+      "check": "A heavily suppressed attacker without sight of an enemy crawls toward its mission",
+      "passed": true
+    },
+    {
+      "check": "Suppression movement still makes progress toward the assigned hilltop",
+      "passed": true
+    },
+    {
+      "check": "All defenders retain encampment orders",
+      "passed": true
+    },
+    {
+      "check": "An entrenched defender without ammunition holds cover instead of digging endlessly",
+      "passed": true
+    },
+    {
+      "check": "Opposite-wing gunfire does not replace the assigned mission",
+      "passed": true
+    },
+    {
+      "check": "AI grenades also begin with a visible windup",
+      "passed": true
+    },
+    {
+      "check": "AI releases one carried grenade after the windup",
+      "passed": true
+    },
+    {
+      "check": "AI cancels release when a friendly enters the grenade landing area",
+      "passed": true
+    },
+    {
+      "check": "Repeated shovel work creates a deep, wide excavation",
+      "passed": true
+    },
+    {
+      "check": "A grenade-sized blast makes only a shallow soil scar",
+      "passed": true
+    },
+    {
+      "check": "An intact timber wall blocks the player capsule",
+      "passed": true
+    },
+    {
+      "check": "A close grenade blast opens a crouch-sized breach while part of the wall remains",
+      "passed": true
+    },
+    {
+      "check": "Authored hills stay below the walking slope limit before excavation",
+      "passed": true
+    },
+    {
+      "check": "The seated player cannot fire or throw grenades",
+      "passed": true
+    },
+    {
+      "check": "AI passengers cannot fire while riding",
+      "passed": true
+    },
+    {
+      "check": "The troop compartment has physical steel side armor",
+      "passed": true
+    },
+    {
+      "check": "Rear steel protects passengers below the viewing slit",
+      "passed": true
+    },
+    {
+      "check": "The armored rear retains a narrow view outside",
+      "passed": true
+    },
+    {
+      "check": "A following truck attempts to go around a wheel-disabled vehicle",
+      "passed": true
+    },
+    {
+      "check": "The passing truck clears the obstruction and continues its journey",
+      "passed": true
+    },
+    {
+      "check": "A truck with two ruined wheels detects no progress and orders dismount",
+      "passed": true
+    },
+    {
+      "check": "An early disabled truck does not force the distant scripted ambush",
+      "passed": true
+    },
+    {
+      "check": "No arriving trucks means no authored ambush shots",
+      "passed": true
+    },
+    {
+      "check": "One eligible arriving truck gets only the front strike",
+      "passed": true
+    },
+    {
+      "check": "The selected armored truck survives the ambush hit and unloads",
+      "passed": true
+    },
+    {
+      "check": "Two actual arrivals schedule distinct front and rear vehicle targets",
+      "passed": true
+    },
+    {
+      "check": "Both armored ambush targets stop and unload without forced destruction",
+      "passed": true
+    },
+    {
+      "check": "A dead front launcher prevents the authored ambush",
+      "passed": true
+    },
+    {
+      "check": "No soldier falls through the terrain during the four-minute battle",
+      "passed": true
+    },
+    {
+      "check": "The live convoy resolves the ambush from actual arrivals without inventing targets",
+      "passed": true
+    },
+    {
+      "check": "Individual trucks settle and survivors dismount in real time",
+      "passed": true
+    },
+    {
+      "check": "Road machine guns engage and visibly damage most of the moving convoy",
+      "passed": true
+    },
+    {
+      "check": "Every surviving dismounted ally retains a mission wing",
+      "passed": true
+    },
+    {
+      "check": "Dismounted Americans engage without the player participating",
+      "passed": true
+    },
+    {
+      "check": "The American force advances and inflicts casualties autonomously",
+      "passed": true
+    },
+    {
+      "check": "The command hierarchy issues reusable support and flanking plans",
+      "passed": true
+    },
+    {
+      "check": "Live combat exercises dispersion-cone friendly-fire avoidance",
+      "passed": true
+    },
+    {
+      "check": "Combat cannot create negative ammunition or replenish bot grenades",
+      "passed": true
+    },
+    {
+      "check": "The battle actually consumes carried supplies",
+      "passed": true
+    },
+    {
+      "check": "Defensive units retain their boundaries throughout the large battle",
+      "passed": true
+    },
+    {
+      "check": "Every casualty still has a body after four simulated minutes",
+      "passed": true
+    }
+  ],
+  "failed": 0,
+  "headless_wall_ms": 78642,
+  "note": "Fixed-seed, headless mechanics and autonomous battle test; not a rendering benchmark.",
+  "passed": 85,
+  "simulation": [
+    {
+      "allied_deaths": {},
+      "allies": 107,
+      "cuts": 204,
+      "deaths": {},
+      "germans": 80,
+      "grenades": 0,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 30,
+      "shots": 993,
+      "states": {
+        "cover": 30,
+        "crawl": 1,
+        "dig": 5,
+        "fire": 31,
+        "mounted": 12,
+        "relocate": 1,
+        "watch": 107
+      },
+      "travelled": 97.3097210673732
+    },
+    {
+      "allied_deaths": {},
+      "allies": 107,
+      "cuts": 250,
+      "deaths": {},
+      "germans": 80,
+      "grenades": 0,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 60,
+      "shots": 2250,
+      "states": {
+        "cover": 28,
+        "dig": 4,
+        "fire": 31,
+        "mounted": 12,
+        "relocate": 5,
+        "watch": 107
+      },
+      "travelled": 195.152715723321
+    },
+    {
+      "allied_deaths": {
+        "explosion": 13,
+        "rifle": 4
+      },
+      "allies": 90,
+      "cuts": 385,
+      "deaths": {
+        "explosion": 14,
+        "rifle": 28
+      },
+      "germans": 55,
+      "grenades": 99,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 90,
+      "shots": 3225,
+      "states": {
+        "advance": 68,
+        "cover": 31,
+        "crawl": 5,
+        "fire": 27,
+        "mounted": 9,
+        "relocate": 5
+      },
+      "travelled": 6907.16969438678
+    },
+    {
+      "allied_deaths": {
+        "explosion": 16,
+        "rifle": 10
+      },
+      "allies": 81,
+      "cuts": 457,
+      "deaths": {
+        "explosion": 25,
+        "rifle": 45
+      },
+      "germans": 36,
+      "grenades": 123,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 120,
+      "shots": 3827,
+      "states": {
+        "advance": 44,
+        "cover": 20,
+        "crawl": 1,
+        "fire": 35,
+        "mounted": 7,
+        "relocate": 10
+      },
+      "travelled": 14936.3670932201
+    },
+    {
+      "allied_deaths": {
+        "explosion": 16,
+        "rifle": 13
+      },
+      "allies": 78,
+      "cuts": 459,
+      "deaths": {
+        "explosion": 25,
+        "rifle": 54
+      },
+      "germans": 30,
+      "grenades": 123,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 150,
+      "shots": 4521,
+      "states": {
+        "advance": 78,
+        "cover": 21,
+        "crawl": 1,
+        "dig": 1,
+        "mounted": 5,
+        "relocate": 2
+      },
+      "travelled": 20923.2295862556
+    },
+    {
+      "allied_deaths": {
+        "explosion": 27,
+        "rifle": 16
+      },
+      "allies": 64,
+      "cuts": 551,
+      "deaths": {
+        "explosion": 40,
+        "rifle": 65
+      },
+      "germans": 18,
+      "grenades": 155,
+      "phase": "playing",
+      "queued_cuts": 0,
+      "second": 180,
+      "shots": 5115,
+      "states": {
+        "advance": 37,
+        "cover": 8,
+        "fire": 28,
+        "mounted": 3,
+        "relocate": 6
+      },
+      "travelled": 26145.3666819969
+    },
+    {
+      "allied_deaths": {
+        "explosion": 27,
+        "rifle": 18
+      },
+      "allies": 62,
+      "cuts": 560,
+      "deaths": {
+        "explosion": 44,
+        "rifle": 74
+      },
+      "germans": 7,
+      "grenades": 159,
+      "phase": "playing",
+      "queued_cuts": 10,
+      "second": 210,
+      "shots": 5504,
+      "states": {
+        "advance": 54,
+        "cover": 2,
+        "crawl": 1,
+        "fire": 3,
+        "mounted": 1,
+        "relocate": 5,
+        "throw": 3
+      },
+      "travelled": 31255.9563622689
+    },
+    {
+      "allied_deaths": {
+        "explosion": 28,
+        "rifle": 20
+      },
+      "allies": 59,
+      "cuts": 628,
+      "deaths": {
+        "explosion": 45,
+        "rifle": 83
+      },
+      "germans": 0,
+      "grenades": 177,
+      "phase": "victory",
+      "queued_cuts": 0,
+      "second": 240,
+      "shots": 5570,
+      "states": {
+        "advance": 58,
+        "fire": 1
+      },
+      "travelled": 33025.0012811541
+    }
+  ]
+}

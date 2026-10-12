@@ -1,0 +1,40 @@
+{
+  "checks": [
+    {
+      "check": "Overlapping explosions finish rebuilding multiple pieces of real village geometry",
+      "passed": true
+    },
+    {
+      "check": "Demolition opens a usable route into an existing house",
+      "passed": true
+    },
+    {
+      "check": "The player can occupy the abandoned MG without duplicating its inventory",
+      "passed": true
+    },
+    {
+      "check": "Player-mounted fire consumes the same ammunition as the AI",
+      "passed": true
+    },
+    {
+      "check": "Dismount restores first-person weapons and movement",
+      "passed": true
+    },
+    {
+      "check": "Satchel can be placed beside the village",
+      "passed": true
+    },
+    {
+      "check": "Detonation consumes exactly one optional charge",
+      "passed": true
+    },
+    {
+      "check": "Destruction settles back to static geometry after the second blast",
+      "passed": true
+    }
+  ],
+  "failed": 0,
+  "note": "Fixed 1440x900 GPU verification. Settle window includes 45 deliberate physics frames, not a pure performance benchmark.",
+  "observed_blast_settle_window_ms": 626,
+  "passed": 8
+}

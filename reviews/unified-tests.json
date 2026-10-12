@@ -1,0 +1,380 @@
+{
+  "checks": [
+    {
+      "check": "bar cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 16,
+        "rpm": 382.978723404255
+      },
+      "ok": true
+    },
+    {
+      "check": "m1919 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 510.63829787234
+      },
+      "ok": true
+    },
+    {
+      "check": "m2 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 510.63829787234
+      },
+      "ok": true
+    },
+    {
+      "check": "mg34 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 33,
+        "rpm": 817.021276595745
+      },
+      "ok": true
+    },
+    {
+      "check": "mg42 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 48,
+        "rpm": 1200.0
+      },
+      "ok": true
+    },
+    {
+      "check": "mp40 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 510.63829787234
+      },
+      "ok": true
+    },
+    {
+      "check": "bar cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 16,
+        "rpm": 380.281690140845
+      },
+      "ok": true
+    },
+    {
+      "check": "m1919 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 507.042253521127
+      },
+      "ok": true
+    },
+    {
+      "check": "m2 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 507.042253521127
+      },
+      "ok": true
+    },
+    {
+      "check": "mg34 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 33,
+        "rpm": 811.267605633803
+      },
+      "ok": true
+    },
+    {
+      "check": "mg42 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 49,
+        "rpm": 1216.9014084507
+      },
+      "ok": true
+    },
+    {
+      "check": "mp40 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 507.042253521127
+      },
+      "ok": true
+    },
+    {
+      "check": "bar cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 16,
+        "rpm": 377.622377622378
+      },
+      "ok": true
+    },
+    {
+      "check": "m1919 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 503.496503496504
+      },
+      "ok": true
+    },
+    {
+      "check": "m2 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 503.496503496504
+      },
+      "ok": true
+    },
+    {
+      "check": "mg34 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 33,
+        "rpm": 805.594405594406
+      },
+      "ok": true
+    },
+    {
+      "check": "mg42 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 49,
+        "rpm": 1208.39160839161
+      },
+      "ok": true
+    },
+    {
+      "check": "mp40 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 503.496503496504
+      },
+      "ok": true
+    },
+    {
+      "check": "bar cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 16,
+        "rpm": 376.306620209059
+      },
+      "ok": true
+    },
+    {
+      "check": "m1919 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 501.742160278746
+      },
+      "ok": true
+    },
+    {
+      "check": "m2 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 501.742160278746
+      },
+      "ok": true
+    },
+    {
+      "check": "mg34 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 33,
+        "rpm": 802.787456445993
+      },
+      "ok": true
+    },
+    {
+      "check": "mg42 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 49,
+        "rpm": 1204.18118466899
+      },
+      "ok": true
+    },
+    {
+      "check": "mp40 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 21,
+        "rpm": 501.742160278746
+      },
+      "ok": true
+    },
+    {
+      "check": "Default physics uses 30 Hz plus interpolation",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Narrow battle widths",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu offers all three missions",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu loads desert",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "desert retains 300 knight health and low rendering",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "desert owns exactly one battlefield",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "desert camera keeps mouse look outside fixed interpolation",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Breda M37 cyclic rate at 20 Hz",
+      "data": {
+        "rounds": 19,
+        "rpm": 459.574468085106
+      },
+      "ok": true
+    },
+    {
+      "check": "Breda M37 cyclic rate at 30 Hz",
+      "data": {
+        "rounds": 19,
+        "rpm": 456.338028169014
+      },
+      "ok": true
+    },
+    {
+      "check": "Breda M37 cyclic rate at 60 Hz",
+      "data": {
+        "rounds": 19,
+        "rpm": 453.146853146853
+      },
+      "ok": true
+    },
+    {
+      "check": "Breda M37 cyclic rate at 120 Hz",
+      "data": {
+        "rounds": 19,
+        "rpm": 451.567944250871
+      },
+      "ok": true
+    },
+    {
+      "check": "desert keeps sprinting from empty stamina without drain",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "desert retains unlimited melee charge",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Returning from desert frees its actors and world",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu offers all three missions",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu loads ardennes",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "ardennes retains 300 knight health and low rendering",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "ardennes owns exactly one battlefield",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "ardennes camera keeps mouse look outside fixed interpolation",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "ardennes keeps sprinting from empty stamina without drain",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "ardennes retains unlimited melee charge",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Returning from ardennes frees its actors and world",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu offers all three missions",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Menu loads omaha",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "omaha retains 300 knight health and low rendering",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "omaha owns exactly one battlefield",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "omaha camera keeps mouse look outside fixed interpolation",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Town wall blocks bullets before a grenade",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Grenade opens a physical local hole without removing the wall",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Remaining wall still stops bullets",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Thick bunker concrete survives a hand grenade",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "omaha keeps sprinting from empty stamina without drain",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "omaha retains unlimited melee charge",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Returning from omaha frees its actors and world",
+      "data": null,
+      "ok": true
+    }
+  ],
+  "passed": 58,
+  "total": 58
+}

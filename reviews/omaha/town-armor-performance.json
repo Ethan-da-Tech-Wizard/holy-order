@@ -1,0 +1,12 @@
+{
+  "mode": "Serial headless CPU comparison; not laptop GPU FPS",
+  "baseline_report": "reviews/omaha/performance-1200-optimized.json",
+  "current_report": "reviews/omaha/performance-town-armor-final.json",
+  "simulated_seconds": 45.0499999999974,
+  "old_wall_seconds": 24.467651,
+  "new_wall_seconds": 25.197557,
+  "wall_change_percent": 2.98,
+  "old_process_interval_p95_ms": 23.611,
+  "new_process_interval_p95_ms": 26.399,
+  "note": "Expanded force/map and altered combat consume different work. This is an indicative comparison, not an identical-event replay or a measured FPS gain. The earlier performance-town-armor.json candidate was not isolated; use this final serial run."
+}

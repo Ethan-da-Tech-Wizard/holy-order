@@ -1,0 +1,59 @@
+{
+  "checks": [
+    {
+      "check": "300 starting and maximum health: res://scripts/player.gd",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "300 starting and maximum health: res://scripts/ardennes/player.gd",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "300 starting and maximum health: res://scripts/omaha/player.gd",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Truck armor uses shared draws without batching rotating wheels",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Steel stops a sustained 120-round burst at the passenger compartment",
+      "data": {
+        "health": 300.0,
+        "hits": 120
+      },
+      "ok": true
+    },
+    {
+      "check": "Protected wheels survive a belt of small-arms hits",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Seated passengers receive reduced blast damage",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Ambush strike stops the armored truck and lets the knight out alive",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "On foot the knight survives five 50-damage hits",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Health remains finite and defeat still works",
+      "data": null,
+      "ok": true
+    }
+  ],
+  "passed": 10,
+  "total": 10
+}

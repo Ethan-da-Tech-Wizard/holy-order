@@ -1,0 +1,109 @@
+{
+  "checks": [
+    {
+      "check": "All 600 reserves sleep with disabled collision until release",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Every boat has three engineers spread through its file",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Twenty separate breach lanes within a 228-metre landing front",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Circling reserves keep hulls separated",
+      "data": 11.9999971389771,
+      "ok": true
+    },
+    {
+      "check": "Terrain collision agrees with rendered height",
+      "data": {
+        "max_error": 0.000049591064453125,
+        "samples": 855
+      },
+      "ok": true
+    },
+    {
+      "check": "Engineer approaches intact wire ahead despite an existing distant gap",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Engineer still breaches its own file even when a nearby file is open",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Engineer plants and retreats immediately",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Rifleman does not cross the entire beach to a distant gap",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Each file has a physically clear short route through the seawall",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Low-mode swept infantry capsule stops at solid concrete",
+      "data": "(250.4874, 1.127322, -59.19994)",
+      "ok": true
+    },
+    {
+      "check": "Infantry moves through the opening after cover is destroyed",
+      "data": "(250.1072, 1.142524, -71.59375)",
+      "ok": true
+    },
+    {
+      "check": "Low-mode infantry cannot walk through intact wire",
+      "data": "(196.4124, 1.947285, -98.97504)",
+      "ok": true
+    },
+    {
+      "check": "Opening the wire admits the full-speed infantry capsule",
+      "data": "(196.0229, 2.132427, -110.5387)",
+      "ok": true
+    },
+    {
+      "check": "Instanced remains keep all six damageable physical parts",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Detached body keeps physical motion and its instancing updater",
+      "data": {
+        "moved": 0.465409070253372,
+        "sleeping": false,
+        "updater": true,
+        "velocity": "(-0.01071, -0.009453, 0.032811)"
+      },
+      "ok": true
+    },
+    {
+      "check": "Instanced dropped weapons retain finite ammunition and collision",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Picking up a batched weapon transfers ammunition and frees the drop",
+      "data": null,
+      "ok": true
+    },
+    {
+      "check": "Wave two activates all 600 soldiers at two minutes",
+      "data": null,
+      "ok": true
+    }
+  ],
+  "passed": 19,
+  "total": 19
+}

@@ -1,0 +1,173 @@
+HOLY ORDER — THE FIRST DISPLACEMENT
+Original desert mission / The village update
+
+Double-click click2play.desktop and choose DESERT, then BEGIN and READY.
+The same menu includes the final Winter and Omaha missions. Esc > Mission Menu
+returns to mission selection. Only one mission runs at a time.
+
+Version 0.7 defaults to Low graphics in every mission. F6 cycles Low / Standard /
+High, and F10 toggles the live FPS counter. The knight keeps 300 maximum health.
+Omaha now has two 600-person American waves and three engineers per boat.
+See OMAHA-START-HERE.txt for the updated landing and DOUBLE-WAVE-UPDATE.txt for performance details.
+Grenades make localized breaches; WEAPON-RATES.txt documents firearm timing.
+See DOUBLE-WAVE-UPDATE.txt for the latest changes and PERFORMANCE-UPDATE.txt for the prior shared graphics update.
+
+WHAT CHANGED
+The encounter now occupies an abandoned, damaged frontier village with seven
+enterable houses, courtyards, a well, doors, roof ramps, and climbable cover.
+The lone sentry remains well outside the five-man village position.
+Inside: two assault soldiers, two rifle defenders and one Breda M37 gunner.
+
+A quiet sentry takedown can preserve surprise. Rifle reports carry across the
+encounter. Hearing one provides a direction and an uncertain search area;
+aimed shots still require a clear view. Assault soldiers investigate and
+alternate advancing with covering fire. Defenders seek cover and can dig a
+shallow scrape when the threat seems distant. Nearby footsteps, shots, and
+near misses interrupt that work and provoke cover or repositioning. Navigation
+updates when doors open or geometry changes. Friendly soldiers use the same
+perception and tactical controller, with the opposing side as their targets.
+The British patrol appears after the fighting, so its tactics are primarily
+infrastructure for future encounters, rather than a new allied battle here.
+
+The M37 has a loaded 20-round tray and precisely three spare trays in its box.
+Reloading consumes a tray. Once it is empty, its gunner uses his Carcano.
+F lets you operate an abandoned usable gun; your shots consume the same supply.
+Its 8 mm ammunition is separate from the Carcano's 6.5 mm ammunition.
+
+Each Italian begins with six loaded rifle rounds and three six-round reserve
+clips. Shooting and reloading deplete those inventories. Bodies yield their
+remaining ammunition, pocket lint and an entrenching tool. If already armed,
+you also strip any loaded rounds from the corpse rifle. Otherwise, recovering
+a replacement rifle preserves the rounds still inside it. Lint stacks without
+a current use. Rifles can be broken by hits; another corpse can supply a
+replacement. Empty soldiers use knives. Your sword and shovel can also break;
+your armoured fists remain available.
+
+Walls, doors, roofs, timber, sandbags, props, rocks and the battlefield ground
+accept persistent local damage. Openings alter collision as well as appearance.
+Wood yields more readily than masonry or rock. The shovel [4] excavates soil;
+grenades and demolition charges make larger breaches and craters. The solid
+ground is 24 metres deep inside the bounded encounter. This is a prototype
+of local geometric destruction, not a structural-engineering simulation:
+unsupported pieces do not yet undergo a general physics collapse. Atmospheric
+particles, sky and objective markers are not physical objects to demolish.
+
+OPTIONAL SUPPLIES
+Three Breda M35 grenades are in the eastern village store.
+Three preassembled demolition satchels are in the rear western engineer's store.
+Carry one satchel at a time. Equip it with 5, look at nearby geometry and left
+click to place it, or right click to lob it. B detonates the wired charge.
+F at a deployed satchel recovers it. There is no automatic timer on the satchel.
+The cable pays out as you move; beyond the game's 30-metre allowance it breaks,
+leaving an inert charge that you can recover. No unlimited or wireless charges.
+Explosives are entirely optional: the rifle, sword and fists can finish the test.
+
+THE FIRST TEST
+Start behind a large rock with sword and armour. Sneak, crawl or charge the
+isolated sentry, recover his rifle, and choose your approach to the village.
+The short pickup scene and the knight's bolt-action-rifle joke are subtitled.
+If the sentry fired, the recovered rifle contains fewer than six loaded rounds.
+Search bodies with F for what remains in their pockets.
+Clear the other five soldiers. The last death brings a stopped British light
+truck to the nearby road. Follow the gold marker and approach the patrol to
+climb aboard and receive a highly questionable cup of tea. That subtitled
+scene ends at the test-complete screen. J displays the objective sequence.
+
+CONTROLS
+WASD          Move
+Mouse         Look
+Left click    Shoot / melee; hold and release for heavy melee / dig / place charge
+Right click   Rifle sights; with sprinting melee, charge / lob equipped satchel
+Shift         Sprint
+Q / E         Lean
+Space         Jump / mantle reachable cover or window sills
+C             Crouch
+Z             Toggle prone
+1 / 2 / 3     Sword / rifle / armoured fists
+4             Entrenching tool, after looting one
+5             Demolition satchel / detonator, after finding supplies
+R             Reload your rifle from actual reserves
+F             Loot / open or close door / use or leave MG / recover satchel
+G             Throw a grenade, if carried
+B             Detonate the connected satchel
+Tab           Inventory
+J             Objectives
+Esc           Pause / resume
+F11           Fullscreen / windowed
+
+VISUAL PASS
+The original procedural Carcano has a contoured walnut stock, slimmer steel
+parts, an open rear V-notch and thin front blade. The eye now sits farther
+behind the sights, reducing the oversized rear-sight silhouette. Settled sights
+share the shot's aim point, including when crouched, prone or leaning.
+Aiming eases in, reduces mouse sensitivity and walking bob, and magnifies the
+view. The bolt cycles visibly; reloading shows a six-round en-bloc clip.
+Rounded prop and armour geometry, plaster wear and irregular rocks,
+warm sunlight, cooler shadows, ACES tone mapping and light dust haze establish
+the first cinematic pass. Characters and much of the environment remain
+simplified original prototype art; this is not MW2/Battlefield-level production.
+
+HISTORY / FICTION / GAME RULES
+The order mistook a time-displacement machine for the Ark of the Covenant.
+Its members were scattered across centuries. The knight's plate equipment is
+inspired by around 1450; his order and this particular village fight are fictional.
+The setting is the Capuzzo frontier, Libya, 14 June 1940, during the opening
+British–Italian fighting. The patrol truck is Morris CS8-inspired, not a Jeep.
+
+The Carcano M91 uses six-round en-bloc clips, not five-round stripper clips.
+The Breda M37 uses 20-round rigid feed trays, not detachable box magazines.
+The demolition satchel is a period-style field-engineer prop; an exact Italian
+issued model for this June 1940 encounter has not been established. Its one-item
+carry limit, 30-metre cable and simplified operation are explicit game rules,
+not historical equipment limits. There are no real construction instructions.
+The M35's simplified impact logic includes a game-only timed failsafe.
+Armour mitigates melee blows, but does not make rifle fire harmless. Health,
+weapon durability, one-hit sword/rifle takedowns and fast charges are balancing
+choices. Reloading conserves rounds but abstracts detailed clip handling.
+
+PRIMARY REFERENCES
+Fort Capuzzo's capture on 14 June 1940:
+https://www.awm.gov.au/collection/C1148092
+Libyan stone-hut / roadhouse photographic reference (1941, near-period context):
+https://www.awm.gov.au/collection/C289133
+North African ruins photographic reference (1941):
+https://www.awm.gov.au/collection/C5066
+Early British desert transport:
+https://collection.nam.ac.uk/detail.php?acc=2001-06-97-1
+Carcano Model 1891:
+https://americanhistory.si.edu/collections/object/nmah_414512
+Six-round M91 reference:
+https://royalarmouries.org/objects-and-stories/stories/arms-of-the-first-world-war
+Breda M37 museum record:
+https://www.iwm.org.uk/collections/item/object/30034750
+Breda M37 veterans' association equipment record (20-round trays; 1937 service):
+https://www.associazionenazionalefantiarresto.it/opere-e-armi/armamento-opere/breda-37/
+Period context for cabled demolition charges (1941, not a 1940 Italian kit):
+https://www.awm.gov.au/collection/C2846775
+15th-century gauntlet:
+https://www.metmuseum.org/art/collection/search/35847
+Plate associated with Rhodes and the Order of St John:
+https://collectionsonline.museumstjohn.org.uk/object-2601
+
+ENGINE / ASSETS / VERIFICATION
+Godot 4.7.2 is the official Linux build already bundled in tools/. The release
+archive's SHA-256 was verified against the published digest; see
+reviews/engine-installation.json. The MIT license is in tools/.
+Geometry, shaders, effects, icons and sounds are original project assets.
+DejaVu fonts came from this machine and include their license in assets/fonts/.
+No material was copied from the Instagram video or another commercial game.
+No system package install, external account or paid asset is required.
+
+This version supports keyboard/mouse and a single encounter, with no campaign
+save, multiplayer or voice acting. Restarting resets damage and inventories.
+New AI behaviour and difficulty still need your hands-on playtest.
+
+Source: project.godot, scripts/, scenes/, assets/
+Mission checks: reviews/encounter-tests.json
+Sights: reviews/aim-checks.json
+Tactics / inventories / geometry: reviews/tactical-tests.json
+Live AI simulation: reviews/ai-simulation.json
+GPU destruction checks: reviews/breach-review.json
+Previews: reviews/rifle-village-*.png, reviews/village-*.png
+Normal launch logs: logs/play-*.log
+Launcher: launch-holy-order.py

@@ -1,0 +1,32 @@
+[
+  {
+    "test": "omaha_test",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 42
+  },
+  {
+    "test": "omaha_routes",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 7
+  },
+  {
+    "test": "survivability_test",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 10
+  },
+  {
+    "test": "omaha_assault",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 0
+  },
+  {
+    "test": "unified_test",
+    "exit_code": 0,
+    "errors": [],
+    "passes": 52
+  }
+]

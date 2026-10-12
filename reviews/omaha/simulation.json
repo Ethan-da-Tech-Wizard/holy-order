@@ -1,0 +1,1504 @@
+{
+  "median_step_ms": 25.218,
+  "mode": "headless simulation, not GPU FPS",
+  "p95_step_ms": 50.793,
+  "p99_step_ms": 60.096,
+  "seed": 19440606,
+  "snapshots": [
+    {
+      "allies": 1073,
+      "armor": [
+        {
+          "hp": 420.0,
+          "position": "(-76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        }
+      ],
+      "bazooka_shots": 0,
+      "breaches": 0,
+      "departed": 0,
+      "enemies": 233,
+      "engineers": 53,
+      "foot_soldiers": 413,
+      "friendly_deaths": {
+        "explosion": 18,
+        "rifle": 108
+      },
+      "front_z": -48.6395263671875,
+      "grenades": 0,
+      "median_z": -22.4041728973389,
+      "past_all_wire": 0,
+      "penetrations": 799,
+      "rocket_teams": [
+        {
+          "carrier": 79,
+          "loaded": true,
+          "loader": 78,
+          "position": "(-88.50584, 0.351561, -17.38253)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 229,
+          "loaded": true,
+          "loader": 228,
+          "position": "(-30.0099, 0.4067, -20.54866)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 378,
+          "loaded": true,
+          "loader": 375,
+          "position": "(27.94868, 0.42142, -19.23426)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 528,
+          "loaded": true,
+          "loader": 525,
+          "position": "(90.68981, 0.301567, -18.3978)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-92.02112, 0.37755, 427.8762)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-32.02043, 0.462249, 427.8771)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": -1,
+          "position": "(27.98176, 0.44342, 427.8799)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": -1,
+          "position": "(87.98233, 0.348042, 427.8806)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 0,
+      "shots": 12468,
+      "shots_at_ai": 9358,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 378,
+        "fire": 35
+      },
+      "stuck": 0,
+      "tanks": 3,
+      "time": 45.0,
+      "town": 0.0,
+      "vehicle_shots": 3110,
+      "width_90_percent": 208.717918395996
+    },
+    {
+      "allies": 899,
+      "armor": [
+        {
+          "hp": 420.0,
+          "position": "(-76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        }
+      ],
+      "bazooka_shots": 0,
+      "breaches": 19,
+      "departed": 0,
+      "enemies": 213,
+      "engineers": 27,
+      "foot_soldiers": 239,
+      "friendly_deaths": {
+        "explosion": 41,
+        "rifle": 259
+      },
+      "front_z": -135.407730102539,
+      "grenades": 0,
+      "median_z": -116.979598999023,
+      "past_all_wire": 0,
+      "penetrations": 818,
+      "rocket_teams": [
+        {
+          "carrier": 86,
+          "loaded": true,
+          "loader": 53,
+          "position": "(-90.90627, 1.454464, -87.78621)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 229,
+          "loaded": true,
+          "loader": 228,
+          "position": "(-25.36451, 2.283397, -121.6211)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 378,
+          "loaded": true,
+          "loader": 375,
+          "position": "(32.42407, 1.697052, -113.7795)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 518,
+          "loaded": true,
+          "loader": 513,
+          "position": "(93.3686, 1.711074, -124.8774)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-91.07796, 0.469095, 433.1128)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-31.0761, 0.400924, 433.1119)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": -1,
+          "position": "(28.9219, 0.317109, 433.1129)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": -1,
+          "position": "(88.91891, 0.337696, 433.1143)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 0,
+      "shots": 23570,
+      "shots_at_ai": 20430,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 145,
+        "cover": 10,
+        "fire": 73,
+        "withdraw": 11
+      },
+      "stuck": 0,
+      "tanks": 3,
+      "time": 65.0,
+      "town": 0.0,
+      "vehicle_shots": 3110,
+      "width_90_percent": 207.276245117188
+    },
+    {
+      "allies": 844,
+      "armor": [
+        {
+          "hp": 420.0,
+          "position": "(-76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(76.0, 47.3, -510.0)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        }
+      ],
+      "bazooka_shots": 0,
+      "breaches": 51,
+      "departed": 0,
+      "enemies": 184,
+      "engineers": 11,
+      "foot_soldiers": 184,
+      "friendly_deaths": {
+        "explosion": 44,
+        "rifle": 311
+      },
+      "front_z": -245.427337646484,
+      "grenades": 0,
+      "median_z": -219.327285766602,
+      "past_all_wire": 165,
+      "penetrations": 852,
+      "rocket_teams": [
+        {
+          "carrier": 86,
+          "loaded": true,
+          "loader": 53,
+          "position": "(-69.49398, 7.188483, -206.8565)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 231,
+          "loaded": true,
+          "loader": 263,
+          "position": "(-38.96972, 12.74366, -218.1451)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 378,
+          "loaded": true,
+          "loader": 375,
+          "position": "(39.10783, 12.6044, -217.8721)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 518,
+          "loaded": true,
+          "loader": 513,
+          "position": "(87.18626, 9.347218, -215.9939)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-87.50688, 0.350708, 429.1627)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-27.50774, 0.445681, 429.1661)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": -1,
+          "position": "(32.49191, 0.46086, 429.1674)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": -1,
+          "position": "(92.49257, 0.374524, 429.1648)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 0,
+      "shots": 32584,
+      "shots_at_ai": 29388,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 137,
+        "cover": 7,
+        "fire": 19,
+        "throw": 20,
+        "withdraw": 1
+      },
+      "stuck": 0,
+      "tanks": 3,
+      "time": 90.0,
+      "town": 0.0,
+      "vehicle_shots": 3110,
+      "width_90_percent": 210.715476989746
+    },
+    {
+      "allies": 790,
+      "armor": [
+        {
+          "hp": 420.0,
+          "position": "(-76.00002, 47.33, -498.7995)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.0, 47.33, -478.3188)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(76.0, 47.33, -498.7996)",
+          "shells": 32,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        }
+      ],
+      "bazooka_shots": 0,
+      "breaches": 51,
+      "departed": 20,
+      "enemies": 163,
+      "engineers": 65,
+      "foot_soldiers": 130,
+      "friendly_deaths": {
+        "explosion": 48,
+        "rifle": 361
+      },
+      "front_z": -340.823181152344,
+      "grenades": 76,
+      "median_z": -250.887344360352,
+      "past_all_wire": 114,
+      "penetrations": 873,
+      "rocket_teams": [
+        {
+          "carrier": 86,
+          "loaded": true,
+          "loader": 53,
+          "position": "(-71.31245, 27.10981, -312.2706)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 231,
+          "loaded": true,
+          "loader": 263,
+          "position": "(-25.09103, 23.90988, -250.2556)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 378,
+          "loaded": true,
+          "loader": 375,
+          "position": "(26.51652, 38.08485, -276.3344)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 502,
+          "loaded": true,
+          "loader": 458,
+          "position": "(76.00637, 31.14823, -316.4981)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-90.00251, 0.333361, 429.7894)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-30.00224, 0.428116, 429.7894)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": -1,
+          "position": "(30.00124, 0.468254, 429.7894)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": -1,
+          "position": "(90.00294, 0.396256, 429.7894)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 2,
+      "shots": 36848,
+      "shots_at_ai": 33622,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 112,
+        "cover": 9,
+        "fire": 9,
+        "watch": 540
+      },
+      "stuck": 30,
+      "tanks": 3,
+      "time": 120.0,
+      "town": 0.0,
+      "vehicle_shots": 3110,
+      "width_90_percent": 182.755882263184
+    },
+    {
+      "allies": 621,
+      "armor": [
+        {
+          "hp": 420.0,
+          "position": "(-59.04369, 47.33, -358.4396)",
+          "shells": 30,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.606691, 47.33, -382.433)",
+          "shells": 31,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(63.50428, 47.33, -358.3995)",
+          "shells": 28,
+          "tracks": [
+            460.0,
+            460.0
+          ]
+        }
+      ],
+      "bazooka_shots": 2,
+      "breaches": 53,
+      "departed": 20,
+      "enemies": 142,
+      "engineers": 55,
+      "foot_soldiers": 501,
+      "friendly_deaths": {
+        "explosion": 57,
+        "rifle": 521
+      },
+      "front_z": -327.110412597656,
+      "grenades": 110,
+      "median_z": -107.673492431641,
+      "past_all_wire": 34,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": 86,
+          "loaded": true,
+          "loader": 53,
+          "position": "(-71.67847, 35.03345, -326.2126)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": true,
+          "loader": -1,
+          "position": "(-13.76639, 47.45, -380.1409)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": true,
+          "loader": -1,
+          "position": "(18.6694, 45.75109, -337.7829)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(74.04433, 46.92873, -349.9852)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": 677,
+          "position": "(-89.54809, 2.191946, -106.0034)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": true,
+          "loader": 827,
+          "position": "(-27.02633, 1.89328, -101.9346)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(29.49669, 1.67868, -97.48409)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": 1125,
+          "position": "(95.35611, 1.271836, -61.62101)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 4,
+      "shots": 56005,
+      "shots_at_ai": 51326,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 479,
+        "cover": 14,
+        "fire": 8
+      },
+      "stuck": 27,
+      "tanks": 3,
+      "time": 180.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 214.236419677734
+    },
+    {
+      "allies": 515,
+      "armor": [
+        {
+          "hp": 328.0,
+          "position": "(-69.52607, 47.33, -358.4904)",
+          "shells": 29,
+          "tracks": [
+            338.297817779692,
+            385.774352898451
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.719707, 47.33, -441.1195)",
+          "shells": 31,
+          "tracks": [
+            460.0,
+            459.195
+          ]
+        },
+        {
+          "hp": 328.0,
+          "position": "(66.00778, 47.33, -358.2106)",
+          "shells": 27,
+          "tracks": [
+            384.974063275134,
+            351.815560613637
+          ]
+        }
+      ],
+      "bazooka_shots": 7,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 128,
+      "engineers": 34,
+      "foot_soldiers": 395,
+      "friendly_deaths": {
+        "explosion": 82,
+        "rifle": 602
+      },
+      "front_z": -385.994415283203,
+      "grenades": 126,
+      "median_z": -328.385314941406,
+      "past_all_wire": 394,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": 169,
+          "loaded": true,
+          "loader": 116,
+          "position": "(-66.56622, 46.46575, -348.3006)",
+          "recoverer": -1,
+          "remaining": 5,
+          "shots": 1
+        },
+        {
+          "carrier": 779,
+          "loaded": false,
+          "loader": 882,
+          "position": "(-19.07583, 47.325, -367.8532)",
+          "recoverer": -1,
+          "remaining": 5,
+          "shots": 1
+        },
+        {
+          "carrier": 968,
+          "loaded": false,
+          "loader": 960,
+          "position": "(22.37996, 47.31163, -352.1272)",
+          "recoverer": -1,
+          "remaining": 5,
+          "shots": 1
+        },
+        {
+          "carrier": 1061,
+          "loaded": false,
+          "loader": 1086,
+          "position": "(75.24957, 47.05103, -351.7184)",
+          "recoverer": -1,
+          "remaining": 3,
+          "shots": 3
+        },
+        {
+          "carrier": 678,
+          "loaded": true,
+          "loader": 677,
+          "position": "(-54.81822, 47.325, -365.7542)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 828,
+          "loaded": false,
+          "loader": 827,
+          "position": "(-23.58884, 45.20214, -314.9145)",
+          "recoverer": -1,
+          "remaining": 5,
+          "shots": 1
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": 1128,
+          "loaded": true,
+          "loader": 1125,
+          "position": "(76.12242, 41.13558, -334.0347)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        }
+      ],
+      "secured": 7,
+      "shots": 66934,
+      "shots_at_ai": 62184,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 372,
+        "cover": 5,
+        "fire": 13,
+        "throw": 1,
+        "withdraw": 4
+      },
+      "stuck": 139,
+      "tanks": 3,
+      "time": 240.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 241.457801818848
+    },
+    {
+      "allies": 358,
+      "armor": [
+        {
+          "hp": 236.0,
+          "position": "(-75.46111, 46.92457, -358.0021)",
+          "shells": 27,
+          "tracks": [
+            136.23497519103,
+            214.257967523675
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(-35.16415, 47.33, -407.9595)",
+          "shells": 28,
+          "tracks": [
+            460.0,
+            459.195
+          ]
+        },
+        {
+          "hp": 148.0,
+          "position": "(75.12582, 47.33, -358.0184)",
+          "shells": 26,
+          "tracks": [
+            228.842382375846,
+            153.830022205961
+          ]
+        }
+      ],
+      "bazooka_shots": 27,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 107,
+      "engineers": 20,
+      "foot_soldiers": 238,
+      "friendly_deaths": {
+        "explosion": 158,
+        "rifle": 683
+      },
+      "front_z": -436.417633056641,
+      "grenades": 181,
+      "median_z": -250.549560546875,
+      "past_all_wire": 237,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-60.65788, 47.45, -358.2614)",
+          "recoverer": 757,
+          "remaining": 1,
+          "shots": 5
+        },
+        {
+          "carrier": 779,
+          "loaded": false,
+          "loader": 882,
+          "position": "(-19.80141, 47.325, -365.6064)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": 968,
+          "loaded": false,
+          "loader": 910,
+          "position": "(29.50797, 47.42483, -342.2842)",
+          "recoverer": -1,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": 1116,
+          "loaded": false,
+          "loader": 1039,
+          "position": "(98.04134, 47.325, -360.3044)",
+          "recoverer": -1,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-59.95713, 47.45, -362.0667)",
+          "recoverer": 802,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": 828,
+          "loaded": false,
+          "loader": 827,
+          "position": "(-23.77846, 46.43338, -321.4218)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(69.05523, 47.45, -366.136)",
+          "recoverer": 1112,
+          "remaining": 4,
+          "shots": 2
+        }
+      ],
+      "secured": 7,
+      "shots": 68678,
+      "shots_at_ai": 63854,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 231,
+        "cover": 3,
+        "fire": 4
+      },
+      "stuck": 156,
+      "tanks": 3,
+      "time": 275.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 259.42463684082
+    },
+    {
+      "allies": 324,
+      "armor": [
+        {
+          "hp": 236.0,
+          "position": "(-37.47856, 47.33, -358.7272)",
+          "shells": 25,
+          "tracks": [
+            136.23497519103,
+            214.257967523675
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(-36.79912, 47.33, -407.9995)",
+          "shells": 27,
+          "tracks": [
+            460.0,
+            459.195
+          ]
+        },
+        {
+          "hp": 0.0,
+          "position": "(75.12582, 47.33, -358.0184)",
+          "shells": 26,
+          "tracks": [
+            182.894327556466,
+            119.374549919436
+          ]
+        }
+      ],
+      "bazooka_shots": 31,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 96,
+      "engineers": 17,
+      "foot_soldiers": 204,
+      "friendly_deaths": {
+        "explosion": 160,
+        "rifle": 715
+      },
+      "front_z": -429.78173828125,
+      "grenades": 188,
+      "median_z": -250.340194702148,
+      "past_all_wire": 203,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-60.65788, 47.45, -358.2614)",
+          "recoverer": 745,
+          "remaining": 1,
+          "shots": 5
+        },
+        {
+          "carrier": 779,
+          "loaded": false,
+          "loader": 882,
+          "position": "(-14.18586, 53.6992, -388.0298)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(23.58012, 47.45, -386.508)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(119.8585, 47.45, -377.8584)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-64.59956, 47.45, -366.2426)",
+          "recoverer": 739,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": 827,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-23.85909, 46.43819, -321.1929)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(64.42226, 47.45, -366.0779)",
+          "recoverer": 1129,
+          "remaining": 4,
+          "shots": 2
+        }
+      ],
+      "secured": 7,
+      "shots": 69775,
+      "shots_at_ai": 64928,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 202,
+        "fire": 2
+      },
+      "stuck": 145,
+      "tanks": 2,
+      "time": 300.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 242.471343994141
+    },
+    {
+      "allies": 311,
+      "armor": [
+        {
+          "hp": 236.0,
+          "position": "(-37.81918, 47.33, -389.5415)",
+          "shells": 24,
+          "tracks": [
+            136.23497519103,
+            214.257967523675
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(113.7315, 47.33, -373.9257)",
+          "shells": 25,
+          "tracks": [
+            458.39,
+            459.195
+          ]
+        },
+        {
+          "hp": 0.0,
+          "position": "(75.12582, 47.33, -358.0184)",
+          "shells": 26,
+          "tracks": [
+            182.894327556466,
+            119.374549919436
+          ]
+        }
+      ],
+      "bazooka_shots": 31,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 91,
+      "engineers": 16,
+      "foot_soldiers": 191,
+      "friendly_deaths": {
+        "explosion": 162,
+        "rifle": 726
+      },
+      "front_z": -326.957794189453,
+      "grenades": 195,
+      "median_z": -250.270385742188,
+      "past_all_wire": 190,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-60.65788, 47.45, -358.2614)",
+          "recoverer": 745,
+          "remaining": 1,
+          "shots": 5
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-18.40177, 47.45, -401.133)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(23.58012, 47.45, -386.508)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(119.8585, 47.45, -377.8584)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-64.59956, 47.45, -366.2426)",
+          "recoverer": 739,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": 827,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-23.85909, 46.43819, -321.1929)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(64.42226, 47.45, -366.0779)",
+          "recoverer": 1129,
+          "remaining": 4,
+          "shots": 2
+        }
+      ],
+      "secured": 7,
+      "shots": 70740,
+      "shots_at_ai": 65881,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 190,
+        "fire": 1
+      },
+      "stuck": 131,
+      "tanks": 2,
+      "time": 360.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 242.46558380127
+    },
+    {
+      "allies": 310,
+      "armor": [
+        {
+          "hp": 236.0,
+          "position": "(-83.55051, 47.33, -497.3932)",
+          "shells": 24,
+          "tracks": [
+            136.23497519103,
+            214.257967523675
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(76.09435, 47.33, -362.4796)",
+          "shells": 25,
+          "tracks": [
+            458.39,
+            459.195
+          ]
+        },
+        {
+          "hp": 0.0,
+          "position": "(75.12582, 47.33, -358.0184)",
+          "shells": 26,
+          "tracks": [
+            182.894327556466,
+            119.374549919436
+          ]
+        }
+      ],
+      "bazooka_shots": 31,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 91,
+      "engineers": 16,
+      "foot_soldiers": 190,
+      "friendly_deaths": {
+        "explosion": 162,
+        "rifle": 727
+      },
+      "front_z": -326.957794189453,
+      "grenades": 195,
+      "median_z": -250.231079101562,
+      "past_all_wire": 189,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-60.65788, 47.45, -358.2614)",
+          "recoverer": 745,
+          "remaining": 1,
+          "shots": 5
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-18.40177, 47.45, -401.133)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(23.58012, 47.45, -386.508)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(119.8585, 47.45, -377.8584)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-64.59956, 47.45, -366.2426)",
+          "recoverer": 739,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-23.85909, 46.56319, -321.1929)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(64.42226, 47.45, -366.0779)",
+          "recoverer": 1129,
+          "remaining": 4,
+          "shots": 2
+        }
+      ],
+      "secured": 7,
+      "shots": 71104,
+      "shots_at_ai": 66244,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 190
+      },
+      "stuck": 131,
+      "tanks": 2,
+      "time": 480.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 242.46558380127
+    },
+    {
+      "allies": 310,
+      "armor": [
+        {
+          "hp": 236.0,
+          "position": "(-113.6604, 47.33, -380.7877)",
+          "shells": 24,
+          "tracks": [
+            136.23497519103,
+            214.257967523675
+          ]
+        },
+        {
+          "hp": 420.0,
+          "position": "(0.85544, 47.33, -452.0169)",
+          "shells": 25,
+          "tracks": [
+            458.39,
+            459.195
+          ]
+        },
+        {
+          "hp": 0.0,
+          "position": "(75.12582, 47.33, -358.0184)",
+          "shells": 26,
+          "tracks": [
+            182.894327556466,
+            119.374549919436
+          ]
+        }
+      ],
+      "bazooka_shots": 31,
+      "breaches": 60,
+      "departed": 40,
+      "enemies": 91,
+      "engineers": 16,
+      "foot_soldiers": 190,
+      "friendly_deaths": {
+        "explosion": 162,
+        "rifle": 727
+      },
+      "front_z": -326.957794189453,
+      "grenades": 195,
+      "median_z": -250.231079101562,
+      "past_all_wire": 189,
+      "penetrations": 1066,
+      "rocket_teams": [
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-60.65788, 47.45, -358.2614)",
+          "recoverer": 745,
+          "remaining": 1,
+          "shots": 5
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-18.40177, 47.45, -401.133)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(23.58012, 47.45, -386.508)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(119.8585, 47.45, -377.8584)",
+          "recoverer": -1,
+          "remaining": 0,
+          "shots": 6
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-64.59956, 47.45, -366.2426)",
+          "recoverer": 739,
+          "remaining": 2,
+          "shots": 4
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(-23.85909, 46.56319, -321.1929)",
+          "recoverer": -1,
+          "remaining": 4,
+          "shots": 2
+        },
+        {
+          "carrier": 978,
+          "loaded": true,
+          "loader": 977,
+          "position": "(25.90686, 22.99036, -250.7916)",
+          "recoverer": -1,
+          "remaining": 6,
+          "shots": 0
+        },
+        {
+          "carrier": -1,
+          "loaded": false,
+          "loader": -1,
+          "position": "(64.42226, 47.45, -366.0779)",
+          "recoverer": 1129,
+          "remaining": 4,
+          "shots": 2
+        }
+      ],
+      "secured": 7,
+      "shots": 71104,
+      "shots_at_ai": 66244,
+      "shots_at_player": 0,
+      "states": {
+        "advance": 190
+      },
+      "stuck": 138,
+      "tanks": 2,
+      "time": 600.0,
+      "town": 0.0,
+      "vehicle_shots": 4285,
+      "width_90_percent": 242.46558380127
+    }
+  ]
+}

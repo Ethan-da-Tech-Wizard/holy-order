@@ -1,0 +1,175 @@
+{
+  "checks": [
+    {
+      "check": "Launch stops at the start screen",
+      "passed": true
+    },
+    {
+      "check": "Six defenders; sentry separated from the line",
+      "passed": true
+    },
+    {
+      "check": "First sentry is over 35 metres from the group",
+      "passed": true
+    },
+    {
+      "check": "Player starts with sword, armour and no firearm",
+      "passed": true
+    },
+    {
+      "check": "Q/E are lean; F remains available for loot",
+      "passed": true
+    },
+    {
+      "check": "World is safe and idle at the title screen",
+      "passed": true
+    },
+    {
+      "check": "W plus Shift moves the player and consumes stamina",
+      "passed": true
+    },
+    {
+      "check": "Shift plus right mouse produces a fast melee charge",
+      "passed": true
+    },
+    {
+      "check": "Prone crawling lowers both viewpoint and collision",
+      "passed": true
+    },
+    {
+      "check": "Leaning offsets the viewpoint",
+      "passed": true
+    },
+    {
+      "check": "Crouching lowers eyes and collision height",
+      "passed": true
+    },
+    {
+      "check": "Space can mantle the low sandbag wall",
+      "passed": true
+    },
+    {
+      "check": "Mantle lands above the cover rather than inside it",
+      "passed": true
+    },
+    {
+      "check": "Enemy line of sight respects solid cover",
+      "passed": true
+    },
+    {
+      "check": "Sentry sees the player when the obstruction is removed",
+      "passed": true
+    },
+    {
+      "check": "Sword collision defeats the isolated sentry",
+      "passed": true
+    },
+    {
+      "check": "The sentry drops the recoverable rifle",
+      "passed": true
+    },
+    {
+      "check": "Pickup animation suspends combat",
+      "passed": true
+    },
+    {
+      "check": "Pickup returns to first person with exactly six rounds and no reserve",
+      "passed": true
+    },
+    {
+      "check": "Requested rifle quip appears as a subtitle",
+      "passed": true
+    },
+    {
+      "check": "Body loot yields lint once; repeat interaction cannot duplicate it",
+      "passed": true
+    },
+    {
+      "check": "Looting supplies three six-round clips exactly once",
+      "passed": true
+    },
+    {
+      "check": "Reloading a full rifle does not waste reserve ammunition",
+      "passed": true
+    },
+    {
+      "check": "Rifle is slung while the sword is drawn",
+      "passed": true
+    },
+    {
+      "check": "Fists mode stows both rifle and sword",
+      "passed": true
+    },
+    {
+      "check": "Rifle raycast hits and defeats a defender",
+      "passed": true
+    },
+    {
+      "check": "Only six rifle shots are available",
+      "passed": true
+    },
+    {
+      "check": "An empty rifle cannot fire a seventh shot",
+      "passed": true
+    },
+    {
+      "check": "R reloads from reserves with ammunition conserved",
+      "passed": true
+    },
+    {
+      "check": "Steel gauntlets can defeat a defender",
+      "passed": true
+    },
+    {
+      "check": "Lint stacks across multiple bodies",
+      "passed": true
+    },
+    {
+      "check": "Supply crate adds a grenade without adding ammunition",
+      "passed": true
+    },
+    {
+      "check": "Thrown impact grenade detonates and damages a nearby defender",
+      "passed": true
+    },
+    {
+      "check": "A held gauntlet power attack deals a heavier blow",
+      "passed": true
+    },
+    {
+      "check": "Inventory pauses incoming damage",
+      "passed": true
+    },
+    {
+      "check": "Zero health reaches the defeat/retry screen",
+      "passed": true
+    },
+    {
+      "check": "Last kill opens the road rendezvous, not an immediate ending",
+      "passed": true
+    },
+    {
+      "check": "Patrol vehicle spawns on its fixed road location",
+      "passed": true
+    },
+    {
+      "check": "Player must approach the patrol before the greeting",
+      "passed": true
+    },
+    {
+      "check": "British patrol begins the tea epilogue",
+      "passed": true
+    },
+    {
+      "check": "Passing soldier delivers the requested tea punchline",
+      "passed": true
+    },
+    {
+      "check": "Tea scene ends at the test-complete screen",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "passed": true,
+  "scope": "Automated headless encounter and input checks, including both cinematics. Human playtesting remains pending."
+}

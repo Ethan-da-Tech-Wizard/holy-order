@@ -1,0 +1,117 @@
+HOLY ORDER — THE LONGEST SHORE
+Mission 03 / Omaha-inspired landing / 6 June 1944
+
+START
+Double-click click2play.desktop, choose OMAHA in the shared mission menu, then Deploy.
+Winter and Desert are in the same menu. Esc > Mission Menu changes missions.
+Only one mission is loaded at a time; old installed shortcuts also open this menu.
+
+THE FORCE
+600 Americans total, including the player and naval crews; 100 German defenders.
+Two waves of 300: ten Higgins craft per wave, each carrying 27 assault passengers,
+two Browning M1919 gunners, and one coxswain. The player replaces passenger 25
+in the fifth first-wave craft, near the back of its nine tightly packed rows.
+That is 540 assault troops including the player, plus 60 naval crew, with no
+infinite reinforcements. Both sides carry grenades and finite ammunition.
+
+THE LANDING
+First-wave craft advance abreast across a concentrated 216-metre frontage. Wave two
+circles offshore, then approaches in formation and lands 240 seconds after
+wave one. First landing is 32 seconds after Deploy; second landing is 4:32.
+Weapons and walking are locked while packed in the craft. Look, crouch, prone,
+and lean still work. Ramps lower, the front files leave first, then your file
+moves you down the ramp into shallow water. No instant F teleport out at sea.
+
+Empty boats begin returning 24 seconds after their landing. They turn into
+separate return lanes 12 metres beside the assault lanes and disappear into fog
+before reaching the reserve holding area.
+Their drivers and gun crews leave with them. Returned boats no longer collide,
+render, attract enemy attention, or obstruct the second wave.
+
+Hull panels accumulate independent damage. Fresh panels stop rounds; worn
+panels permit reduced-energy penetration into real passenger hitboxes, then fail.
+The driver has a reinforced shield and very high health. Other occupants have
+normal health. Thin offshore fog conceals the formation until it crosses the
+visibility line. Friendly Brownings provide covering fire.
+
+THE BEACH
+An authored 576-metre-wide playable coastal sector: wet sand and surf, rows of Czech
+hedgehogs and mined posts, crater cover, a broken seawall, three barbed-wire rows,
+tall graded bluffs, eight concrete bunker complexes, traversable firing slits,
+rear entrances, interconnected dug trenches, a fortified 48-building village, and 8 ruined cottages along the beach road.
+The visible coastline continues beyond the playable area. This is NOT a surveyed
+1:1 reconstruction of all Omaha Beach. Landforms and fortification positions
+are authored for this game. Soldier models and animation remain prototype art;
+photographic ground/concrete textures do not make the entire game photorealistic.
+
+The surf-to-first-wire crossing is 100 metres (previously 214). The three belts
+stand at 100, 138 and 176 metres inland. Squads converge on three breach lanes,
+charge faster, and share open gaps instead of wandering to the far wire ends.
+Engineers check for deployment immediately on reaching the wire; other infantry
+provide brief covering bursts and can fire less accurately while advancing.
+
+32 German mounted MG42 positions: three protected bunker positions and one
+sandbag position per strongpoint, including enfilade arcs along the beach.
+Eight additional infantry carry MG42s. Riflemen use Kar98k, G43 and MP40 weapons.
+Americans use Garands, BARs, carbines and six flamethrowers. The player starts
+with a Garand, 8 loaded / 96 spare rounds, four grenades, sword, fists and shovel.
+The knight starts with 300 health in all three missions; the health bar uses that maximum.
+
+BREACHES AND OBJECTIVES
+20 AI engineers carry three finite Bangalore sections each, ten carriers per wave.
+That lets a surviving engineer breach successive belts. Carriers remain scarce and
+carriers can die. A carrier lays its charge at a wire segment, retreats during
+the two-second fuse, then that ONE eight-metre segment opens. Adjacent segments and the
+other rows remain intact. Soldiers share existing gaps; nearby allies can recover
+an unused charge from a fallen carrier. The player never receives a Bangalore.
+If engineers fail, work around a wire flank, or use 16 close shovel strokes to
+cut one segment while under cover. Clear at least three strongpoints and all
+village guards, establish control inland, and link with the second wave to win.
+
+AI selects the nearest detectable target with real line-of-sight checks. It has
+no player priority. Quiet crouched/prone movement shortens detection distance;
+approaching from behind works until close range, exposure or firing reveals you.
+Knowing where a gunshot happened does not allow sight through concrete.
+Suppression, reloads, ammunition exhaustion, grenades, friendly fire, looting,
+equipment damage and persistent bodies remain part of the battle.
+
+CONTROLS
+WASD move, mouse look; LMB attack; RMB sights; Shift sprint.
+C toggle crouch; Z toggle prone; Q/E lean; Space jump / mantle.
+R reload; G timed grenade throw; F interact / loot / swap firearm.
+1 sword; 2 firearm; 3 fists; 4 shovel. Tab inventory; J orders.
+Shovel: hold LMB to dig deeper; add RMB for a wider cut.
+Esc pause; F11 fullscreen; F6 cycles Low / Standard / High. F10 hides the FPS counter.
+
+PERFORMANCE
+Low graphics is the default in all missions: 50% internal 3D resolution, no
+MSAA, no screen-space effects or shadows, cheaper particles, pooled gunshot
+voices and fewer detailed models. Text stays sharp. Standard is 75% resolution;
+High is 100% with short-range sun shadows. The bundled engine's lighter Mobile
+renderer is used; nothing was downloaded or installed for this update.
+
+Distant soldiers use interpolated instanced meshes; Low keeps at most 16 detailed
+soldiers nearby. There are 168 terrain chunks, down from 360, and 156 wire
+sections (about 175,000 triangles). Buildings, tracers and flashes are instanced.
+AI decisions are spread across rendered frames. Gun timers retain fractional
+tick time. Movement is interpolated between simulation ticks; mouse look stays
+responsive at render speed. Local soil cells refine only where actually dug.
+
+Grenades leave small shallow soil scars and local holes in thin town walls and
+other vulnerable cover. Remaining pieces keep collision. Thick concrete bunkers
+and winter truck armor retain their protection. Geometry edits are queued with
+a bounded work budget. WEAPON-RATES.txt documents firearm timing and its sources.
+
+Headless checks measure CPU work, not laptop GPU frame rate. Use the on-screen
+FPS counter during actual play to assess the complete result.
+
+REFERENCES / ASSETS
+Omaha Beachhead, US Army Center of Military History (terrain/obstacle reference):
+https://history.army.mil/Publications/Publications-Catalog/Omaha-Beachhead/
+Higgins boat background, The National WWII Museum:
+https://www.nationalww2museum.org/students-teachers/student-resources/research-starters/research-starters-higgins-boats
+Poly Haven CC0 photographic textures (original downloads and hashes in assets/omaha/credits.json):
+https://polyhaven.com/license
+https://polyhaven.com/a/sand_01
+https://polyhaven.com/a/concrete_wall_008
+https://polyhaven.com/a/rocky_terrain_02

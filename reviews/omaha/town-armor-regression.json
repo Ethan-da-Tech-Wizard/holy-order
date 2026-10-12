@@ -1,0 +1,70 @@
+{
+  "version": "0.8.0",
+  "checks": {
+    "omaha_mechanics": {
+      "passed": 43,
+      "total": 43,
+      "report": "reviews/omaha/tests.json"
+    },
+    "scale_collision_loot": {
+      "passed": 19,
+      "total": 19,
+      "report": "reviews/omaha/double-wave-checks.json"
+    },
+    "town_armor_bazooka_stairs_sights": {
+      "passed": 34,
+      "total": 34,
+      "report": "reviews/omaha/town-armor-checks.json"
+    },
+    "routing_objectives": {
+      "passed": 8,
+      "total": 8,
+      "report": "reviews/omaha/routes-and-objectives.json"
+    },
+    "shared_menu_fire_cadence_sprint": {
+      "passed": 58,
+      "total": 58,
+      "report": "reviews/unified-tests.json"
+    },
+    "winter_regression": {
+      "passed": 85,
+      "total": 85,
+      "report": "reviews/ardennes-tests.json"
+    },
+    "survivability": {
+      "passed": 10,
+      "total": 10,
+      "report": "reviews/survivability-tests.json"
+    },
+    "desert_sights_and_reload": {
+      "passed": 22,
+      "total": 22,
+      "report": "reviews/aim-checks.json"
+    },
+    "launcher_singleton": {
+      "passed": 3,
+      "total": 3,
+      "report": "tests/launcher_test.py"
+    }
+  },
+  "assertions_passed": 282,
+  "assertions_total": 282,
+  "strongpoint_assault": {
+    "success": true,
+    "report": "reviews/omaha/inland-assault.json"
+  },
+  "town_approach_assault": {
+    "report": "reviews/omaha/town-assault.json",
+    "survivors_passed_old_slope_choke": true,
+    "scope": "246 infantry at town approach versus 150 defenders and three tanks; no player; route/combat diagnostic, not a victory assertion."
+  },
+  "full_battle": {
+    "report": "reviews/omaha/simulation.json",
+    "simulated_seconds": 600,
+    "boats_departed": 40,
+    "rockets_fired": 31,
+    "tanks_destroyed": 1,
+    "note": "Full run exposed inland troops backtracking toward another beach sector; final targeting fix is covered by routing_objectives. This observer run is not a player victory test."
+  },
+  "errors_in_final_check_logs": false
+}

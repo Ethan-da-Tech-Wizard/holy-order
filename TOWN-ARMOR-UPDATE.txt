@@ -1,0 +1,97 @@
+HOLY ORDER 0.8 — OMAHA TOWN AND ARMOR
+
+PLAY
+Open click2play.desktop > OMAHA. Deploy plays the approach; SKIP TO RAMP
+jumps to just before arrival. Enter also skips during the approach.
+The cinematic ends before the ramp lowers. Wait for the file to clear,
+then use WASD to walk off yourself. F does not teleport you ashore.
+Boats return after unloading, with a 36-second deadline for the player's craft.
+Staying aboard until it returns to sea ends the landing attempt.
+Wave two lands two minutes after wave one (2:32 from a normal deployment).
+Sprint and melee charges no longer consume stamina in Winter, Desert or Omaha.
+
+FORTIFIED TOWN
+The existing 100 beach defenders are followed by 150 additional town Germans.
+24 houses have ground floors, upper floors and attics, working collision floors
+and stairwells. There are 96 indoor stations and 54 street positions, including
+42 additional mounted MG42 positions. Window apertures, sandbags, barricades,
+paved streets, kerbs, shutters, chimneys and slate/terracotta roofs replace the
+old grassy-looking house surfaces. Town infantry stays inactive until contact
+or the inland approach, then fights using the normal visibility and ammo rules.
+The full beach force is still 1,200 Americans in two waves of 600.
+
+PANZER IVs
+Three tanks patrol connected streets between the front and rear of town.
+Their targets must be detected and visible; the player gets no priority.
+They can pursue a last seen contact and reposition at crossroads. They remain
+inside the town boundaries and cannot drive down onto the beach.
+Each has a rotating turret, a long 75 mm-style cannon, coaxial MG, track runs,
+road wheels and side skirts. Ammunition is finite: 32 shells and 1,600 MG rounds.
+Small arms cannot drain hull health. Hundreds of concentrated track hits can
+immobilize a tank. Several close grenade blasts can also break tracks, but
+hand grenades cannot destroy the hull. Broken tracks do not stop its turret.
+Bazooka impacts damage the hull; side/rear hits are more effective than frontal
+hits, and several penetrating hits are normally needed to destroy a tank.
+These are gameplay damage values, not an engineering armor-penetration model.
+
+AI-ONLY BAZOOKAS
+Eight launchers: four per wave, each with six total rockets. Carriers retain
+ordinary rifles. Each launcher owns exactly one carrier and at most one loader.
+A loader must be alive and within 2.8 metres to complete a 6.8-second reload.
+The buddy follows alongside, uses a rifle, and matches the carrier's cover stance.
+If a loader dies, another eligible rifleman is nominated. If the carrier dies,
+the launcher and remaining rockets stay at the drop point; an eligible friendly
+can recover it, then receive a different loader. Claims prevent duplicate crews
+or one helper serving several launchers. Engineers retain their wire assignment until the wire belts have been crossed.
+The loader can spot a tank, and the carrier seeks a clear firing position if
+nearby cover or friendly troops obstruct the shot or backblast.
+Teams require a clear line of fire and backblast space. The player cannot pick
+up or use bazookas. Protect the teams and open routes for them into town.
+
+WEAPONS AND HANDS
+The eleven WWII firearm models have separate dimensions, furniture, magazines,
+belt boxes, shrouds, muzzle shapes and sight positions. Walnut, steel and painted
+parts have separate finishes. Garand clips, Mauser stripper clips, detachable
+magazines and belts have corresponding reload props and motions.
+Existing caliber compatibility, partial magazines, carry limits, finite supplies
+and firing-rate clocks are preserved. The knight's gauntlets wrap around the gun
+and forearms extend toward the shoulders; sights align for every firearm.
+Desert retains its separate Carcano and Breda models, with the revised rifle hands.
+
+DESTRUCTION
+Repeated bullets can punch small local openings in vulnerable wood, sandbags
+and town masonry. Grenades damage walls and leave shallow ground scars. Cannon
+shells and rockets cause stronger local structural damage and larger craters.
+Remaining wall pieces still block movement and bullets. Reinforced beach bunkers
+remain resistant to small arms and hand grenades.
+A house checks remaining foundation support capacity and the distribution of
+supports around its centre. Losing sufficient support collapses its shell and
+kills occupants, including those upstairs. Collapses leave eight solid rubble
+pieces instead of hundreds of continually simulated fragments.
+Damage edits are queued, coalesced and bounded; they are not unlimited per-bullet
+CSG cuts. The environment and original soldier art remain stylized prototypes,
+not a photorealistic or surveyed 1:1 reconstruction of Normandy.
+
+PERFORMANCE AND VALIDATION
+Low / Max FPS remains the default, with 40% 3D resolution in Omaha, 20 Hz
+interpolated simulation, spatial AI queries, instanced distant troops, bounded
+projectiles/effects and persistent instanced bodies. Batched scenery releases
+its redundant individual visual nodes and recreates only panels being damaged.
+No software or art packages were downloaded or installed for this update.
+Headless tests exercise game logic, collision, navigation and ammunition; they
+do not measure the laptop GPU or verify the final rendered appearance. Read F10's
+FPS counter during actual combat. The expanded battle adds simulation work.
+Detailed current test results and CPU timings are in readiness-report.json and
+reviews/omaha/town-armor-checks.json.
+
+HISTORICAL VISUAL REFERENCES
+US National Park Service / Springfield Armory, US WWII small arms:
+https://home.nps.gov/spar/learn/historyculture/us-wwii-arms.htm
+National Park Service, John C. Garand and the eight-shot en-bloc rifle:
+https://www.nps.gov/spar/learn/historyculture/john-c-garand.htm
+Smithsonian National Museum of American History, M1 bazooka collection object:
+https://www.si.edu/object/nmah_415906
+The Tank Museum, Panzer IV collection:
+https://tankmuseum.org/tank-nuts/tank-collection/panzer-iv/
+Weapon cadence references remain in WEAPON-RATES.txt. Visual dimensions,
+crew inventories and damage thresholds are approximations for this game.

@@ -1,0 +1,88 @@
+{
+  "version": "0.7.0",
+  "omaha_mechanics": {
+    "passed": 42,
+    "total": 42
+  },
+  "scale_routing_collision_loot": {
+    "passed": 19,
+    "total": 19
+  },
+  "routes_objectives": {
+    "passed": 7,
+    "total": 7
+  },
+  "inland_assault": {
+    "success": true,
+    "survivors": 37
+  },
+  "winter": {
+    "passed": 85,
+    "failed": 0
+  },
+  "shared_menu_cadence_grenades": {
+    "passed": 52,
+    "total": 52
+  },
+  "armor": {
+    "passed": 10,
+    "total": 10
+  },
+  "six_minute_full_battle": {
+    "allies": 622,
+    "breaches": 59,
+    "departed": 40,
+    "enemies": 0,
+    "engineers": 35,
+    "foot_soldiers": 503,
+    "friendly_deaths": {
+      "explosion": 48,
+      "rifle": 529
+    },
+    "front_z": -474.577026367188,
+    "grenades": 99,
+    "median_z": -352.291839599609,
+    "past_all_wire": 502,
+    "penetrations": 973,
+    "secured": 7,
+    "shots": 54525,
+    "shots_at_ai": 50972,
+    "shots_at_player": 0,
+    "states": {
+      "advance": 503
+    },
+    "stuck": 168,
+    "time": 360.0,
+    "town": 12.0,
+    "vehicle_shots": 3228,
+    "width_90_percent": 239.720001220703
+  },
+  "logs": [
+    "mechanics2",
+    "scale5",
+    "routes",
+    "assault",
+    "simulation",
+    "shared",
+    "armor",
+    "winter",
+    "finalperf"
+  ],
+  "errors": {
+    "mechanics2": [],
+    "scale5": [],
+    "routes": [],
+    "assault": [],
+    "simulation": [],
+    "shared": [],
+    "armor": [],
+    "winter": [],
+    "finalperf": []
+  },
+  "gpu_rendering_tested": false,
+  "scope_note": "Unchanged Desert encounter and aiming checks are inherited from the previous release; shared menu lifecycle launches all three missions. Three launcher checks were rerun and passed.",
+  "launcher": {
+    "passed": 3,
+    "total": 3
+  }
+}
