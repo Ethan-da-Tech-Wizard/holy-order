@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: vehicle_visuals.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Consolidated multi-part vehicle rendering and articulated suspension/wheel kinematics updater.
+# ==============================================================================
 extends RefCounted
 # Moving vehicles keep individual armor colliders, but draw same-material panels
 # together in vehicle-local coordinates. Wheels, ramps and crew keep their motion.

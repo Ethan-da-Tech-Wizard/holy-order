@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: menu.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for menu.gd.
+# ==============================================================================
 extends Control
 const Graphics=preload("res://scripts/graphics.gd")
 const MISSIONS={"ardennes":"res://scenes/ardennes.tscn","desert":"res://scenes/main.tscn","omaha":"res://scenes/omaha.tscn"}

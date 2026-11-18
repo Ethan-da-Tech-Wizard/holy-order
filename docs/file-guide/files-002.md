@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-002.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Directory inventory tracking Ardennes theater combat scripts, actors, audio, and vehicle models.
+============================================================================== -->
+
 # Files 2 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

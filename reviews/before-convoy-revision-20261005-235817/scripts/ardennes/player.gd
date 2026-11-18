@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: player.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for player.gd.
+# ==============================================================================
 extends CharacterBody3D
 
 const Kit=preload("res://scripts/ardennes/weapons.gd")

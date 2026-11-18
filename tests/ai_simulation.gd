@@ -1,9 +1,18 @@
+# ==============================================================================
+# Program: ai_simulation.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated headless benchmark evaluating AI decision tree performance, perception latency, and pathfinding costs.
+# ==============================================================================
 extends SceneTree
 var g
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func ticks(n):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# Logic: Execute step-by-step processing for run
 	g=load("res://scenes/main.tscn").instantiate()
 	root.add_child(g)
 	current_scene=g

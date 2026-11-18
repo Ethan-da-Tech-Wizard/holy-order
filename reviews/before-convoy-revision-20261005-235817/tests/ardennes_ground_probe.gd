@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: ardennes_ground_probe.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for ardennes_ground_probe.gd.
+# ==============================================================================
 extends SceneTree
 var g
 func _initialize():call_deferred("run")

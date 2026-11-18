@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: town_house.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Normandy coastal village structure with destructible masonry, interior rooms, and sniper vantage points.
+# ==============================================================================
 extends Node3D
 # Three occupied levels share static geometry. Only damaged panels are rebuilt.
 const Art=preload("res://scripts/art.gd")
@@ -15,6 +21,7 @@ var timber:Material
 var roof_material:Material
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	facade=world.town_materials[index%world.town_materials.size()]
 	timber=world.town_timber
 	roof_material=world.town_roofs[index%2]
@@ -94,6 +101,7 @@ func _ready():
 	decorative.set_meta("skip_static_batch",true)
 
 func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry"):
+	# Logic: Execute step-by-step processing for panel
 	if mat==timber and kind=="masonry":kind="wood"
 	var body=world.strong(size,p,mat,self,kind)
 	body.protected_concrete=false
@@ -104,13 +112,16 @@ func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry
 	return body
 
 func contains(p:Vector3,padding:float=0.0)->bool:
+	# Logic: Execute step-by-step processing for contains
 	var local=p-position
 	return absf(local.x)<11+padding and absf(local.z)<13+padding
 
 func floor_at(p:Vector3)->int:
+	# Logic: Execute step-by-step processing for floor_at
 	return clampi(roundi((p.y-position.y)/3.2),0,2)
 
 func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
+	# Logic: Execute step-by-step processing for route_inside
 	var path=PackedVector3Array()
 	var floor_id=floor_at(start) if contains(start) else 0
 	if not contains(start):
@@ -135,6 +146,7 @@ func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
 	return path
 
 func check_supports():
+	# Logic: Execute step-by-step processing for check_supports
 	if collapsed or supports.is_empty():return
 	var capacity=0.0
 	var footprint=PackedVector2Array()
@@ -149,6 +161,7 @@ func check_supports():
 	if not stable:collapse()
 
 func collapse():
+	# Logic: Execute step-by-step processing for collapse
 	if collapsed:return
 	collapsed=true
 	for panel_body in panels:

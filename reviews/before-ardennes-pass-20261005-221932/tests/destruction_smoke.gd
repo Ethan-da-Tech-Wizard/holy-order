@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: destruction_smoke.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for destruction_smoke.gd.
+# ==============================================================================
 extends SceneTree
 const Art=preload("res://scripts/art.gd")
 func _initialize():call_deferred("run")

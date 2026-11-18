@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: carcano_model.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for carcano_model.gd.
+# ==============================================================================
 extends RefCounted
 
 # Original M91-inspired geometry, in metres. Open sights are geometry rather than

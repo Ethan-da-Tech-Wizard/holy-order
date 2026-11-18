@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: omaha_performance.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_performance.gd.
+# ==============================================================================
 extends SceneTree
 var g
 var frames=[]

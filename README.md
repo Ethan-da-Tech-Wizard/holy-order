@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: README.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Root entry point and architectural guide for Holy Order, a historical 3D tactical simulation game built in Godot.
+============================================================================== -->
+
 # Holy Order
 
 A Godot game prototype following a displaced knight through desert, winter-convoy, and Omaha-inspired combat scenarios.

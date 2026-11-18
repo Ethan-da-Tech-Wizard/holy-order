@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: prop.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Winter battlefield prop component representing frozen crates, sandbags, destroyed fences, and foliage.
+# ==============================================================================
 extends "res://scripts/breakable.gd"
 
 var battle_world
@@ -11,6 +17,7 @@ static var mark_mesh:SphereMesh
 static var mark_material:StandardMaterial3D
 
 func damage_at(amount:float,point:Vector3,radius:float=0.24,explosive:bool=false)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	if material_kind=="soil" and not explosive and radius<0.3:return false
 	wear+=amount
@@ -39,6 +46,7 @@ func damage_at(amount:float,point:Vector3,radius:float=0.24,explosive:bool=false
 	return super.damage_at(amount,point,radius,explosive)
 
 func bullet_mark(point:Vector3):
+	# Logic: Execute step-by-step processing for bullet_mark
 	if marks_used>=8:return
 	if marks==null:
 		if mark_mesh==null:
@@ -65,10 +73,12 @@ func bullet_mark(point:Vector3):
 	marks.multimesh.visible_instance_count=marks_used
 
 func carve(point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for carve
 	if destroyed:return
 	if battle_world!=null:battle_world.queue_cut(self,point,radius)
 	else:super.carve(point,radius)
 
 func commit_cut(point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for commit_cut
 	if material_kind=="soil" and battle_world!=null:battle_world.deform_ground(self,point,radius)
 	else:super.carve(point,radius)

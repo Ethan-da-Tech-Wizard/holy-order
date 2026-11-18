@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: audio.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for audio.gd.
+# ==============================================================================
 extends "res://scripts/ardennes/audio.gd"
 func at(sound:String,pos:Vector3,volume:float=0,pitch:float=1.0):
 	if not enabled or get_child_count()>42:return

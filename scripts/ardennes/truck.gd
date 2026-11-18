@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: truck.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Military transport truck vehicle simulator governing engine physics, convoy pathfinding, and passenger disembarkation.
+# ==============================================================================
 extends Node3D
 
 const Art=preload("res://scripts/art.gd")
@@ -37,6 +43,7 @@ var last_transform_progress:float=-100
 var last_transform_lane:float=-100
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var olive=Art.material(Color("535c43"),0.18,0.83)
 	var wood=Art.material(Color("655d46"))
 	var steel=Art.material(Color("333b38"),0.68,0.61)
@@ -81,6 +88,7 @@ func _ready():
 	preload("res://scripts/vehicle_visuals.gd").batch_boxes(self,wheels)
 
 func part(size:Vector3,offset:Vector3,mat:Material,kind:String,role:String):
+	# Logic: Execute step-by-step processing for part
 	var body=ArmoredPanel.new()
 	body.material_kind=kind
 	body.battle_world=game.world
@@ -98,14 +106,17 @@ func part(size:Vector3,offset:Vector3,mat:Material,kind:String,role:String):
 	return body
 
 func seat_transform(seat:int)->Transform3D:
+	# Logic: Execute step-by-step processing for seat_transform
 	var side=-1 if seat%2==0 else 1
 	var offset=Vector3(side*0.70,1.32,-0.45+float(seat/2)*0.60)
 	return global_transform*Transform3D(Basis(Vector3.UP,-side*PI/2),offset)
 
 func gunner_transform()->Transform3D:
+	# Logic: Execute step-by-step processing for gunner_transform
 	return seat_transform(1)
 
 func has_passengers()->bool:
+	# Logic: Execute step-by-step processing for has_passengers
 	if unloaded:return false
 	if game.player.truck==self and game.player.health>0:return true
 	for actor in occupants:
@@ -113,6 +124,7 @@ func has_passengers()->bool:
 	return false
 
 func target_point(shooter)->Vector3:
+	# Logic: Execute step-by-step processing for target_point
 	# Finite bursts move between targets and panels; wheel hits are real ray hits.
 	var choice=(shooter.index+int(game.elapsed/2.2))%10
 	if choice==0:
@@ -123,6 +135,7 @@ func target_point(shooter)->Vector3:
 	return to_global(Vector3(side*1.08,2.15,0.25+float(choice%4)*0.62))
 
 func update_transform():
+	# Step: Update internal simulation state and refresh cached coordinates
 	if is_equal_approx(progress,last_transform_progress) and is_equal_approx(lane_offset,last_transform_lane):return
 	last_transform_progress=progress
 	last_transform_lane=lane_offset
@@ -136,6 +149,7 @@ func update_transform():
 	rotation.x=-asin(clampf(heading.y,-0.16,0.16))
 
 func can_pass(lane:float)->bool:
+	# Logic: Execute step-by-step processing for can_pass
 	for other in game.trucks:
 		if other==self:continue
 		if absf(other.progress-progress)<11 and absf(other.lane_offset-lane)<2.7:return false
@@ -144,6 +158,7 @@ func can_pass(lane:float)->bool:
 	return absf(game.world.surface_height(at.x,at.z)-game.world.road_point(progress+8).y)<1.0
 
 func tick(delta:float,_front=null):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if destroyed or unloaded:return
 	if not has_passengers():
 		dismount("crew lost")
@@ -195,6 +210,7 @@ func tick(delta:float,_front=null):
 			dismount("arrival" if arrived else ("wheels disabled" if disabled else "stuck"))
 
 func receive_part_damage(amount:float,point:Vector3,explosive:bool,part_node=null):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return
 	total_damage+=amount
 	last_hit_time=game.elapsed
@@ -214,10 +230,12 @@ func receive_part_damage(amount:float,point:Vector3,explosive:bool,part_node=nul
 	if health<=0:wreck(false)
 
 func passenger_damage(amount:float,kind:String)->float:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return amount
 	return amount*(0.12 if kind=="rifle" else (0.22 if kind=="explosion" else 1.0))
 
 func receive_ambush_strike(point:Vector3):
+	# Logic: Execute step-by-step processing for receive_ambush_strike
 	# A rocket can stop the convoy without a scripted execution of everyone aboard.
 	receive_part_damage(1400,point,true)
 	if destroyed:return
@@ -225,6 +243,7 @@ func receive_ambush_strike(point:Vector3):
 	dismount("armored ambush stop")
 
 func wreck(scripted:bool):
+	# Logic: Execute step-by-step processing for wreck
 	if destroyed:return
 	destroyed=true
 	disabled=true
@@ -252,6 +271,7 @@ func wreck(scripted:bool):
 	unloaded=true
 
 func dismount(reason:String="orders"):
+	# Logic: Execute step-by-step processing for dismount
 	if unloaded:return
 	unloaded=true
 	stopped=true

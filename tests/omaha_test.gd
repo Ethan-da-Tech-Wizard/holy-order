@@ -1,14 +1,24 @@
+# ==============================================================================
+# Program: omaha_test.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Integration test suite verifying Omaha landing sequence, boat ramp physics, and bunker elimination.
+# ==============================================================================
 extends SceneTree
 const Armor=preload("res://scripts/omaha/armor.gd")
 var g
 var checks:Array=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
 func ticks(n:int):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()

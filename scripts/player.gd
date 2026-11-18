@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: player.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: First-person player controller implementing physics kinematics, mouse look smoothing, stamina, and weapon handling.
+# ==============================================================================
 extends CharacterBody3D
 const ViewSmoothing=preload("res://scripts/view_smoothing.gd")
 var camera_render_offset=Vector3.ZERO
@@ -63,6 +69,7 @@ const AIM_FOV: float = 58.0
 const HIP_RIFLE_POSITION = Vector3(0.22, -0.245, -0.40)
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	collision_layer = 2
 	collision_mask = 1|4
 	floor_snap_length = 0.35
@@ -126,12 +133,14 @@ func _ready():
 	select_weapon(0)
 
 func set_model_layers(node: Node, layers: int):
+	# Logic: Execute step-by-step processing for set_model_layers
 	if node is VisualInstance3D:
 		node.layers = layers
 	for child in node.get_children():
 		set_model_layers(child,layers)
 
 func _unhandled_input(event):
+	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if game.phase != "playing":
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -184,6 +193,7 @@ func _unhandled_input(event):
 			velocity.y = 6.2
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	ViewSmoothing.restore(self)
 	if game.phase != "playing":
 		return
@@ -254,6 +264,7 @@ func _physics_process(delta):
 		position.z = clampf(position.z,-85,61)
 
 func _process(delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	ViewSmoothing.restore(self)
 	if game.phase != "playing" or game.player_mounted: return
 	# Cosmetic movement follows rendered frames, not the fixed physics tick rate.
@@ -263,6 +274,7 @@ func _process(delta):
 	ViewSmoothing.display(self)
 
 func update_view(delta):
+	# Step: Update internal simulation state and refresh cached coordinates
 	aim_blend = move_toward(aim_blend,1.0 if aiming else 0.0,delta/0.20)
 	var aim_weight = smoothstep(0,1,aim_blend)
 	var target_fov = lerpf(96.0 if is_charging else (88.0 if is_sprinting else HIP_FOV),AIM_FOV,aim_weight)
@@ -324,6 +336,7 @@ func update_view(delta):
 		shovel.rotation.x-=sin(clampf(1-cooldown/0.65,0,1)*PI)*1.0
 
 func select_weapon(slot: int):
+	# Logic: Execute step-by-step processing for select_weapon
 	if slot==4 and game.demolition and game.demolition.carried==0 and not is_instance_valid(game.demolition.active):
 		game.toast("Find demolition supplies in the village engineer's store.",3)
 		return
@@ -357,6 +370,7 @@ func select_weapon(slot: int):
 	for box in equipment_boxes:box.set_active(box.get_parent().visible)
 
 func attack(power: float = 0):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if cooldown > 0 or climbing > 0 or reload_time > 0: return
 	strike_power = 1.0 + clampf(power,0,1.2)*1.2 + (0.7 if is_charging else 0)
 	if weapon == 1:
@@ -406,6 +420,7 @@ func attack(power: float = 0):
 		game.sounds.play("sword",-10,0.75 if weapon == 0 else 1.35)
 
 func melee_hit():
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	var closest = null
 	var best = 3.05 if weapon == 0 else 2.20
 	var origin = camera.global_position
@@ -437,12 +452,14 @@ func melee_hit():
 			game.sounds.play("clang",-13)
 
 func shot_exclusions() -> Array[RID]:
+	# Logic: Execute step-by-step processing for shot_exclusions
 	var result: Array[RID]=[get_rid()]
 	for box in equipment_boxes:
 		if is_instance_valid(box):result.append(box.get_rid())
 	return result
 
 func receive_equipment_damage(item: String, amount: float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if game.phase!="playing":return
 	match item:
 		"rifle":
@@ -472,6 +489,7 @@ func receive_equipment_damage(item: String, amount: float):
 	game.sounds.play("clang",-7)
 
 func dig_stroke():
+	# Logic: Execute step-by-step processing for dig_stroke
 	if cooldown>0 or not has_shovel:return
 	cooldown=0.65
 	var ray=PhysicsRayQueryParameters3D.create(camera.global_position,camera.global_position-camera.global_basis.z*3.0,1|16)
@@ -488,6 +506,7 @@ func dig_stroke():
 	game.impact(hit.position,Color("9b8769"))
 
 func step_over_rubble(direction: Vector3):
+	# Logic: Execute step-by-step processing for step_over_rubble
 	var space=get_world_3d().direct_space_state
 	var low=global_position+Vector3(0,0.16,0)
 	var ahead=direction*0.55
@@ -501,6 +520,7 @@ func step_over_rubble(direction: Vector3):
 		if space.intersect_ray(clear).is_empty():global_position.y+=lift+0.025
 
 func reload_weapon():
+	# Logic: Execute step-by-step processing for reload_weapon
 	if weapon != 1 or reload_time > 0 or ammo == 6: return
 	if reserve == 0:
 		game.toast("No spare ammunition. %d / 6 rounds remain." % ammo,2.5)
@@ -510,6 +530,7 @@ func reload_weapon():
 	game.sounds.play("reload",-10)
 
 func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if game.phase != "playing": return
 	# Plate protects against blows; twentieth-century rifle rounds still penetrate it.
 	health = maxf(0,health-amount*(0.4 if kind=="melee" else 1.0))
@@ -519,6 +540,7 @@ func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	if health <= 0: game.defeat()
 
 func try_mantle() -> bool:
+	# Logic: Execute step-by-step processing for try_mantle
 	var direction = -global_basis.z
 	var low = global_position+Vector3(0,0.66,0)
 	var q = PhysicsRayQueryParameters3D.create(low,low+direction*1.25,1)

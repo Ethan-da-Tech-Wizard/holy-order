@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: world.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Level geometry synthesizer constructing environmental terrain meshes, lighting setups, and world boundaries.
+# ==============================================================================
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
@@ -13,6 +19,7 @@ var terrain_chunks: Array = []
 var game
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed = 19400614
 	lighting()
@@ -41,6 +48,7 @@ func _ready():
 	add_child(fill)
 
 func lighting():
+	# Logic: Execute step-by-step processing for lighting
 	var env = Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky = Sky.new()
@@ -94,6 +102,7 @@ func lighting():
 	add_child(sun)
 
 func landscape():
+	# Logic: Execute step-by-step processing for landscape
 	ground_material = ShaderMaterial.new()
 	ground_material.shader = load("res://assets/shaders/sand.gdshader")
 	# Individually editable soil chunks. Digging changes the surface and collision.
@@ -153,6 +162,7 @@ func landscape():
 	add_child(dust)
 
 func rock(pos: Vector3, size: Vector3, collide: bool):
+	# Logic: Execute step-by-step processing for rock
 	var root = Art.Breakable.new()
 	root.material_kind="rock"
 	add_child(root)
@@ -175,6 +185,7 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 		root.add_child(c)
 
 func rock_mesh(variant: int) -> ArrayMesh:
+	# Logic: Execute step-by-step processing for rock_mesh
 	if rock_shapes.has(variant): return rock_shapes[variant]
 	var source = SphereMesh.new()
 	source.radius = 1
@@ -208,6 +219,7 @@ func rock_mesh(variant: int) -> ArrayMesh:
 	return result
 
 func sandbags(pos: Vector3, length: int, angle: float = 0.0):
+	# Logic: Execute step-by-step processing for sandbags
 	var root=Art.Breakable.new()
 	root.material_kind="sandbag"
 	add_child(root)
@@ -228,6 +240,7 @@ func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 	return root
 
 func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
+	# Logic: Execute step-by-step processing for crate
 	var wood = Art.material(Color("736c4c"))
 	var dark = Art.material(Color("4e4b36"))
 	var root = Art.solid(self,size,pos+Vector3(0,size.y/2,0),wood)
@@ -237,6 +250,7 @@ func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 		Art.box(root,Vector3(size.x+0.015,0.065,size.z+0.018),Vector3(0,y,0),dark)
 
 func tent(pos: Vector3):
+	# Logic: Execute step-by-step processing for tent
 	var root = Node3D.new()
 	add_child(root)
 	root.position = pos
@@ -254,6 +268,7 @@ func tent(pos: Vector3):
 		Art.cylinder(root,0.045,3,Vector3(0,1.5,z),Art.material(Color("514737")))
 
 func fortifications():
+	# Logic: Execute step-by-step processing for fortifications
 	# Forward sentry, then the six-man outpost. Open ends permit a sword-only route.
 	sandbags(Vector3(0,0,7),3)
 	sandbags(Vector3(-12,0,-31),7,0.12)
@@ -301,10 +316,12 @@ func fortifications():
 	Art.solid(self,Vector3(3.5,0.16,2),Vector3(0,0.08,38.7),Art.material(Color("686c65")))
 
 func geometry_updated(point: Vector3):
+	# Step: Update internal simulation state and refresh cached coordinates
 	geometry_revision+=1
 	if is_instance_valid(navigation):navigation.mark_dirty(point)
 
 func blast(point: Vector3, power: float = 300, radius: float = 4.2):
+	# Logic: Execute step-by-step processing for blast
 	for body in get_tree().get_nodes_in_group("breakable"):
 		if body.destroyed:continue
 		var distance=body.distance_to_surface(point)
@@ -316,12 +333,14 @@ func blast(point: Vector3, power: float = 300, radius: float = 4.2):
 			body.damage_at(amount,point,minf(1.25,radius-distance+0.25),true)
 
 func dig(point: Vector3, depth: float = 0.82):
+	# Logic: Execute step-by-step processing for dig
 	var centre=point-Vector3(0,depth*0.34,0)
 	for chunk in terrain_chunks:
 		if is_instance_valid(chunk) and not chunk.destroyed and chunk.distance_to_surface(centre)<depth:
 			chunk.carve(centre,depth)
 
 func nearby_door(point: Vector3, distance: float = 2.6):
+	# Logic: Execute step-by-step processing for nearby_door
 	var best=null
 	for door in get_tree().get_nodes_in_group("field_door"):
 		if not door.available():continue
@@ -332,6 +351,7 @@ func nearby_door(point: Vector3, distance: float = 2.6):
 	return best
 
 func make_loose_props_breakable(node: Node):
+	# Logic: Execute step-by-step processing for make_loose_props_breakable
 	# Convert decorative geometry into independently hittable physical props, while
 	# keeping doors and existing breakable bodies as their own objects.
 	for child in node.get_children():

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: layout.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Spatial coordinate manifest defining bunker placements, shingle berm lines, hedgehogs, and barbed wire belts.
+# ==============================================================================
 extends RefCounted
 # Gameplay distances in metres. Troops, weapons and fortifications retain their scale.
 const WIDTH:float=288.0

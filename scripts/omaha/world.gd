@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: world.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Tidal beach terrain generator with wet sand specular shading, bluff cliffs, and tidal flats.
+# ==============================================================================
 extends "res://scripts/ardennes/world.gd"
 const Armor=preload("res://scripts/omaha/armor.gd")
 const Wire=preload("res://scripts/omaha/wire.gd")
@@ -36,8 +42,10 @@ var edited_cells:Dictionary={}
 var seawall_gaps:Array[float]=[]
 
 func play_bounds()->Vector2:return Vector2(WIDTH-8,DEPTH-10)
+	# Logic: Execute step-by-step processing for play_bounds
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed=19440606
 	noise.seed=19440606
@@ -91,6 +99,7 @@ func _ready():
 	world_camera.fov=74
 
 func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
+	# Logic: Execute step-by-step processing for textured
 	var m=StandardMaterial3D.new()
 	m.albedo_color=tint
 	m.albedo_texture=load("res://assets/omaha/"+kind+"_diff.jpg")
@@ -105,6 +114,7 @@ func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
 	return m
 
 func raw_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for raw_height
 	if z>0:return -0.07*z-0.1
 	var beach=minf(-z*0.017,5.45)
 	var bluff=smoothstep(178.0,313.0,-z)*42.0
@@ -117,6 +127,7 @@ func raw_height(x:float,z:float)->float:
 	return h
 
 func height_at(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for height_at
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
 	var h=raw_height(x,z)
@@ -144,8 +155,10 @@ func height_at(x:float,z:float)->float:
 	return h
 
 func grid_step(z:float)->int:return 2 if z< -192 and z>=-384 else 4
+	# Logic: Execute step-by-step processing for grid_step
 
 func ground_chunk(x:float,z:float):
+	# Logic: Execute step-by-step processing for ground_chunk
 	var body=Prop.new()
 	body.material_kind="soil"
 	body.battle_world=self
@@ -161,6 +174,7 @@ func ground_chunk(x:float,z:float):
 	terrain_meshes+=1
 
 func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloat32Array())->ArrayMesh:
+	# Logic: Execute step-by-step processing for terrain_mesh
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(0)
@@ -182,6 +196,7 @@ func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloa
 	return st.commit()
 
 func base_surface_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for base_surface_height
 	var step=grid_step(floorf(z/TILE)*TILE)
 	var gx=floorf(x/step)*step
 	var gz=floorf(z/step)*step
@@ -194,6 +209,7 @@ func base_surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func surface_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for surface_height
 	var key=Vector2i(floori(x/TILE)*TILE,floori(z/TILE)*TILE)
 	if not soil_edits.has(key):return base_surface_height(x,z)
 	var gx=clampi(floori(x-key.x),0,47)
@@ -208,12 +224,14 @@ func surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func carve_ground(center:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for carve_ground
 	for x in range(floori((center.x-radius)/TILE)*TILE,floori((center.x+radius)/TILE)*TILE+1,TILE):
 		for z in range(floori((center.z-radius)/TILE)*TILE,floori((center.z+radius)/TILE)*TILE+1,TILE):
 			var body=terrain_lookup.get(Vector2i(x,z))
 			if body!=null:body.carve(center,radius)
 
 func deform_ground(body,point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for deform_ground
 	var key=Vector2i(roundi(body.position.x),roundi(body.position.z))
 	var heights:PackedFloat32Array
 	if soil_edits.has(key):heights=soil_edits[key]
@@ -243,12 +261,14 @@ func deform_ground(body,point:Vector3,radius:float):
 	geometry_updated(point)
 
 func geometry_updated(point:Vector3):
+	# Step: Update internal simulation state and refresh cached coordinates
 	geometry_revision+=1
 	path_cache.clear()
 	geometry_changes.append({"revision":geometry_revision,"point":point})
 	if geometry_changes.size()>32:geometry_changes.pop_front()
 
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
+	# Logic: Execute step-by-step processing for path_between
 	if minf(a.z,b.z)<Layout.TOWN_FRONT:
 		# Nearby teammates can keep formation without taking a loop around a block.
 		if absf(a.y-b.y)<0.7 and a.distance_squared_to(b)<36:
@@ -287,6 +307,7 @@ func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	return PackedVector3Array([a,b])
 
 func strong(size:Vector3,p:Vector3,mat:Material,parent:Node3D=self,kind:String="masonry"):
+	# Logic: Execute step-by-step processing for strong
 	var body=Armor.new()
 	body.material_kind=kind
 	body.protected_concrete=kind=="masonry"
@@ -306,6 +327,7 @@ func strong(size:Vector3,p:Vector3,mat:Material,parent:Node3D=self,kind:String="
 	return body
 
 func build_bunker(i:int):
+	# Step: Instantiate and position node hierarchy into scene tree for build_bunker
 	var root=Node3D.new()
 	add_child(root)
 	root.position=anchors[i]
@@ -334,6 +356,7 @@ func build_bunker(i:int):
 	for x in [-8.0,8.0]:covers.append(on_ground(anchors[i]+Vector3(x,0,6)))
 
 func build_field_nest(p:Vector3,i:int):
+	# Step: Instantiate and position node hierarchy into scene tree for build_field_nest
 	var bag=Art.material(Color("797762"),0,1)
 	var root=Node3D.new()
 	add_child(root)
@@ -347,6 +370,7 @@ func build_field_nest(p:Vector3,i:int):
 	covers.append(p)
 
 func build_wire():
+	# Step: Instantiate and position node hierarchy into scene tree for build_wire
 	for row in range(3):
 		for x in range(-Layout.WIRE_EDGE,Layout.WIRE_EDGE,8):
 			var wire=Wire.new()
@@ -372,6 +396,7 @@ func build_wire():
 				group[i].visual_index=i
 
 func blocking_wire(p:Vector3,lane:float):
+	# Logic: Execute step-by-step processing for blocking_wire
 	for row in range(3):
 		if p.z<WIRE_ROWS[row]-2:continue
 		var column=clampi(floori((lane+Layout.WIRE_EDGE)/8),0,wires_by_row[row].size()-1)
@@ -379,6 +404,7 @@ func blocking_wire(p:Vector3,lane:float):
 	return null
 
 func nearest_gap(row:int,x:float,max_distance:float=INF):
+	# Logic: Execute step-by-step processing for nearest_gap
 	var chosen=null
 	var best=max_distance
 	for wire in gaps_by_row[row]:
@@ -389,6 +415,7 @@ func nearest_gap(row:int,x:float,max_distance:float=INF):
 	return chosen
 
 func build_seawall():
+	# Step: Instantiate and position node hierarchy into scene tree for build_seawall
 	for x in range(-216,216,12):
 		seawall_gaps.append(float(x+11))
 		# Overlapping breaks provide crawl-height recesses and routes through the wall.
@@ -401,6 +428,7 @@ func build_seawall():
 	for c in craters:covers.append(on_ground(c.p))
 
 func instance_batch(key:String,mesh:Mesh,transforms:Array):
+	# Logic: Execute step-by-step processing for instance_batch
 	var m=MultiMeshInstance3D.new()
 	m.multimesh=MultiMesh.new()
 	m.multimesh.transform_format=MultiMesh.TRANSFORM_3D
@@ -412,6 +440,7 @@ func instance_batch(key:String,mesh:Mesh,transforms:Array):
 	obstacle_batches[key]=m
 
 func build_obstacles():
+	# Step: Instantiate and position node hierarchy into scene tree for build_obstacles
 	var root=Node3D.new()
 	var iron=Art.material(Color("373d36"),0.78,0.72)
 	for angle in [Vector3(0,0,PI/4),Vector3(0,0,-PI/4),Vector3(PI/2,0,0)]:
@@ -454,6 +483,7 @@ func build_obstacles():
 	instance_batch("mined_posts",mesh,transforms)
 
 func build_trench_details():
+	# Step: Instantiate and position node hierarchy into scene tree for build_trench_details
 	var timber=Art.material(Color("534d3d"))
 	var root=Node3D.new()
 	for x in range(-204,204,12):
@@ -470,6 +500,7 @@ func build_trench_details():
 	root.free()
 
 func town_surface(tint:String,kind:int)->Material:
+	# Logic: Execute step-by-step processing for town_surface
 	var mat=ShaderMaterial.new()
 	mat.shader=load("res://assets/omaha/town_surface.gdshader")
 	mat.set_shader_parameter("tint",Color(tint))
@@ -477,6 +508,7 @@ func town_surface(tint:String,kind:int)->Material:
 	return mat
 
 func build_village():
+	# Step: Instantiate and position node hierarchy into scene tree for build_village
 	for tint in ["b8ad91","a29d8d","c7bfa3","9c9180"]:town_materials.append(town_surface(tint,0))
 	for tint in ["535e66","855d47"]:town_roofs.append(town_surface(tint,1))
 	for tint in ["526568","63745d","644e42"]:town_shutters.append(Art.material(Color(tint)))
@@ -527,18 +559,21 @@ func build_village():
 	Art.box(self,Vector3(1.6,0.18,0.18),p+Vector3(0,22.4,0),town_metal)
 
 func closest_road_x(x:float)->float:
+	# Logic: Execute step-by-step processing for closest_road_x
 	var best=Layout.ROAD_X[0]
 	for road in Layout.ROAD_X:
 		if absf(road-x)<absf(best-x):best=road
 	return best
 
 func closest_road_z(z:float)->float:
+	# Logic: Execute step-by-step processing for closest_road_z
 	var best=Layout.ROAD_Z[0]
 	for road in Layout.ROAD_Z:
 		if absf(road-z)<absf(best-z):best=road
 	return best
 
 func tank_route(a:Vector3,b:Vector3)->PackedVector3Array:
+	# Logic: Execute step-by-step processing for tank_route
 	# Manhattan streets keep columns out of house walls; final approach uses a door.
 	var path=PackedVector3Array()
 	var ax=closest_road_x(a.x)
@@ -550,6 +585,7 @@ func tank_route(a:Vector3,b:Vector3)->PackedVector3Array:
 	return path
 
 func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,soil_depth:float=0.13):
+	# Logic: Execute step-by-step processing for blast
 	match game.active_blast_kind:
 		"tank_shell":
 			power*=3.5
@@ -562,6 +598,7 @@ func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,
 	super.blast(point,power,radius,soil_radius,soil_depth)
 
 func build_coastal_light():
+	# Step: Instantiate and position node hierarchy into scene tree for build_coastal_light
 	ambient=WorldEnvironment.new()
 	var env=Environment.new()
 	env.background_mode=Environment.BG_SKY
@@ -595,6 +632,7 @@ func build_coastal_light():
 	add_child(sun)
 
 func batch_static_boxes():
+	# Logic: Execute step-by-step processing for batch_static_boxes
 	# Keep every original collision/damage body. Only their box visuals are instanced.
 	# Spatial grouping keeps offscreen village blocks eligible for normal culling.
 	var groups={}
@@ -633,6 +671,7 @@ func batch_static_boxes():
 		static_batches+=1
 
 func build_sea():
+	# Step: Instantiate and position node hierarchy into scene tree for build_sea
 	var plane=PlaneMesh.new()
 	plane.size=Vector2(7600,3600)
 	plane.subdivide_width=32
@@ -651,10 +690,12 @@ func build_sea():
 			rock.rotation.z=side*0.017
 
 func street_cell(p:Vector3)->Vector2i:
+	# Logic: Execute step-by-step processing for street_cell
 	var c=Vector2i(((Vector2(p.x,p.z)-STREET_ORIGIN)/STREET_STEP).round())
 	return c.clamp(Vector2i.ZERO,street_grid.size-Vector2i.ONE)
 
 func free_street_cell(p:Vector3)->Vector2i:
+	# Logic: Execute step-by-step processing for free_street_cell
 	var c=street_cell(p)
 	if not street_grid.is_point_solid(c):return c
 	for radius in range(1,13):
@@ -673,6 +714,7 @@ func free_street_cell(p:Vector3)->Vector2i:
 	return c
 
 func build_street_navigation():
+	# Step: Instantiate and position node hierarchy into scene tree for build_street_navigation
 	street_grid=AStarGrid2D.new()
 	street_grid.region=Rect2i(Vector2i.ZERO,Vector2i(177,109))
 	street_grid.cell_size=Vector2.ONE*STREET_STEP
@@ -697,6 +739,7 @@ func build_street_navigation():
 	street_cache.clear()
 
 func street_route(a:Vector3,b:Vector3)->PackedVector3Array:
+	# Logic: Execute step-by-step processing for street_route
 	if street_grid==null:return tank_route(a,b)
 	var start=free_street_cell(a)
 	var finish=free_street_cell(b)

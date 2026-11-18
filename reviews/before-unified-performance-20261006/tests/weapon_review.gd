@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: weapon_review.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for weapon_review.gd.
+# ==============================================================================
 extends SceneTree
 
 # Separate, noninteractive render review. Never drives or closes the user's game.

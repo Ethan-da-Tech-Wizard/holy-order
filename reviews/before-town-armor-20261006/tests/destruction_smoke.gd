@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: destruction_smoke.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for destruction_smoke.gd.
+# ==============================================================================
 extends SceneTree
 const Art=preload("res://scripts/art.gd")
 func _initialize():call_deferred("run")

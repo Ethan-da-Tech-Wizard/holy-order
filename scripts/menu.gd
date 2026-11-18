@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: menu.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Campaign and mission selection menu handling scene transitions, input bindings, and settings persistence.
+# ==============================================================================
 extends Control
 const Graphics=preload("res://scripts/graphics.gd")
 const MISSIONS={"ardennes":"res://scenes/ardennes.tscn","desert":"res://scenes/main.tscn","omaha":"res://scenes/omaha.tscn"}
@@ -5,6 +11,7 @@ var loading:bool=false
 var status:Label
 var choices:Dictionary={}
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	Engine.physics_ticks_per_second=30
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
@@ -54,6 +61,7 @@ func _ready():
 		if arg.begins_with("--preferred-mission="):preferred=arg.get_slice("=",1)
 	choices.get(preferred,choices.omaha).grab_focus()
 func add_text(parent:Node,value:String,points:int,color:Color)->Label:
+	# Logic: Execute step-by-step processing for add_text
 	var label=Label.new()
 	label.text=value
 	label.add_theme_font_size_override("font_size",points)
@@ -61,6 +69,7 @@ func add_text(parent:Node,value:String,points:int,color:Color)->Label:
 	parent.add_child(label)
 	return label
 func launch(mission:String):
+	# Logic: Execute step-by-step processing for launch
 	if loading or not MISSIONS.has(mission):return
 	loading=true
 	for button in choices.values():button.disabled=true

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: corpse_part.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Articulated anatomical segment component for realistic casualty poses and battlefield persistence.
+# ==============================================================================
 extends RigidBody3D
 var corpse
 var part_name:String="torso"
@@ -7,14 +13,17 @@ var wound_shown:bool=false
 var visual_batch:Dictionary={}
 
 func batch_visual(mesh:MeshInstance3D):
+	# Logic: Execute step-by-step processing for batch_visual
 	visual_batch=corpse.game.batch_remains(mesh)
 	set_physics_process(false)
 	sleeping_state_changed.connect(func():set_physics_process(detached and not sleeping and not visual_batch.is_empty()))
 
 func _physics_process(_delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not visual_batch.is_empty():visual_batch.mm.set_instance_transform(visual_batch.slot,global_transform)
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_physics_process(false)
 	collision_layer=32
 	collision_mask=1
@@ -26,6 +35,7 @@ func _ready():
 	can_sleep=true
 
 func receive_hit(amount:float,point:Vector3):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	integrity-=amount
 	if not wound_shown:
 		wound_shown=true
@@ -33,6 +43,7 @@ func receive_hit(amount:float,point:Vector3):
 	if integrity<=0:detach((global_position-point+Vector3(0,0.2,0)).normalized()*minf(amount*0.04,5.0))
 
 func detach(impulse:Vector3):
+	# Logic: Execute step-by-step processing for detach
 	if not detached:
 		detached=true
 		freeze=false

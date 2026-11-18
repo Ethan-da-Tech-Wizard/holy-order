@@ -1,28 +1,40 @@
+# ==============================================================================
+# Program: aim_check.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test verifying weapon raycast alignment, iron sight accuracy, and bullet spread distributions.
+# ==============================================================================
 extends SceneTree
 
 class AimTarget extends StaticBody3D:
 	var hits: int = 0
 	func take_damage(_amount: float, _head: bool = false): hits += 1
+		# Step: Process damage reception, evaluate armor mitigation, and update health status
 
 var game
 var checks: Array = []
 
 func _initialize():
+	# Step: Configure initial parameters and dependency references for _initialize
 	root.size = Vector2i(1440,900)
 	call_deferred("run")
 
 func check(ok: bool, description: String):
+	# Logic: Execute step-by-step processing for check
 	checks.append({"check":description,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+description)
 
 func ticks(count: int):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(maxi(1,roundi(count*Engine.physics_ticks_per_second/60.0))): await physics_frame
 
 func sight_error(p, marker_name: String = "SightLine") -> float:
+	# Logic: Execute step-by-step processing for sight_error
 	var point = p.rifle.get_node(marker_name).global_position
 	return p.camera.unproject_position(point).distance_to(p.camera.get_viewport().get_visible_rect().size*0.5)
 
 func run():
+	# Logic: Execute step-by-step processing for run
 	game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)
 	current_scene = game

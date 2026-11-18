@@ -1,9 +1,17 @@
+# ==============================================================================
+# Program: make_audio.py
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Procedural audio synthesis utility generating original WAV sound effects
+#          using mathematical waveforms, frequency modulations, and envelope curves.
+# ==============================================================================
 """Generate original sound effects; no sampled or licensed game audio."""
 from pathlib import Path
 import math, random, wave, struct
 out=Path(__file__).parent/'audio';out.mkdir(exist_ok=True)
 sr=22050
 random.seed(6141940)
+# Step 1: Quantize mathematical waveform function into 16-bit PCM WAV stream
 def save(name,seconds,fn):
  data=bytearray()
  for i in range(int(seconds*sr)):
@@ -13,6 +21,7 @@ def save(name,seconds,fn):
  with wave.open(str(out/(name+'.wav')),'wb') as w:
   w.setnchannels(1);w.setsampwidth(2);w.setframerate(sr);w.writeframes(data)
 noise=lambda:random.uniform(-1,1)
+# Step 2: Synthesize procedural weapon and movement audio effects
 save('rifle',.9,lambda t:noise()*(.76*math.exp(-t*34)+.14*math.exp(-t*5)) + math.sin(t*math.tau*(90-25*t))*.25*math.exp(-t*17))
 save('bolt',.38,lambda t:noise()*(.2*math.exp(-t*75)+.28*math.exp(-abs(t-.22)*100))+.07*math.sin(2800*t)*math.exp(-abs(t-.21)*45))
 save('sword',.5,lambda t:noise()*.25*math.sin(min(1,t/.5)*math.pi)**2+.035*math.sin(t*math.tau*440)*math.exp(-t*5))

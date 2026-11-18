@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: corpse.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Persistent ragdoll and casualty entity with dynamic LOD transitions and performance-optimized collision.
+# ==============================================================================
 extends Node3D
 const Art=preload("res://scripts/art.gd")
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -9,6 +15,7 @@ var detached_count:int=0
 static var meshes:Dictionary={}
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("winter_corpses")
 	var side=1 if soldier.index%2==0 else -1
 	var pose=Basis(Vector3.FORWARD,side*PI/2)
@@ -62,6 +69,7 @@ func _ready():
 	set_physics_process(false)
 
 func wound(part,point:Vector3):
+	# Logic: Execute step-by-step processing for wound
 	var red=Art.material(Color("522b2a"),0,0.83)
 	var patch=Art.sphere(part,0.055,part.to_local(point),red)
 	patch.scale=Vector3(1.3,0.55,1.2)
@@ -72,6 +80,7 @@ func wound(part,point:Vector3):
 		Art.cylinder(self,0.22,0.012,to_local(p),red,-1,12)
 
 func blast(point:Vector3,radius:float,power:float):
+	# Logic: Execute step-by-step processing for blast
 	for part in parts:
 		var d=part.global_position.distance_to(point)
 		if d>radius:continue
@@ -79,5 +88,6 @@ func blast(point:Vector3,radius:float,power:float):
 		if part.detached:part.apply_central_impulse((part.global_position-point).normalized()*power*(1-d/radius)*0.10+Vector3(0,1,0))
 
 func _physics_process(_delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not parts.is_empty() and parts[0].detached:
 		soldier.global_position=parts[0].global_position

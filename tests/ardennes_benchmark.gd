@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: ardennes_benchmark.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Performance stress test measuring frame rate stability and draw calls across 100+ active Ardennes entities.
+# ==============================================================================
 extends SceneTree
 var g
 var view:SubViewport
@@ -7,12 +13,16 @@ var slow_frames:Array=[]
 var ride_frames:Array=[]
 var combat_frames:Array=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func ticks(n):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func capture(label):
+	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441224)
 	AudioServer.set_bus_mute(0,true)
@@ -92,6 +102,7 @@ func run():
 	quit()
 
 func summarize(values:Array)->Dictionary:
+	# Logic: Execute step-by-step processing for summarize
 	if values.is_empty():return {"frames":0}
 	values.sort()
 	return {"frames":values.size(),"median_ms":values[values.size()/2],"p95_ms":values[int(values.size()*0.95)],"p99_ms":values[int(values.size()*0.99)]}

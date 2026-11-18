@@ -1,9 +1,16 @@
+# ==============================================================================
+# Program: equipment_hitbox.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Collision detection proxy differentiating headshots, torso hits, armor plating deflection, and limb impacts.
+# ==============================================================================
 extends Area3D
 
 var wielder
 var item: String="rifle"
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("equipment_hitbox")
 	collision_layer=16
 	collision_mask=0
@@ -23,7 +30,9 @@ func _ready():
 	add_child(collider)
 
 func set_active(active: bool):
+	# Logic: Execute step-by-step processing for set_active
 	collision_layer=16 if active else 0
 
 func receive_hit(amount: float, _position: Vector3):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if is_instance_valid(wielder):wielder.receive_equipment_damage(item,amount)

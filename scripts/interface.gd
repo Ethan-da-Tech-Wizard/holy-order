@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: interface.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: User interface manager rendering heads-up display, compass headings, ammunition counts, and tactical objectives.
+# ==============================================================================
 extends Control
 
 var game
@@ -11,6 +17,7 @@ var panel: Control
 var menu_phase: String = ""
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var theme = Theme.new()
@@ -20,15 +27,18 @@ func _ready():
 	resized.connect(func(): if is_instance_valid(panel): build_menu())
 
 func _process(_delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if game.phase != menu_phase:
 		menu_phase = game.phase
 		build_menu()
 	queue_redraw()
 
 func label_at(text: String, pos: Vector2, font: Font, font_size: int, color: Color = cream):
+	# Logic: Execute step-by-step processing for label_at
 	draw_string(font,pos,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,color)
 
 func _draw():
+	# Logic: Execute step-by-step processing for _draw
 	var w = size.x
 	var h = size.y
 	if game.phase == "cinematic":
@@ -153,6 +163,7 @@ func _draw():
 		label_at("Use cover, loot ammunition, and choose your moment to charge.",Vector2(x,h*0.53),sans,18,muted)
 
 func draw_navigation():
+	# Logic: Execute step-by-step processing for draw_navigation
 	var center=Vector2(size.x/2,78)
 	var radius=51.0
 	draw_circle(center,radius,Color(0.035,0.065,0.06,0.89))
@@ -181,6 +192,7 @@ func draw_navigation():
 	label_at("%dm" % int(game.player.position.distance_to(target)),p+Vector2(-13,25),mono,11,cream)
 
 func draw_subtitles(y: float):
+	# Logic: Execute step-by-step processing for draw_subtitles
 	if game.subtitle_time <= 0 or game.subtitle == "": return
 	var lines: Array[String] = []
 	var line = ""
@@ -199,6 +211,7 @@ func draw_subtitles(y: float):
 		label_at(lines[i],Vector2(size.x/2-width/2,y+21+i*26),sans,18,cream)
 
 func button(text: String, rect: Rect2, callback: Callable, primary: bool = false):
+	# Logic: Execute step-by-step processing for button
 	var b = Button.new()
 	b.text = text
 	b.position = rect.position
@@ -221,6 +234,7 @@ func button(text: String, rect: Rect2, callback: Callable, primary: bool = false
 	panel.add_child(b)
 
 func build_menu():
+	# Step: Instantiate and position node hierarchy into scene tree for build_menu
 	if is_instance_valid(panel):
 		remove_child(panel)
 		panel.queue_free()

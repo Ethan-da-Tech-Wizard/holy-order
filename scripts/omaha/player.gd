@@ -1,9 +1,16 @@
+# ==============================================================================
+# Program: player.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Coastal landing player character controller managing surf drag, low crawl mechanics, and sandbag cover.
+# ==============================================================================
 extends "res://scripts/ardennes/player.gd"
 const Wire=preload("res://scripts/omaha/wire.gd")
 var last_fired:float=-999
 var deck_position=Vector3(0,0.27,1.99)
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	ammo_pack.containers.clear()
 	set_firearm("garand",8,100)
@@ -11,6 +18,7 @@ func _ready():
 	camera.far=750
 
 func dismount():
+	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived or deck_position.z> -6.4:return
 	var p=global_position
 	truck=null
@@ -22,6 +30,7 @@ func dismount():
 	game.toast("MOVE OFF THE RAMP • USE THE OBSTACLES • Z PRONE",6)
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if truck!=null:
 		step_on_deck(delta)
 		return
@@ -37,6 +46,7 @@ func _physics_process(delta):
 			game.toast("Deep water • head for the beach",2)
 
 func step_on_deck(delta:float):
+	# Logic: Execute step-by-step processing for step_on_deck
 	ViewSmoothing.restore(self)
 	if game.phase!="playing":return
 	update_view(delta)
@@ -62,10 +72,12 @@ func step_on_deck(delta:float):
 	if deck_position.z< -6.5:dismount()
 
 func _unhandled_input(event):
+	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if game.intro_active:return
 	super._unhandled_input(event)
 
 func dig_stroke():
+	# Logic: Execute step-by-step processing for dig_stroke
 	# Preserve digging; close shovel work can cut one wire segment if every engineer falls.
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return
 	var ray=PhysicsRayQueryParameters3D.create(camera.global_position,camera.global_position-camera.global_basis.z*3.1,1)

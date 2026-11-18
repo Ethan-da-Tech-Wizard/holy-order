@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: unified_test.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for unified_test.gd.
+# ==============================================================================
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
 const Soldier=preload("res://scripts/omaha/actor.gd")

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: grade_probe.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for grade_probe.gd.
+# ==============================================================================
 extends SceneTree
 func _initialize():call_deferred("run")
 func run():

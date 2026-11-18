@@ -1,10 +1,18 @@
+# ==============================================================================
+# Program: omaha_simulation.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Headless statistical test measuring sector capture probabilities across 1000 simulated beach landings.
+# ==============================================================================
 extends SceneTree
 var g
 var snapshots=[]
 var sample_times=[]
 var durations=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func snapshot():
+	# Logic: Execute step-by-step processing for snapshot
 	var states={}
 	var positions=[]
 	var living=0
@@ -30,6 +38,7 @@ func snapshot():
 	var file=FileAccess.open("res://reviews/omaha/simulation-progress.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(snapshots,"  "))
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()

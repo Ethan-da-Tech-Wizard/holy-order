@@ -1,11 +1,20 @@
+# ==============================================================================
+# Program: omaha_scale.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Stress test evaluating multi-wave landing craft arrival and troop density scaling limits.
+# ==============================================================================
 extends SceneTree
 var g
 var checks=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()
@@ -150,6 +159,7 @@ func run():
 	quit(0 if result.passed==result.total else 1)
 
 func move_for(actor,seconds:float):
+	# Logic: Execute step-by-step processing for move_for
 	for i in range(roundi(seconds*Engine.physics_ticks_per_second)):
 		await physics_frame
 		g.elapsed+=1.0/Engine.physics_ticks_per_second

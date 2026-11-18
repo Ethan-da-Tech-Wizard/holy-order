@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-003.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Directory inventory tracking Omaha beach assault scripts, Higgins boats, armor systems, and layouts.
+============================================================================== -->
+
 # Files 3 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: boat.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: LCVP Higgins boat landing craft simulator governing wave bobbing, approach vectors, ramp drop, and troop egress.
+# ==============================================================================
 extends Node3D
 const Art=preload("res://scripts/art.gd")
 const Armor=preload("res://scripts/omaha/armor.gd")
@@ -34,6 +40,7 @@ const APPROACH_Z:float=270.0
 const EXIT_Z:float=330.0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var paint=Art.material(Color("565f59"),0.65,0.64)
 	var dark=Art.material(Color("222e2e"),0.40,0.65)
 	part(Vector3(3.4,0.22,10.8),Vector3(0,0.13,0),paint,1800)
@@ -75,6 +82,7 @@ func _ready():
 	preload("res://scripts/vehicle_visuals.gd").batch_boxes(self,[ramp,wake])
 
 func part(size:Vector3,p:Vector3,mat:Material,strength:float,parent:Node3D=self):
+	# Logic: Execute step-by-step processing for part
 	var body=Armor.new()
 	body.material_kind="metal"
 	body.truck_owner=self
@@ -94,6 +102,7 @@ func part(size:Vector3,p:Vector3,mat:Material,strength:float,parent:Node3D=self)
 	return body
 
 func seat_transform(seat:int)->Transform3D:
+	# Logic: Execute step-by-step processing for seat_transform
 	var row=int(seat/3)
 	var p=Vector3((seat%3-1)*0.80,0.27,-4.25+row*0.78)
 	if landed_at>=0:
@@ -102,9 +111,11 @@ func seat_transform(seat:int)->Transform3D:
 	return global_transform*Transform3D(Basis.IDENTITY,p)
 
 func crew_transform(slot:int)->Transform3D:
+	# Logic: Execute step-by-step processing for crew_transform
 	return global_transform*Transform3D(Basis.IDENTITY,Vector3(0 if slot==2 else (-1.12 if slot==0 else 1.12),0.38,4.4 if slot==2 else 3.35))
 
 func update_course(now:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if departing:
 		var t=maxf(0,now-departure_at)
 		# Retreat through the gaps between lanes and disappear into offshore fog
@@ -129,6 +140,7 @@ func update_course(now:float):
 		rotation.z=sin(now*1.3+index)*0.011
 
 func tick(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if departed:return
 	update_course(game.elapsed)
 	if departing:
@@ -183,12 +195,14 @@ func tick(delta:float):
 			if not crew[i].mounted:crew[i].rotation.y=rotation.y
 
 func has_passengers()->bool:
+	# Logic: Execute step-by-step processing for has_passengers
 	if game.player.truck==self:return true
 	for actor in occupants:
 		if actor.alive and actor.truck==self:return true
 	return false
 
 func target_point(shooter)->Vector3:
+	# Logic: Execute step-by-step processing for target_point
 	# Aim at the nearest occupied bay panel; hull wear can expose actual passengers.
 	var nearest=to_global(Vector3(0,0.95,-3.5))
 	var distance=INF
@@ -205,9 +219,11 @@ func target_point(shooter)->Vector3:
 	return nearest
 
 func dismount(_reason:String="orders"):
+	# Logic: Execute step-by-step processing for dismount
 	# F cannot bypass the packed crew or open the ramp at sea.
 	if not arrived:game.toast("HOLD FAST • THE COXSWAIN WILL DROP THE RAMP",3)
 	else:game.toast("FOLLOW THE FILE • THE RAMP IS DOWN",3)
 
 func receive_part_damage(amount:float,_point:Vector3,_explosive:bool,_part=null):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	total_damage+=amount

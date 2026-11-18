@@ -1,7 +1,15 @@
+# ==============================================================================
+# Program: destruction_smoke.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Particle and volumetric effect test verifying performance impact of explosive smoke and debris meshes.
+# ==============================================================================
 extends SceneTree
 const Art=preload("res://scripts/art.gd")
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# Logic: Execute step-by-step processing for run
 	var world=Node3D.new()
 	root.add_child(world)
 	var wall=Art.solid(world,Vector3(5,3,0.4),Vector3(0,1.5,0),Art.material(Color.TAN),0,"masonry")

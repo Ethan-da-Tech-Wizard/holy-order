@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: tank.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Sherman DD amphibious tank vehicle controller simulating dual-propeller swimming and tracked beach traction.
+# ==============================================================================
 extends CharacterBody3D
 const Art=preload("res://scripts/art.gd")
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -37,6 +43,7 @@ var mount_facing=Vector3.BACK
 var mount_arc:float=PI
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	tank_owner=self
 	collision_layer=1|128
 	collision_mask=1
@@ -104,6 +111,7 @@ func _ready():
 	set_physics_process(false)
 
 func part_shape(parent:Node3D,p:Vector3,size:Vector3,side:int):
+	# Logic: Execute step-by-step processing for part_shape
 	var part=Part.new()
 	part.tank_owner=self
 	part.track_side=side
@@ -119,6 +127,7 @@ func part_shape(parent:Node3D,p:Vector3,size:Vector3,side:int):
 	part.add_collision_exception_with(self)
 
 func bake_visuals(root:Node3D):
+	# Logic: Execute step-by-step processing for bake_visuals
 	var mesh=MeshInstance3D.new()
 	mesh.mesh=Kit.bake(root)
 	for child in root.get_children():
@@ -126,11 +135,16 @@ func bake_visuals(root:Node3D):
 	root.add_child(mesh)
 
 func eye()->Vector3:return global_position+Vector3(0,2.95,0)
+	# Logic: Execute step-by-step processing for eye
 func aim_point()->Vector3:return global_position+Vector3(0,1.4,0)
+	# Logic: Execute step-by-step processing for aim_point
 func shot_exclusions()->Array[RID]:return rids
+	# Logic: Execute step-by-step processing for shot_exclusions
 func mobile()->bool:return alive and tracks[0]>0 and tracks[1]>0
+	# Logic: Execute step-by-step processing for mobile
 
 func tick(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if not alive or not game.town_active:return
 	cannon_clock=maxf(0,cannon_clock-delta)
 	mg_clock=maxf(-delta,mg_clock-delta)
@@ -176,6 +190,7 @@ func tick(delta:float):
 			mg_burst=0
 
 func choose_target():
+	# Logic: Execute step-by-step processing for choose_target
 	target=null
 	var candidates=[]
 	for actor in game.active_attackers+[game.player]:
@@ -191,18 +206,21 @@ func choose_target():
 			return
 
 func clear_shot(from:Vector3,to:Vector3,actor)->bool:
+	# Logic: Execute step-by-step processing for clear_shot
 	var q=PhysicsRayQueryParameters3D.create(from,to,1|2|4|8)
 	q.exclude=rids
 	var hit=get_world_3d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or hit.collider==actor
 
 func plan_route(goal:Vector3):
+	# Logic: Execute step-by-step processing for plan_route
 	if not mobile() or route_goal.distance_squared_to(goal)<4:return
 	route_goal=goal
 	route=game.world.tank_route(position,goal)
 	route_cursor=0
 
 func move_tank(delta:float):
+	# Logic: Execute step-by-step processing for move_tank
 	if not mobile():
 		velocity=Vector3.ZERO
 		return
@@ -224,15 +242,18 @@ func move_tank(delta:float):
 	position.y=maxf(position.y,game.world.surface_height(position.x,position.z)+0.03)
 
 func damage_at(amount:float,point:Vector3,_radius:float=0.2,_explosive:bool=false)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	var p=to_local(point)
 	if absf(p.x)>1.12 and p.y<1.04:hit_track(0 if p.x<0 else 1,amount*0.025)
 	return true # Rifle fire stops at the armour; it cannot drain hull health.
 
 func hit_track(side:int,amount:float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	tracks[side]=maxf(0,tracks[side]-maxf(0,amount))
 
 func receive_blast(point:Vector3,radius:float,damage:float,kind:String):
+	# Logic: Execute step-by-step processing for receive_blast
 	if not alive:return
 	for side in range(2):
 		var track_point=to_global(Vector3(-1.43 if side==0 else 1.43,0.55,clampf(to_local(point).z,-2.8,2.8)))
@@ -242,6 +263,7 @@ func receive_blast(point:Vector3,radius:float,damage:float,kind:String):
 			hit_track(side,damage*multiplier*pow(1-distance/radius,1.2))
 
 func hit_rocket(point:Vector3):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	var local=to_local(point)
 	var frontal=local.z< -1.8 and absf(local.x)<1.15
@@ -250,6 +272,7 @@ func hit_rocket(point:Vector3):
 	if absf(local.x)>1.1 and local.y<1.2:hit_track(0 if local.x<0 else 1,240)
 
 func hull_damage(amount:float,point:Vector3):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	health=maxf(0,health-amount)
 	if health>0:return

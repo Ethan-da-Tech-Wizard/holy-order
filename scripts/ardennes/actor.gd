@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: actor.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Soldier entity controller for the Ardennes theater governing animation blends, health, squad tactics, and equipment.
+# ==============================================================================
 extends CharacterBody3D
 
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -90,6 +96,7 @@ var idle_mount_time:float=0
 var last_mount_position=Vector3.ZERO
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	spec=Kit.DATA[weapon_kind]
 	rounds=spec.capacity
 	reserve=spec.reserve
@@ -138,17 +145,21 @@ func _ready():
 	grenade_clock=randf_range(6,18)
 
 func eye()->Vector3:
+	# Logic: Execute step-by-step processing for eye
 	return global_position+Vector3(0,eye_height,0)+global_basis.x*lean_amount*0.22-global_basis.z*(0.65 if stance=="prone" else 0.0)
 
 func aim_point()->Vector3:
+	# Logic: Execute step-by-step processing for aim_point
 	return global_position+Vector3(0,0.34 if stance=="prone" else (0.86 if stance=="crouch" else 1.12),0)-global_basis.z*(0.65 if stance=="prone" else 0.0)
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	var started=Time.get_ticks_usec() if game.profile_enabled else 0
 	step_actor(delta)
 	if game.profile_enabled and Time.get_ticks_usec()-started>8000:print("PROFILE actor_tick ",Time.get_ticks_usec()-started," ",state)
 
 func step_actor(delta):
+	# Logic: Execute step-by-step processing for step_actor
 	if not alive or game.phase!="playing":return
 	suppression=maxf(0,suppression-delta)
 	threat_pressure=maxf(0,threat_pressure-delta*0.8)
@@ -266,15 +277,19 @@ func step_actor(delta):
 	if global_position.y< -42:take_damage(1000,global_position,"fall")
 
 func motion_grounded()->bool:
+	# Logic: Execute step-by-step processing for motion_grounded
 	return is_on_floor()
 
 func motion_wall_normal()->Vector3:
+	# Logic: Execute step-by-step processing for motion_wall_normal
 	return get_slide_collision(0).get_normal() if get_slide_collision_count()>0 else Vector3.ZERO
 
 func move_actor_body(_delta:float):
+	# Logic: Execute step-by-step processing for move_actor_body
 	move_and_slide()
 
 func update_posture(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	var prone_now=stance=="prone"
 	var slope=0.0
 	if prone_now:
@@ -307,6 +322,7 @@ func update_posture(delta:float):
 	model.right_arm.position.y=1.41
 
 func try_step(direction:Vector3)->bool:
+	# Logic: Execute step-by-step processing for try_step
 	if direction.length_squared()<0.1:return false
 	var ahead=global_position+direction*0.8
 	var q=PhysicsRayQueryParameters3D.create(ahead+Vector3(0,0.8,0),ahead-Vector3(0,0.1,0),1)
@@ -320,6 +336,7 @@ func try_step(direction:Vector3)->bool:
 	return true
 
 func think(now:float):
+	# Logic: Execute step-by-step processing for think
 	if not alive:return
 	decision_count+=1
 	if truck!=null:return
@@ -451,9 +468,11 @@ func think(now:float):
 		advance_to_goal(goal,17)
 
 func flat_distance(a:Vector3,b:Vector3)->float:
+	# Logic: Execute step-by-step processing for flat_distance
 	return Vector2(a.x-b.x,a.z-b.z).length()
 
 func advance_to_goal(goal:Vector3,step:float):
+	# Logic: Execute step-by-step processing for advance_to_goal
 	if path_refresh>0 and path_cursor<path.size():return
 	var offset=goal-global_position
 	offset.y=0
@@ -462,6 +481,7 @@ func advance_to_goal(goal:Vector3,step:float):
 	set_destination(game.world.on_ground(next))
 
 func limit_goal(goal:Vector3)->Vector3:
+	# Logic: Execute step-by-step processing for limit_goal
 	if order!="hold":return goal
 	var offset=goal-home
 	offset.y=0
@@ -469,6 +489,7 @@ func limit_goal(goal:Vector3)->Vector3:
 	return game.world.on_ground(goal)
 
 func set_destination(goal:Vector3):
+	# Logic: Execute step-by-step processing for set_destination
 	goal=limit_goal(goal)
 	if flat_distance(destination,goal)<1.5 and path_refresh>0:return
 	destination=goal
@@ -478,6 +499,7 @@ func set_destination(goal:Vector3):
 	if state=="watch":state="advance"
 
 func choose_cover(threat:Vector3,radius:float,mission:Vector3=Vector3.INF):
+	# Logic: Execute step-by-step processing for choose_cover
 	last_cover_search=game.elapsed
 	var best=INF
 	var chosen=Vector3.ZERO
@@ -509,6 +531,7 @@ func choose_cover(threat:Vector3,radius:float,mission:Vector3=Vector3.INF):
 		peek=limit_goal(chosen_peek)
 
 func try_fire():
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if truck!=null or grenade_throw_time>0 or game.elapsed<reaction:return
 	if shot_clock>0.000001 or reload_clock>0 or burst_pause>0 or rounds<=0 or weapon_health<=0:return
 	if not mounted and state not in ["fire","watch","cover","suppressed"]:return
@@ -537,6 +560,7 @@ func try_fire():
 		if burst_left==0:burst_pause=randf_range(0.55,1.1)
 
 func hear_noise(point:Vector3,radius:float,source_team:int,_kind:String):
+	# Logic: Execute step-by-step processing for hear_noise
 	if not alive or staged or source_team==team:return
 	var distance=global_position.distance_to(point)
 	if distance>radius:return
@@ -549,6 +573,7 @@ func hear_noise(point:Vector3,radius:float,source_team:int,_kind:String):
 	game.report_contact(self,last_known)
 
 func near_miss(point:Vector3):
+	# Logic: Execute step-by-step processing for near_miss
 	if not alive:return
 	suppression=maxf(suppression,randf_range(1.5,3.5))
 	threat_pressure=minf(8,threat_pressure+1.15)
@@ -558,6 +583,7 @@ func near_miss(point:Vector3):
 	if state=="dig":state="suppressed"
 
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	health=maxf(0,health-amount)
 	suppression=maxf(suppression,2.5)
@@ -588,6 +614,7 @@ func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
 	model.root.hide()
 
 func damage_weapon(amount:float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	weapon_health=maxf(0,weapon_health-amount)
 	if weapon_health==0 and not dropped_broken:
 		dropped_broken=true
@@ -596,6 +623,7 @@ func damage_weapon(amount:float):
 		gun.hide()
 
 func dismount():
+	# Logic: Execute step-by-step processing for dismount
 	if truck==null:return
 	var vehicle=truck
 	var side=-1 if seat%2==0 else 1
@@ -622,6 +650,7 @@ func dismount():
 	else:mounted=false
 
 func switch_to_rifle():
+	# Logic: Execute step-by-step processing for switch_to_rifle
 	weapon_kind="garand" if team==1 else "kar98"
 	spec=Kit.DATA[weapon_kind]
 	# A separately tracked emergency personal rifle, not an infinite refill of the MG.
@@ -638,6 +667,7 @@ func switch_to_rifle():
 	gun.scale=Vector3.ONE*0.85
 
 func leave_mount():
+	# Logic: Execute step-by-step processing for leave_mount
 	if not mounted:return
 	mounted=false
 	if weapon_kind=="m2" and truck!=null:
@@ -651,6 +681,7 @@ func leave_mount():
 	state="advance"
 
 func begin_grenade(point:Vector3):
+	# Logic: Execute step-by-step processing for begin_grenade
 	if grenades<=0 or grenade_throw_time>0 or grenade_clock>0 or truck!=null:return
 	grenade_throw_time=1.1
 	grenade_throw_target=point
@@ -662,6 +693,7 @@ func begin_grenade(point:Vector3):
 	stance="crouch"
 
 func step_grenade(delta:float):
+	# Logic: Execute step-by-step processing for step_grenade
 	if grenade_throw_time<=0:
 		model.right_arm.rotation.x=lerp_angle(model.right_arm.rotation.x,0,delta*10)
 		return

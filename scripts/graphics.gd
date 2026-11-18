@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: graphics.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Rendering settings manager controlling dynamic resolution scaling, shadow cascaded maps, and post-processing quality.
+# ==============================================================================
 extends RefCounted
 # Shared by all three missions. The 3D scene alone is scaled; text stays sharp.
 const NAMES=["LOW / MAX FPS","STANDARD","HIGH"]

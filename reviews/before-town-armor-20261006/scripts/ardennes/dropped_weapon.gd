@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: dropped_weapon.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for dropped_weapon.gd.
+# ==============================================================================
 extends StaticBody3D
 const Kit=preload("res://scripts/ardennes/weapons.gd")
 var game

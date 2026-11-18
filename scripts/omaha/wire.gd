@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: wire.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Concertina barbed wire entanglement entity applying movement entrapment and cutting mechanics.
+# ==============================================================================
 extends StaticBody3D
 const Art=preload("res://scripts/art.gd")
 var game
@@ -15,6 +21,7 @@ var visual_index:int=-1
 static var wire_mesh:Mesh
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	collision_layer=1|128
 	collision_mask=0
 	var shape=CollisionShape3D.new()
@@ -46,6 +53,7 @@ func _ready():
 	bars.add_child(mesh)
 
 func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
+	# Logic: Execute step-by-step processing for strand
 	var mesh=Art.segment(parent,a,b,radius,mat)
 	mesh.mesh.radial_segments=4
 	mesh.mesh.rings=1
@@ -53,6 +61,7 @@ func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
 	mesh.mesh.cap_bottom=false
 
 func deploy(actor)->bool:
+	# Logic: Execute step-by-step processing for deploy
 	if broken or charge or not actor.alive or actor.bangalores<=0:return false
 	if actor.position.distance_to(position)>4.2:return false
 	actor.bangalores-=1
@@ -66,6 +75,7 @@ func deploy(actor)->bool:
 	return true
 
 func tick(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if not charge or broken:return
 	fuse-=delta
 	if fuse<=0:
@@ -73,6 +83,7 @@ func tick(delta:float):
 		game.explode(position+Vector3(0,0.2,0),6.0,140,null,"bangalore")
 
 func breach():
+	# Logic: Execute step-by-step processing for breach
 	if broken:return
 	broken=true
 	destroyed=true
@@ -85,6 +96,7 @@ func breach():
 	game.toast("WIRE BREACHED • A LOCAL GAP IS OPEN",4)
 
 func damage_at(amount:float,_point:Vector3,_radius:float=0.2,explosive:bool=false)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	# Rifle bullets and fragmentation do not conveniently erase entire wire rows.
 	# A player can finish an isolated segment with repeated close shovel strokes.
 	if not explosive and amount>=90:

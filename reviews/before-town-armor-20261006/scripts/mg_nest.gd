@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: mg_nest.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for mg_nest.gd.
+# ==============================================================================
 extends Node3D
 
 # Breda modello 37: 8 mm ammunition in 20-round rigid feed trays.

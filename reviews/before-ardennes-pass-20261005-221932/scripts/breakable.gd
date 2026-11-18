@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: breakable.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for breakable.gd.
+# ==============================================================================
 extends StaticBody3D
 
 # Geometry is static between impacts. Only edited objects enter a temporary CSG

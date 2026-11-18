@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: interface.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes-specific HUD displaying frost vignette, compass, squad status, and winter objectives.
+# ==============================================================================
 extends Control
 var game
 var panel:Control
@@ -11,6 +17,7 @@ const GOLD=Color("c8ae76")
 const BLUE=Color("a7c5d1")
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var theme=Theme.new()
@@ -20,15 +27,18 @@ func _ready():
 	resized.connect(func():last_phase="")
 
 func _process(_delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if last_phase!=game.phase:
 		last_phase=game.phase
 		menu()
 	queue_redraw()
 
 func text(value:String,pos:Vector2,font:Font=sans,points:int=17,color:Color=WHITE):
+	# Logic: Execute step-by-step processing for text
 	draw_string(font,pos,value,HORIZONTAL_ALIGNMENT_LEFT,-1,points,color)
 
 func _draw():
+	# Logic: Execute step-by-step processing for _draw
 	var w=size.x
 	var h=size.y
 	if game.phase=="title":
@@ -112,6 +122,7 @@ func _draw():
 	for i in range(lines.size()):text(lines[i],Vector2(x,h*0.33+i*30),sans,15)
 
 func navigation():
+	# Logic: Execute step-by-step processing for navigation
 	var center=Vector2(size.x/2,64)
 	var yaw=game.player.rotation.y
 	draw_rect(Rect2(center-Vector2(137,35),Vector2(274,76)),Color(INK,0.84))
@@ -139,6 +150,7 @@ func navigation():
 	draw_colored_polygon(PackedVector2Array([radar+Vector2(0,-5),radar+Vector2(-3,3),radar+Vector2(3,3)]),WHITE)
 
 func menu():
+	# Logic: Execute step-by-step processing for menu
 	if is_instance_valid(panel):panel.queue_free()
 	panel=Control.new()
 	add_child(panel)
@@ -156,6 +168,7 @@ func menu():
 	button("QUIT",Vector2(x+280,y),Vector2(95,44),func():get_tree().quit())
 
 func button(caption:String,pos:Vector2,dimensions:Vector2,callback:Callable):
+	# Logic: Execute step-by-step processing for button
 	var b=Button.new()
 	b.text=caption
 	b.position=pos

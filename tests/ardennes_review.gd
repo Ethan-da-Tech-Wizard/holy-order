@@ -1,14 +1,24 @@
+# ==============================================================================
+# Program: ardennes_review.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Tactical behavioral evaluation suite verifying squad maneuvers, ambush logic, and convoy retreat actions.
+# ==============================================================================
 extends SceneTree
 var g
 var view:SubViewport
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func ticks(n):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func capture(label):
+	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
 	print("CAPTURE ",label)
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	AudioServer.set_bus_mute(0,true)
 	view=SubViewport.new()

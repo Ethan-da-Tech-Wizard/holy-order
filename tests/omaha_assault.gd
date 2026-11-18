@@ -1,10 +1,18 @@
+# ==============================================================================
+# Program: omaha_assault.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach assault simulation measuring troop progression rates from water line to seawall.
+# ==============================================================================
 extends SceneTree
 var g
 var attack=[]
 var defend=[]
 var results=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()

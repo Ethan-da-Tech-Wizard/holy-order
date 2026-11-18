@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: art.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for art.gd.
+# ==============================================================================
 extends RefCounted
 
 const Carcano = preload("res://scripts/carcano_model.gd")

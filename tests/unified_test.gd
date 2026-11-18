@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: unified_test.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Unified test suite executing cross-mission sanity checks, asset integrity tests, and memory leak verifications.
+# ==============================================================================
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
 const Soldier=preload("res://scripts/omaha/actor.gd")
@@ -9,16 +15,24 @@ class GunRange extends Node3D:
 	var profile_enabled:bool=false
 	var bullets:int=0
 	func actor_alive(_actor):return true
+		# Logic: Execute step-by-step processing for actor_alive
 	func actor_aim(_actor):return Vector3(0,1.2,-20)
+		# Logic: Execute step-by-step processing for actor_aim
 	func safe_fire_line(_actor,_from,_to):return true
+		# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	func shoot(_source,_from,_aim,_spread,_damage,_kind):bullets+=1
+		# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
 func ticks(n:int):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	var range_scene=GunRange.new()
 	root.add_child(range_scene)

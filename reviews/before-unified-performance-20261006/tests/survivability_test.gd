@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: survivability_test.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for survivability_test.gd.
+# ==============================================================================
 extends SceneTree
 var checks=[]
 func _initialize():call_deferred("run")

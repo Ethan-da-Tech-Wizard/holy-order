@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: battle.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha Beach assault battle controller managing landing craft waves, shingle advances, and bunker suppression.
+# ==============================================================================
 extends "res://scripts/ardennes/battle.gd"
 const Layout=preload("res://scripts/omaha/layout.gd")
 const Coast=preload("res://scripts/omaha/world.gd")
@@ -61,6 +67,7 @@ var town_active:bool=false
 const TARGET_CELL:float=32.0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
 	combat_seed=int(get_tree().get_meta("battle_seed",19440606))
@@ -103,6 +110,7 @@ func _ready():
 	if "--battle-preview" in OS.get_cmdline_user_args():begin()
 
 func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
+	# Logic: Execute step-by-step processing for add_soldier
 	var a=Soldier.new()
 	a.game=self
 	a.team=team_id
@@ -113,6 +121,7 @@ func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
 	return a
 
 func make_landing_force():
+	# Logic: Execute step-by-step processing for make_landing_force
 	# Twenty craft per wave, each with 27 passengers, two gunners and a driver.
 	# The player replaces one passenger: exactly 600 Americans in each wave.
 	for wave in range(2):
@@ -180,6 +189,7 @@ func make_landing_force():
 				engine.finished.connect(func():if phase=="playing" and not craft.arrived:engine.play())
 
 func make_defenders():
+	# Logic: Execute step-by-step processing for make_defenders
 	for sector_id in range(8):
 		var sq=new_squad(0,"hold","cautious",world.anchors[sector_id])
 		for j in range(11):
@@ -233,6 +243,7 @@ func make_defenders():
 		a.set_reserve(true)
 
 func make_armor():
+	# Logic: Execute step-by-step processing for make_armor
 	for i in range(3):
 		var tank=Panzer.new()
 		tank.game=self
@@ -253,6 +264,7 @@ func make_armor():
 			rocket_teams.append(pair)
 
 func begin(skip_approach:bool=false):
+	# Logic: Execute step-by-step processing for begin
 	phase="playing"
 	intro_active=true
 	player.camera.current=false
@@ -264,6 +276,7 @@ func begin(skip_approach:bool=false):
 	if skip_approach:skip_intro()
 
 func skip_intro():
+	# Logic: Execute step-by-step processing for skip_intro
 	if not intro_active:return
 	elapsed=first_landing_at-0.6
 	for craft in boats:craft.tick(0.0)
@@ -271,24 +284,28 @@ func skip_intro():
 	reset_physics_interpolation()
 
 func end_intro():
+	# Logic: Execute step-by-step processing for end_intro
 	intro_active=false
 	player.camera.current=true
 	world.world_camera.current=false
 	toast("RAMP OPENING • FOLLOW THE CREW WITH WASD",5)
 
 func missed_landing():
+	# Logic: Execute step-by-step processing for missed_landing
 	landing_aborted=true
 	phase="defeat"
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	toast("The craft returned to sea. Deploy again and walk down the ramp.",10)
 
 func _unhandled_input(event):
+	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if phase=="playing" and intro_active and event is InputEventKey and event.pressed and event.keycode==KEY_ENTER:
 		skip_intro()
 		return
 	super._unhandled_input(event)
 
 func boat_landed(craft):
+	# Logic: Execute step-by-step processing for boat_landed
 	if craft.engine_loop!=null:craft.engine_loop.stop()
 	if craft.wave==0 and not first_wave_landed:
 		first_wave_landed=true
@@ -300,6 +317,7 @@ func boat_landed(craft):
 		say("Second wave ashore! Push through the gaps and take the bluff exits!",6,"SGT. HAYES")
 
 func apply_quality():
+	# Logic: Execute step-by-step processing for apply_quality
 	quality=preload("res://scripts/graphics.gd").quality(get_tree())
 	preload("res://scripts/graphics.gd").apply(self)
 	world.concrete.normal_enabled=quality>0
@@ -309,6 +327,7 @@ func apply_quality():
 
 
 func step_battle(delta):
+	# Logic: Execute step-by-step processing for step_battle
 	if phase!="playing":return
 	elapsed+=delta
 	if intro_active and player.truck!=null:
@@ -358,6 +377,7 @@ func step_battle(delta):
 		check_mines()
 
 func think_budget(delta:float):
+	# Logic: Execute step-by-step processing for think_budget
 	# Spend the budget on living, active fighters, not offshore reserves or drivers.
 	defender_credit=minf(defender_credit+minf(delta,0.05)*active_defenders.size()*1.5,8.0)
 	attacker_credit=minf(attacker_credit+minf(delta,0.05)*active_attackers.size()*1.5,40.0)
@@ -375,6 +395,7 @@ func think_budget(delta:float):
 		if actor.alive:actor.think(elapsed)
 
 func update_squads():
+	# Step: Update internal simulation state and refresh cached coordinates
 	for sq in squads:
 		if sq.leader==null or not sq.leader.alive:
 			sq.leader=null
@@ -385,6 +406,7 @@ func update_squads():
 					break
 
 func separation_for(actor)->Vector3:
+	# Logic: Execute step-by-step processing for separation_for
 	if elapsed<actor.separation_at:return actor.separation_cache
 	actor.separation_at=elapsed+0.10+float(actor.index%3)*0.008
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
@@ -403,6 +425,7 @@ func separation_for(actor)->Vector3:
 	return actor.separation_cache
 
 func can_detect(observer,other)->bool:
+	# Logic: Execute step-by-step processing for can_detect
 	if not actor_alive(other):return false
 	if other.position.z>FOG_LINE and observer.team==0:return false
 	var offset=actor_aim(other)-observer.eye()
@@ -423,6 +446,7 @@ func can_detect(observer,other)->bool:
 	return true
 
 func acquire_target(observer):
+	# Logic: Execute step-by-step processing for acquire_target
 	var nearest=[]
 	var cells=target_cells[1-observer.team]
 	var ordered=[]
@@ -457,12 +481,14 @@ func acquire_target(observer):
 	return null
 
 func insert_nearest(list:Array,actor,distance:float):
+	# Logic: Execute step-by-step processing for insert_nearest
 	var slot=0
 	while slot<list.size() and list[slot].d<distance:slot+=1
 	list.insert(slot,{"actor":actor,"d":distance})
 	if list.size()>10:list.pop_back()
 
 func acquire_vehicle(observer):
+	# Logic: Execute step-by-step processing for acquire_vehicle
 	if observer.team!=0:return null
 	var selected=null
 	var best=INF
@@ -482,6 +508,7 @@ func acquire_vehicle(observer):
 	return selected
 
 func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var ray=PhysicsRayQueryParameters3D.create(from,to+(to-from).normalized()*0.2,1|2|4|8)
 	ray.exclude=[actor.get_rid()]
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
@@ -492,6 +519,7 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	return false
 
 func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	source.last_fired=elapsed
 	if kind=="flamethrower":
 		flame_jet(source,from,aim)
@@ -547,6 +575,7 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	if source!=player and source.position.distance_squared_to(player.position)<1960000:sounds.at("rifle",from,-6,randf_range(0.80,1.06))
 
 func rebuild_spatial():
+	# Step: Instantiate and position node hierarchy into scene tree for rebuild_spatial
 	spatial.clear()
 	cover_reservations.clear()
 	active_attackers.clear()
@@ -573,6 +602,7 @@ func rebuild_spatial():
 		occupied_max=occupied_max.max(Vector2(key)*5+Vector2(15,15))
 
 func notify_projectile(from:Vector3,to:Vector3,source_team:int):
+	# Logic: Execute step-by-step processing for notify_projectile
 	var line=to-from
 	var sq=line.length_squared()
 	if sq<0.001 or spatial.is_empty():return
@@ -608,11 +638,13 @@ func notify_projectile(from:Vector3,to:Vector3,source_team:int):
 						near_misses+=1
 
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
+	# Logic: Execute step-by-step processing for emit_noise
 	if kind=="gunshot":return # Perception uses each actual shooter's last-fired timestamp.
 	for actor in actors:
 		if actor.alive and actor.team!=team and actor.position.distance_squared_to(point)<radius*radius:actor.hear_noise(point,radius,team,kind)
 
 func build_tracers():
+	# Step: Instantiate and position node hierarchy into scene tree for build_tracers
 	tracer_batch=MultiMeshInstance3D.new()
 	var mesh=BoxMesh.new()
 	mesh.size=Vector3.ONE
@@ -630,6 +662,7 @@ func build_tracers():
 	add_child(tracer_batch)
 
 func tracer(from:Vector3,to:Vector3,color:Color):
+	# Logic: Execute step-by-step processing for tracer
 	if tracers.size()>=160:return
 	var delta=to-from
 	var distance=delta.length()
@@ -639,6 +672,7 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	tracers.append({"from":from,"direction":direction,"distance":distance,"travel":0.0,"basis":basis,"color":color})
 
 func update_tracers(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	var count=0
 	for i in range(tracers.size()-1,-1,-1):
 		var t=tracers[i]
@@ -652,6 +686,7 @@ func update_tracers(delta:float):
 	tracer_batch.multimesh.visible_instance_count=count
 
 func flame_jet(source,from:Vector3,aim:Vector3):
+	# Logic: Execute step-by-step processing for flame_jet
 	ammo_spent+=1
 	var direction=(aim-from).normalized()
 	var ray=PhysicsRayQueryParameters3D.create(from,from+direction*23,1|2|4|8)
@@ -675,6 +710,7 @@ func flame_jet(source,from:Vector3,aim:Vector3):
 	sounds.at("explosion",from,-20,1.8)
 
 func build_flashes():
+	# Step: Instantiate and position node hierarchy into scene tree for build_flashes
 	flash_batch=MultiMeshInstance3D.new()
 	flash_batch.multimesh=MultiMesh.new()
 	flash_batch.multimesh.transform_format=MultiMesh.TRANSFORM_3D
@@ -694,12 +730,14 @@ func build_flashes():
 	add_child(flash_batch)
 
 func update_flashes():
+	# Step: Update internal simulation state and refresh cached coordinates
 	if flash_batch==null:return
 	flashes=flashes.filter(func(f):return f.until>elapsed)
 	for i in range(flashes.size()):flash_batch.multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY,flashes[i].p))
 	flash_batch.multimesh.visible_instance_count=flashes.size()
 
 func recover_bangalore(actor)->bool:
+	# Logic: Execute step-by-step processing for recover_bangalore
 	if actor.bangalores>0:return false
 	var closest=null
 	var best=24.0*24.0
@@ -725,6 +763,7 @@ func recover_bangalore(actor)->bool:
 	return true
 
 func assault_goal(actor)->Vector3:
+	# Logic: Execute step-by-step processing for assault_goal
 	var center=world.anchors[actor.sector]
 	var flank=center.x+(15 if actor.index%2==0 else -15)
 	var doorway=world.on_ground(Vector3(center.x,0,center.z-8))
@@ -774,6 +813,7 @@ func assault_goal(actor)->Vector3:
 	return goal
 
 func update_objectives(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	secured=0
 	for i in range(8):
 		var defenders=0
@@ -801,6 +841,7 @@ func update_objectives(delta:float):
 		sounds.play("victory",-10)
 
 func check_mines():
+	# Logic: Execute step-by-step processing for check_mines
 	for mine in world.mines:
 		if not mine.live:continue
 		var c=Vector2i(floori(mine.point.x/5),floori(mine.point.z/5))
@@ -816,6 +857,7 @@ func check_mines():
 			explode(mine.point+Vector3(0,0.4,0),4.0,130,null,"mine")
 
 func build_lod_batches():
+	# Step: Instantiate and position node hierarchy into scene tree for build_lod_batches
 	for actor in actors:
 		var key=str(actor.team)+"/"+actor.weapon_kind
 		if lod_batches.has(key):continue
@@ -878,6 +920,7 @@ func build_lod_batches():
 	update_lod()
 
 func update_lod():
+	# Step: Update internal simulation state and refresh cached coordinates
 	var viewpoint=player.position if phase!="title" else world.world_camera.position
 	detail_timer-=get_physics_process_delta_time()
 	if detail_timer<=0:
@@ -920,11 +963,13 @@ func update_lod():
 		if was_far!=far:mm.reset_instance_physics_interpolation(i)
 
 func actor_died(actor,kind:String):
+	# Logic: Execute step-by-step processing for actor_died
 	# Keep the established persistent bodies, loot, damaged weapons and finite inventory.
 	super.actor_died(actor,kind)
 	if phase=="victory":phase="playing" # Mission ends at secured exits / town, not a kill counter.
 
 func batch_remains(visual:MeshInstance3D)->Dictionary:
+	# Logic: Execute step-by-step processing for batch_remains
 	# Persistent bodies and loot keep their hitboxes and inventory, while shared
 	# meshes draw together instead of adding seven draw calls for every casualty.
 	var p=visual.global_position
@@ -951,12 +996,14 @@ func batch_remains(visual:MeshInstance3D)->Dictionary:
 	return {"mm":mm,"slot":slot}
 
 func interact():
+	# Logic: Execute step-by-step processing for interact
 	if player.truck!=null:
 		player.truck.dismount()
 		return
 	super.interact()
 
 func objective_target()->Vector3:
+	# Logic: Execute step-by-step processing for objective_target
 	if player.truck!=null:return world.on_ground(Vector3(player.truck.lane_x,0,Layout.WIRE_ROWS[0]))
 	if secured>=3:
 		var guard=null
@@ -983,6 +1030,7 @@ func objective_target()->Vector3:
 	return goal
 
 func objective_text()->String:
+	# Logic: Execute step-by-step processing for objective_text
 	if player.truck!=null:
 		if player.truck.departing:return "MISSED THE RAMP • CRAFT RETURNING TO SEA"
 		if player.truck.arrived:return "WASD off ramp • boat leaves in %ds"%maxi(0,ceili(player.truck.landed_at+36-elapsed))
@@ -991,13 +1039,16 @@ func objective_text()->String:
 	return "Exits %d/3 • town guards %d • tanks %d"%[mini(secured,3),enemies.filter(func(a):return a.alive and a.role=="town_guard").size(),tanks.filter(func(t):return t.alive).size()]
 
 func retry():
+	# Logic: Execute step-by-step processing for retry
 	get_tree().set_meta("omaha_retry",true)
 	get_tree().change_scene_to_file("res://scenes/omaha.tscn")
 
 func _exit_tree():
+	# Logic: Execute step-by-step processing for _exit_tree
 	super._exit_tree()
 
 func launch_heavy(source,from:Vector3,aim:Vector3,kind:String):
+	# Logic: Execute step-by-step processing for launch_heavy
 	if heavy_projectiles.size()>=32:return
 	var speed=90.0 if kind=="bazooka" else 160.0
 	var gravity=3.5 if kind=="bazooka" else 9.8
@@ -1019,6 +1070,7 @@ func launch_heavy(source,from:Vector3,aim:Vector3,kind:String):
 	emit_noise(from,260,source.team,"gunshot")
 
 func step_heavy_projectiles(delta:float):
+	# Logic: Execute step-by-step processing for step_heavy_projectiles
 	for shot in heavy_projectiles.duplicate():
 		var next=shot.p+shot.v*delta+Vector3(0,-0.5*shot.g*delta*delta,0)
 		var q=PhysicsRayQueryParameters3D.create(shot.p,next,1|2|4|8)
@@ -1044,6 +1096,7 @@ func step_heavy_projectiles(delta:float):
 			shot.visual.look_at(next+shot.v)
 
 func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade"):
+	# Logic: Execute step-by-step processing for explode
 	var previous=active_blast_kind
 	active_blast_kind=kind
 	super.explode(point,radius,damage,source,kind)
@@ -1051,6 +1104,7 @@ func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade
 	active_blast_kind=previous
 
 func activate_town():
+	# Logic: Execute step-by-step processing for activate_town
 	if town_active:return
 	town_active=true
 	for a in enemies:
@@ -1058,10 +1112,12 @@ func activate_town():
 	rebuild_spatial()
 
 func actor_alive(actor)->bool:
+	# Logic: Execute step-by-step processing for actor_alive
 	if is_instance_valid(actor) and actor is Soldier and actor.role=="town_guard":return actor.alive
 	return super.actor_alive(actor)
 
 func hurt_actor(actor,damage:float,source:Vector3,kind:String):
+	# Logic: Execute step-by-step processing for hurt_actor
 	if actor is Soldier and actor.role=="town_guard" and actor.staged:
 		activate_town()
 		actor.set_reserve(false)

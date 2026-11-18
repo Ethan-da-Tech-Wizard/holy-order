@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: enemy.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Tactical combat AI governing line-of-sight perception, cover evaluation, engagement range, and weapon firing logic.
+# ==============================================================================
 extends CharacterBody3D
 
 # One perception / cover / ammunition controller for both sides. A sound is a
@@ -61,6 +67,7 @@ var investigate_timer: float=0
 var step_distance: float=0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	rng.seed=740+index*39+team*19
 	add_to_group("tactical_actor")
 	collision_layer=4 if team==0 else 8
@@ -101,6 +108,7 @@ func _ready():
 	muzzle.hide()
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not alive or game.phase!="playing":return
 	clock+=delta
 	cooldown=maxf(0,cooldown-delta)
@@ -167,15 +175,19 @@ func _physics_process(delta):
 	if global_position.y< -25:take_damage(200)
 
 func target_is_alive(actor) -> bool:
+	# Logic: Execute step-by-step processing for target_is_alive
 	return is_instance_valid(actor) and actor.health>0
 
 func eye_position() -> Vector3:
+	# Logic: Execute step-by-step processing for eye_position
 	return global_position+Vector3(0,1.53-stance*0.55,0)
 
 func target_eye(actor) -> Vector3:
+	# Logic: Execute step-by-step processing for target_eye
 	return actor.global_position+Vector3(0,actor.eye_height*0.82 if actor==game.player else 1.3,0)
 
 func can_see(actor) -> bool:
+	# Logic: Execute step-by-step processing for can_see
 	if not target_is_alive(actor):return false
 	var q=PhysicsRayQueryParameters3D.create(eye_position(),target_eye(actor),1|2|4|8)
 	q.exclude=[get_rid()]
@@ -183,9 +195,11 @@ func can_see(actor) -> bool:
 	return not hit.is_empty() and hit.collider==actor
 
 func can_see_player() -> bool:
+	# Logic: Execute step-by-step processing for can_see_player
 	return can_see(game.player)
 
 func perceive():
+	# Logic: Execute step-by-step processing for perceive
 	visible_target=false
 	var candidates=game.hostile_targets(team)
 	var nearest=INF
@@ -216,9 +230,11 @@ func perceive():
 		close_sound=false
 
 func hear_shot(point: Vector3):
+	# Logic: Execute step-by-step processing for hear_shot
 	hear_noise(point,"gunshot")
 
 func hear_noise(point: Vector3, kind: String="gunshot"):
+	# Logic: Execute step-by-step processing for hear_noise
 	if not alive:return
 	var distance=global_position.distance_to(point)
 	alerted=true
@@ -234,6 +250,7 @@ func hear_noise(point: Vector3, kind: String="gunshot"):
 	if close_sound:digging=0
 
 func hear_contact(point: Vector3):
+	# Logic: Execute step-by-step processing for hear_contact
 	if not alive or visible_target:return
 	alerted=true
 	last_known=point+Vector3(rng.randf_range(-1.5,1.5),0,rng.randf_range(-1.5,1.5))
@@ -241,6 +258,7 @@ func hear_contact(point: Vector3):
 	decision_timer=0
 
 func near_miss(source: Vector3):
+	# Logic: Execute step-by-step processing for near_miss
 	if not alive:return
 	near_misses+=1
 	suppressed=2.5
@@ -251,6 +269,7 @@ func near_miss(source: Vector3):
 	decision_timer=0
 
 func choose_cover(advance: bool=false):
+	# Logic: Execute step-by-step processing for choose_cover
 	var best_score=INF
 	var chosen=global_position
 	var chosen_peek=global_position
@@ -306,6 +325,7 @@ func choose_cover(advance: bool=false):
 	peek_point=chosen_peek
 
 func decide():
+	# Logic: Execute step-by-step processing for decide
 	if not alerted:
 		state="idle"
 		destination=anchor
@@ -356,6 +376,7 @@ func decide():
 		destination=game.world.navigation.floor_point(last_known+Vector3(sin(clock*0.3+index)*7,0,cos(clock*0.3+index)*7))
 
 func move_tactically(delta: float):
+	# Logic: Execute step-by-step processing for move_tactically
 	var wanted=Vector3.ZERO
 	var nav=game.world.navigation
 	if digging<=0 and stagger==0 and destination.distance_to(global_position)>0.8:
@@ -389,6 +410,7 @@ func move_tactically(delta: float):
 			game.sounds.at("step",global_position,-10,0.95+index*0.018)
 
 func animate(delta: float):
+	# Logic: Execute step-by-step processing for animate
 	var low=(state in ["taking_cover","digging","reloading"] or (state=="holding" and not visible_target)) and not moving
 	stance=move_toward(stance,1.0 if low else 0.0,delta*5)
 	capsule.shape.height=1.85-stance*0.50
@@ -409,6 +431,7 @@ func animate(delta: float):
 	model.gun.rotation.x=lerpf(model.gun.rotation.x,0.0 if alerted else -0.48,delta*4)
 
 func shoot():
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if not alive or rounds<=0 or weapon_health<=0 or reload_time>0:return
 	if not is_instance_valid(target_actor):target_actor=game.player if team==0 else null
 	if not target_is_alive(target_actor) or not can_see(target_actor):return
@@ -431,6 +454,7 @@ func shoot():
 	create_tween().tween_property(model.gun,"position:z",-0.43,0.28)
 
 func melee():
+	# Logic: Execute step-by-step processing for melee
 	if not target_is_alive(target_actor) or not can_see(target_actor):return
 	cooldown=1.1
 	game.sounds.at("sword",global_position,-12)
@@ -440,6 +464,7 @@ func melee():
 	else:target_actor.take_damage(35)
 
 func operate_mg(delta: float):
+	# Logic: Execute step-by-step processing for operate_mg
 	var nest=game.mg_nest
 	destination=nest.operator_position()
 	state="manning_mg"
@@ -461,6 +486,7 @@ func operate_mg(delta: float):
 	if not nest.usable():dismount()
 
 func dismount():
+	# Logic: Execute step-by-step processing for dismount
 	if game.mg_nest:game.mg_nest.release(self)
 	mounted=false
 	role="hold"
@@ -471,6 +497,7 @@ func dismount():
 	weapon_hitbox.set_active(model.gun.visible)
 
 func receive_equipment_damage(_item: String, amount: float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	weapon_health=maxf(0,weapon_health-amount)
 	if weapon_health<=0:
 		model.gun.hide()
@@ -483,6 +510,7 @@ func receive_equipment_damage(_item: String, amount: float):
 	game.sounds.at("clang",global_position,-8)
 
 func take_damage(amount: float, headshot: bool=false):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	health-=amount*(2.0 if headshot else 1.0)
 	stagger=0.55
@@ -494,6 +522,7 @@ func take_damage(amount: float, headshot: bool=false):
 		hear_noise(game.player.global_position,"impact")
 
 func die():
+	# Logic: Execute step-by-step processing for die
 	alive=false
 	collision_layer=0
 	collision_mask=0

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: carcano_model.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Mathematical 3D modeling and rendering of the Carcano M91 rifle geometry, sights, and moving bolt.
+# ==============================================================================
 extends RefCounted
 
 # Original M91-inspired geometry, in metres. Open sights are geometry rather than

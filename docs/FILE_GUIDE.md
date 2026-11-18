@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: FILE_GUIDE.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Exhaustive manifest documenting every scene, script, asset, shader, and configuration file in Holy Order.
+============================================================================== -->
+
 # File guide — Holy Order
 
 931 tracked or newly documented entries, grouped into readable pages. Each description is grounded in the file’s name, metadata, declarations, or document headings. Generated files and binary assets are identified as such; their contents are not represented as newly reviewed source code.

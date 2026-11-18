@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: armored_panel.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ballistic armor plate simulator calculating impact angle, penetration resistance, and spalling.
+# ==============================================================================
 extends "res://scripts/ardennes/prop.gd"
 var integrity:float=6500
 var render_batch:MultiMesh
@@ -5,12 +11,15 @@ var render_index:int=-1
 var render_origin=Vector3.ZERO
 
 func demolish():
+	# Logic: Execute step-by-step processing for demolish
 	if render_batch!=null:render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
 	super.demolish()
 
 func stops_small_arms()->bool:return not destroyed
+	# Logic: Execute step-by-step processing for stops_small_arms
 
 func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=false)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	wear+=amount
 	bullet_mark(point)

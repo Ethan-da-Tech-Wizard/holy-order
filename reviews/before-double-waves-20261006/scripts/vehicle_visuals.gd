@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: vehicle_visuals.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for vehicle_visuals.gd.
+# ==============================================================================
 extends RefCounted
 # Moving vehicles keep individual armor colliders, but draw same-material panels
 # together in vehicle-local coordinates. Wheels, ramps and crew keep their motion.

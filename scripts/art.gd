@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: art.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Procedural mesh and material generation for period structures, fortifications, props, and terrain assets.
+# ==============================================================================
 extends RefCounted
 
 const Carcano = preload("res://scripts/carcano_model.gd")

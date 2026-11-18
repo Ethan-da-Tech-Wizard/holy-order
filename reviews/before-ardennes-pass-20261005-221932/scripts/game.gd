@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: game.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for game.gd.
+# ==============================================================================
 extends Node3D
 
 const World = preload("res://scripts/world.gd")

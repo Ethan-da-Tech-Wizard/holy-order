@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: rocket_team.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Two-man anti-fortification rocket launcher squad AI handling setup, aiming, and bunker demolition.
+# ==============================================================================
 extends Node3D
 # A single owner and a single exclusive helper lease per finite launcher.
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -21,17 +27,21 @@ var recoveries:int=0
 var loader_changes:int=0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	launcher=Kit.weapon(self,"bazooka")
 	attach_launcher()
 	set_physics_process(false)
 
 func active(actor)->bool:
+	# Logic: Execute step-by-step processing for active
 	return is_instance_valid(actor) and actor.alive and not actor.staged and actor.truck==null and actor.boat==null
 
 func eligible(actor)->bool:
+	# Logic: Execute step-by-step processing for eligible
 	return active(actor) and actor.team==1 and (actor.bangalores==0 or actor.position.z< -186) and actor.bazooka_team<0 and actor.loader_for<0 and actor.role not in ["driver","gunner"]
 
 func attach_launcher():
+	# Logic: Execute step-by-step processing for attach_launcher
 	if carrier==null:return
 	launcher.reparent(carrier,false)
 	launcher.position=Vector3(-0.30,1.03,0.30)
@@ -40,10 +50,12 @@ func attach_launcher():
 	dropped_at=Vector3.INF
 
 func release_loader():
+	# Logic: Execute step-by-step processing for release_loader
 	if is_instance_valid(loader) and loader.loader_for==index:loader.loader_for=-1
 	loader=null
 
 func lose_carrier():
+	# Logic: Execute step-by-step processing for lose_carrier
 	if carrier==null:return
 	dropped_at=game.world.on_ground(carrier.position)+Vector3(0,0.15,0)
 	carrier.bazooka_team=-1
@@ -57,6 +69,7 @@ func lose_carrier():
 	release_loader()
 
 func nearest_eligible(point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for nearest_eligible
 	var nearest=null
 	var best=radius*radius
 	for actor in game.friendlies:
@@ -68,6 +81,7 @@ func nearest_eligible(point:Vector3,radius:float):
 	return nearest
 
 func tick(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	if carrier!=null and not carrier.alive:lose_carrier()
 	if loader!=null and (not active(loader) or loader.loader_for!=index):release_loader()
 	if recoverer!=null and not active(recoverer):
@@ -137,6 +151,7 @@ func tick(delta:float):
 	reload_progress=0
 
 func select_tank():
+	# Logic: Execute step-by-step processing for select_tank
 	var chosen=null
 	var best=185.0*185.0
 	for tank in game.tanks:
@@ -153,12 +168,14 @@ func select_tank():
 	return chosen
 
 func sees_tank(from:Vector3,tank,exclude:Array[RID])->bool:
+	# Logic: Execute step-by-step processing for sees_tank
 	var q=PhysicsRayQueryParameters3D.create(from,tank.aim_point(),1|2|4|8)
 	q.exclude=exclude
 	var hit=get_world_3d().direct_space_state.intersect_ray(q)
 	return not hit.is_empty() and hit.collider.get("tank_owner")==tank
 
 func find_firing_position(tank)->Vector3:
+	# Logic: Execute step-by-step processing for find_firing_position
 	var toward=tank.position-carrier.position
 	toward.y=0
 	toward=toward.normalized()
@@ -172,6 +189,7 @@ func find_firing_position(tank)->Vector3:
 	return Vector3.INF
 
 func safe_backblast(from:Vector3,direction:Vector3)->bool:
+	# Logic: Execute step-by-step processing for safe_backblast
 	for actor in game.friendlies+[game.player]:
 		if actor==carrier or not game.actor_alive(actor) or actor.position.distance_squared_to(from)>42:continue
 		var offset=game.actor_aim(actor)-from
@@ -181,6 +199,7 @@ func safe_backblast(from:Vector3,direction:Vector3)->bool:
 	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 func command(actor)->bool:
+	# Logic: Execute step-by-step processing for command
 	if actor==recoverer:
 		actor.state="advance"
 		actor.stance="stand"
@@ -209,4 +228,5 @@ func command(actor)->bool:
 	return false
 
 func _exit_tree():
+	# Logic: Execute step-by-step processing for _exit_tree
 	if is_instance_valid(launcher):launcher.queue_free()

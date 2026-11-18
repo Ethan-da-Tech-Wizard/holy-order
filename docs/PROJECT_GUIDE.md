@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: PROJECT_GUIDE.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: High-level contributor guide explaining navigation pathways, development workflow, and testing procedures.
+============================================================================== -->
+
 # Holy Order
 
 A Godot game prototype following a displaced knight through desert, winter-convoy, and Omaha-inspired combat scenarios.

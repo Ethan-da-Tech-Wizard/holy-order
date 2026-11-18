@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: audio.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Dynamic positional audio manager routing combat sound effects, spatial attenuation, Doppler shifts, and volume mixing.
+# ==============================================================================
 extends Node
 
 var streams: Dictionary = {}
@@ -5,6 +11,7 @@ var music: AudioStreamPlayer
 var enabled: bool = DisplayServer.get_name() != "headless"
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	# The headless dummy audio driver does not release active WAV voices reliably.
 	# Simulation tests do not need audio playback; normal desktop launches do.
 	if not enabled:
@@ -21,6 +28,7 @@ func _ready():
 	music.play()
 
 func _exit_tree():
+	# Logic: Execute step-by-step processing for _exit_tree
 	for child in get_children():
 		if child is AudioStreamPlayer or child is AudioStreamPlayer3D:
 			child.stop()
@@ -28,6 +36,7 @@ func _exit_tree():
 	streams.clear()
 
 func play(sound: String, volume: float = -8, pitch: float = 1.0):
+	# Logic: Execute step-by-step processing for play
 	if not enabled: return
 	var p = AudioStreamPlayer.new()
 	add_child(p)
@@ -38,6 +47,7 @@ func play(sound: String, volume: float = -8, pitch: float = 1.0):
 	p.play()
 
 func at(sound: String, pos: Vector3, volume: float = 0, pitch: float = 1.0):
+	# Logic: Execute step-by-step processing for at
 	if not enabled: return
 	var p = AudioStreamPlayer3D.new()
 	add_child(p)

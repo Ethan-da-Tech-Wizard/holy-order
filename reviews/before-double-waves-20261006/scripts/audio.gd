@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: audio.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for audio.gd.
+# ==============================================================================
 extends Node
 
 var streams: Dictionary = {}

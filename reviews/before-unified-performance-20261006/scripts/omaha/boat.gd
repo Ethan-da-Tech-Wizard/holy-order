@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: boat.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for boat.gd.
+# ==============================================================================
 extends Node3D
 const Art=preload("res://scripts/art.gd")
 const Armor=preload("res://scripts/omaha/armor.gd")

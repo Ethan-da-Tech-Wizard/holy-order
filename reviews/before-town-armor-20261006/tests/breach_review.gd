@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: breach_review.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for breach_review.gd.
+# ==============================================================================
 extends SceneTree
 var g
 var view: SubViewport

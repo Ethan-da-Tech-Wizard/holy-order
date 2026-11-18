@@ -1,10 +1,18 @@
+# ==============================================================================
+# Program: visual_check.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Shader and material pipeline test verifying LOD transitions, shadows, and screen-space reflections.
+# ==============================================================================
 extends Node
 
 func snap(name: String):
+	# Logic: Execute step-by-step processing for snap
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://reviews/"+name+".png")
 
 func run(g):
+	# Logic: Execute step-by-step processing for run
 	await get_tree().create_timer(1.5).timeout
 	await snap("start-screen")
 	g.begin()

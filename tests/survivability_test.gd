@@ -1,10 +1,19 @@
+# ==============================================================================
+# Program: survivability_test.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Health and damage calculation test checking armor plate deflection formulas and wound thresholds.
+# ==============================================================================
 extends SceneTree
 var checks=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	for path in ["res://scripts/player.gd","res://scripts/ardennes/player.gd","res://scripts/omaha/player.gd"]:
 		var knight=load(path).new()

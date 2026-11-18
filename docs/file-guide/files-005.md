@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-005.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Directory inventory tracking historical review snapshots and pre-pass reference implementations.
+============================================================================== -->
+
 # Files 5 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

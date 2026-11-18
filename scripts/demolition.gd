@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: demolition.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Field explosive satchel mechanics handling fuse timers, placement hitboxes, blast radius calculation, and structural damage.
+# ==============================================================================
 extends Node3D
 
 # Period-style, preassembled field demolition satchel. The 30 m line and
@@ -20,6 +26,7 @@ var satchel: Node3D
 const CABLE_LIMIT=30.0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	cache=Art.solid(self,Vector3(1.15,0.65,0.75),Vector3(-21,0.325,-39),Art.material(Color("736647")))
 	var label=Label3D.new()
 	label.text="GENIO • MATERIALI"
@@ -52,6 +59,7 @@ func _ready():
 	cable.material_override=Art.material(Color("37382f"))
 
 func make_satchel(parent: Node3D) -> Node3D:
+	# Logic: Execute step-by-step processing for make_satchel
 	var root=Node3D.new()
 	parent.add_child(root)
 	Art.beveled_box(root,Vector3(0.34,0.19,0.24),Vector3.ZERO,Art.material(Color("817553")),0.024)
@@ -61,9 +69,11 @@ func make_satchel(parent: Node3D) -> Node3D:
 	return root
 
 func available() -> bool:
+	# Logic: Execute step-by-step processing for available
 	return not cache.destroyed and stock>0 and carried==0 and not is_instance_valid(active)
 
 func take():
+	# Logic: Execute step-by-step processing for take
 	if not available():return
 	stock-=1
 	packs[stock].hide()
@@ -72,6 +82,7 @@ func take():
 	game.say("The pouch appears to contain an argument against architecture.",5)
 
 func deploy(lob: bool):
+	# Logic: Execute step-by-step processing for deploy
 	if carried<=0 or is_instance_valid(active):return
 	var camera=game.player.camera
 	var direction=-camera.global_basis.z
@@ -95,6 +106,7 @@ func deploy(lob: bool):
 	game.toast("SATCHEL DEPLOYED  •  Move clear / B detonate / F recover",4)
 
 func recover():
+	# Logic: Execute step-by-step processing for recover
 	if not is_instance_valid(active):return
 	active.queue_free()
 	active=null
@@ -106,6 +118,7 @@ func recover():
 	game.toast("Satchel recovered.",2)
 
 func detonate():
+	# Logic: Execute step-by-step processing for detonate
 	if not is_instance_valid(active):return
 	if cable_broken:
 		game.toast("The cable has broken. Recover the satchel with F.",3)
@@ -119,6 +132,7 @@ func detonate():
 	game.toast("DEMOLITION  •  A new way through.",3)
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if game.phase!="playing":return
 	detonator.visible=game.player.weapon==4 and is_instance_valid(active)
 	satchel.visible=game.player.weapon==4 and carried>0

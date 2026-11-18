@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: equipment_hitbox.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for equipment_hitbox.gd.
+# ==============================================================================
 extends Area3D
 
 var wielder

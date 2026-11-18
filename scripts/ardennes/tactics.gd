@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: tactics.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Tactical decision engine computing squad flanking vectors, suppressive fire allocations, and retreat waypoints.
+# ==============================================================================
 extends RefCounted
 var book:Dictionary
 var groups:Array=[]
@@ -11,19 +17,23 @@ var assigned_count:int=0
 var opening_secured:bool=false
 
 func _init():
+	# Step: Configure initial parameters and dependency references for _init
 	book=JSON.parse_string(FileAccess.get_file_as_string("res://scripts/ardennes/tactical_plans.json"))
 
 func initialize(game):
+	# Step: Configure initial parameters and dependency references for initialize
 	commander=game.squads[4].leader
 	groups=[{"side":-1,"name":"LEFT","squads":[0,1,2,3],"leader":null,"route":[6,4,2,0],"step":0,"area":6},
 		{"side":1,"name":"RIGHT","squads":[4,5,6,7],"leader":null,"route":[7,5,3,1],"step":0,"area":7}]
 
 func area_alive(game,area:int)->bool:
+	# Logic: Execute step-by-step processing for area_alive
 	for actor in game.squads[9+area].members:
 		if actor.alive:return true
 	return false
 
 func assign_dismounted(game):
+	# Logic: Execute step-by-step processing for assign_dismounted
 	var fresh:Array=[]
 	var left=0
 	var right=0
@@ -57,6 +67,7 @@ func assign_dismounted(game):
 		assigned_count+=1
 
 func update(game):
+	# Step: Update internal simulation state and refresh cached coordinates
 	assign_dismounted(game)
 	if not opening_secured and not area_alive(game,6) and not area_alive(game,7):
 		opening_secured=true
@@ -111,6 +122,7 @@ func update(game):
 			sq.objective=game.world.on_ground(anchor-approach*book.plans[plan].approach_distance+flank)
 
 func formation_goal(game,actor)->Vector3:
+	# Logic: Execute step-by-step processing for formation_goal
 	var sq=game.squads[actor.squad]
 	var goal:Vector3=sq.objective
 	var slot=0
@@ -124,6 +136,7 @@ func formation_goal(game,actor)->Vector3:
 	return game.world.on_ground(goal+right*(slot%3-1)*book.spacing.column-toward.normalized()*float(slot/3)*book.spacing.row)
 
 func active_areas(game)->Array:
+	# Logic: Execute step-by-step processing for active_areas
 	var result:Array=[]
 	for group in groups:
 		if area_alive(game,group.area):result.append(group.area)

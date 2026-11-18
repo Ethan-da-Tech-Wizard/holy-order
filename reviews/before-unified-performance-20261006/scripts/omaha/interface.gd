@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: interface.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for interface.gd.
+# ==============================================================================
 extends Control
 var game
 var panel:Control

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: graphics.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for graphics.gd.
+# ==============================================================================
 extends RefCounted
 # Shared by all three missions. The 3D scene alone is scaled; text stays sharp.
 const NAMES=["LOW / MAX FPS","STANDARD","HIGH"]

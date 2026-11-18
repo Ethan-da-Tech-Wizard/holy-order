@@ -1,9 +1,18 @@
+# ==============================================================================
+# Program: ardennes_ground_probe.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Terrain collision verification test validating ground contact normal calculations across irregular topography.
+# ==============================================================================
 extends SceneTree
 var g
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func ticks(n):
+	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/ardennes.tscn").instantiate()
 	root.add_child(g)

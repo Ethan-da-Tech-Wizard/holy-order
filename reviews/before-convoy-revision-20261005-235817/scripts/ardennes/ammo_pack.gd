@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: ammo_pack.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for ammo_pack.gd.
+# ==============================================================================
 extends RefCounted
 # Scenario carry limits: 24 space units / 7.5 kg of spare ammunition. These are
 # a playable belt-and-pack allowance, not a claim that every soldier had this load.

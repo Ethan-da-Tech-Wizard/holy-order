@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: field_navigation.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for field_navigation.gd.
+# ==============================================================================
 extends Node3D
 
 # A small tactical ground graph, refreshed locally when a door moves or geometry

@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+# ==============================================================================
+# Program: launch-holy-order.py
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Launcher daemon and window manager bridge for Holy Order Godot game.
+#          Manages file prerequisites verification, process locking via fcntl,
+#          Hyprland window focus dispatch, and child engine lifecycle.
+# ==============================================================================
 """Start Holy Order at its title screen, using the bundled local Godot engine."""
 import argparse
 import datetime
@@ -15,6 +23,7 @@ ENGINE = BASE / "tools/godot"
 RUNTIME = BASE / "runtime"
 
 
+# Step 1: Query active Hyprland windows and dispatch focus to running game instance
 def focus_existing(runtime):
     try:
         state = json.loads((runtime / "process.json").read_text())
@@ -31,12 +40,14 @@ def focus_existing(runtime):
         pass
 
 
+# Step 2: Parse CLI arguments, verify project assets, and manage engine process lifecycle
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="Check required files without opening the game")
     parser.add_argument("--mission", choices=("omaha", "ardennes", "desert"), default="omaha", help="Highlight a mission in the shared mission menu")
     args = parser.parse_args()
     runtime = RUNTIME / "main"
+    # Step 3: Validate presence of essential engine binary and game scenes
     required = [ENGINE, BASE / "project.godot", BASE / "scenes/menu.tscn", BASE / "scripts/menu.gd"]
     required += [BASE / name for name in ("scenes/main.tscn", "scenes/ardennes.tscn", "scenes/omaha.tscn", "scripts/game.gd", "scripts/ardennes/battle.gd", "scripts/omaha/battle.gd")]
     missing = [str(path) for path in required if not path.is_file()]
@@ -47,6 +58,7 @@ def main():
         print("Holy Order / " + args.mission + ": ready\nEngine: " + result.stdout.strip() + "\nLaunch destination: unified Winter / Desert / Omaha menu")
         return 0
     runtime.mkdir(parents=True, exist_ok=True)
+    # Step 4: Acquire non-blocking file lock to prevent duplicate concurrent processes
     with (runtime / "launch.lock").open("a") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)

@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-004.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Directory inventory tracking automated test harnesses, performance benchmarks, and ballistics regressions.
+============================================================================== -->
+
 # Files 4 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: carcano_model.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for carcano_model.gd.
+# ==============================================================================
 extends RefCounted
 
 # Original M91-inspired geometry, in metres. Open sights are geometry rather than

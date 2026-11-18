@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: actor.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Amphibious assault infantry controller handling beach sprint fatigue, wading physics, and seawall breaching.
+# ==============================================================================
 extends "res://scripts/ardennes/actor.gd"
 var boat
 var stationary:bool=false
@@ -34,15 +40,19 @@ var terrain_grounded:bool=false
 var terrain_wall=Vector3.ZERO
 
 func simple_motion()->bool:
+	# Logic: Execute step-by-step processing for simple_motion
 	return game.get("quality")==0
 
 func motion_grounded()->bool:
+	# Logic: Execute step-by-step processing for motion_grounded
 	return terrain_grounded if simple_motion() else super.motion_grounded()
 
 func motion_wall_normal()->Vector3:
+	# Logic: Execute step-by-step processing for motion_wall_normal
 	return terrain_wall if simple_motion() else super.motion_wall_normal()
 
 func move_actor_body(delta:float):
+	# Logic: Execute step-by-step processing for move_actor_body
 	if not simple_motion():
 		if collision_mask!=(1|2):collision_mask=1|2
 		super.move_actor_body(delta)
@@ -80,6 +90,7 @@ func move_actor_body(delta:float):
 		motion=hit.get_remainder().slide(normal)
 
 func set_reserve(waiting:bool):
+	# Logic: Execute step-by-step processing for set_reserve
 	staged=waiting
 	var hidden_reserve=waiting and team==1
 	collision_layer=0 if hidden_reserve else (4 if team==0 else 8)
@@ -90,6 +101,7 @@ func set_reserve(waiting:bool):
 	set_physics_process(not waiting and truck==null and role!="driver")
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	# First-person sight/reload markers belong to the player, not every AI rifle.
 	for marker in ["SightLine","RearSightLine","Bolt","ReloadClip"]:gun.get_node(marker).free()
@@ -116,6 +128,7 @@ func _ready():
 		Art.segment(model.root,Vector3(0.15,0.98,0.4),Vector3(0.35,0.81,-0.15),0.028,Art.material(Color("1a2420")))
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not alive or staged or game.phase!="playing":return
 	if truck!=null:
 		if truck.arrived:
@@ -167,6 +180,7 @@ func _physics_process(delta):
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
 
 func clear_charge(now:float):
+	# Logic: Execute step-by-step processing for clear_charge
 	charge_retreat=game.world.on_ground(position+Vector3((index%2*2-1)*3,0,9))
 	retreat_until=now+2.4
 	state="withdraw"
@@ -174,6 +188,7 @@ func clear_charge(now:float):
 	set_destination(charge_retreat)
 
 func think(now:float):
+	# Logic: Execute step-by-step processing for think
 	if not alive or staged or truck!=null or role=="driver":return
 	decision_count+=1
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
@@ -282,6 +297,7 @@ func think(now:float):
 		set_destination(last_known)
 
 func bound_toward(goal:Vector3,now:float):
+	# Logic: Execute step-by-step processing for bound_toward
 	# Short covering bursts; nine files keep charging while one covers.
 	var cover_slot=(int(now/1.25)+index)%10==0 and target!=null and position.z<0
 	state="fire" if cover_slot else "advance"
@@ -289,6 +305,7 @@ func bound_toward(goal:Vector3,now:float):
 	if not cover_slot:set_destination(goal)
 
 func try_fire():
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if role=="driver" or staged:return
 	var previous=shots
 	var previous_state=state
@@ -309,6 +326,7 @@ func try_fire():
 			burst_left=randi_range(9,18)
 
 func dismount():
+	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived:return
 	var craft=truck
 	var p=craft.seat_transform(seat).origin
@@ -328,6 +346,7 @@ func dismount():
 	set_physics_process(true)
 
 func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
+	# Logic: Execute step-by-step processing for hear_noise
 	if not alive or staged or source_team==team:return
 	# A sound creates a search direction, never visibility through a wall.
 	if global_position.distance_to(point)>radius:return
@@ -337,9 +356,11 @@ func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
 		contact_age=3.0
 
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if staged:return
 	super.take_damage(amount,source,kind)
 
 func set_destination(goal:Vector3):
+	# Logic: Execute step-by-step processing for set_destination
 	if position.z< -342 and destination.distance_to(goal)<2 and path_cursor<path.size():return
 	super.set_destination(goal)

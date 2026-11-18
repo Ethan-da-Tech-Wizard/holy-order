@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-001.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Granular directory inventory and tracking index for core game scenes, root configs, and root scripts.
+============================================================================== -->
+
 # Files 1 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

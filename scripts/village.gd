@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: village.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Procedural layout synthesizer generating village buildings, cobblestone paths, cover positions, and perimeter fences.
+# ==============================================================================
 extends Node3D
 
 const Art=preload("res://scripts/art.gd")
@@ -8,15 +14,18 @@ var enemy_positions=[Vector3(0,0.04,26),Vector3(-26,0.04,-14),Vector3(27,0.04,-1
 var enemy_roles=["sentry","hold","assault","assault","hold","mg"]
 
 func plaster_material(color: Color) -> Material:
+	# Logic: Execute step-by-step processing for plaster_material
 	var mat=ShaderMaterial.new()
 	mat.shader=load("res://assets/shaders/plaster.gdshader")
 	mat.set_shader_parameter("plaster_color",color)
 	return mat
 
 func wall(parent: Node3D, size: Vector3, pos: Vector3, mat: Material):
+	# Logic: Execute step-by-step processing for wall
 	return Art.solid(parent,size,pos,mat,0,"masonry")
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var plaster=plaster_material(Color("a89372"))
 	var pale=plaster_material(Color("b7a789"))
 	var worn=plaster_material(Color("93836c"))
@@ -80,6 +89,7 @@ func _ready():
 		rubble.rotation.y=rng.randf_range(-PI,PI)
 
 func house(pos: Vector3, size: Vector2, plaster: Material, damaged: bool):
+	# Logic: Execute step-by-step processing for house
 	var root=Node3D.new()
 	add_child(root)
 	root.position=pos
@@ -132,6 +142,7 @@ func house(pos: Vector3, size: Vector2, plaster: Material, damaged: bool):
 	for x in [-3,-1]:Art.solid(root,Vector3(0.15,0.5,0.5),Vector3(x,0.25,-d/2+1.1),wood)
 
 func flag(pos: Vector3):
+	# Logic: Execute step-by-step processing for flag
 	var pole=Art.solid(self,Vector3(0.10,6.5,0.10),pos+Vector3(0,3.25,0),Art.material(Color("706c59"),0.6),0,"metal")
 	for i in range(3):
 		var mat=ShaderMaterial.new()

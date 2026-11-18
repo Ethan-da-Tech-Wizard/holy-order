@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: world.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Snow-covered Ardennes forest terrain generator with elevation heightmaps, pine tree distributions, and dirt roads.
+# ==============================================================================
 extends Node3D
 
 const Art=preload("res://scripts/art.gd")
@@ -39,6 +45,7 @@ static var pine_cache:Dictionary={}
 var ambient:WorldEnvironment
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed=rng_seed
 	noise.seed=19441223
@@ -103,9 +110,11 @@ ALBEDO=mix(dirt,ice,face*(1.0-lane*0.84)); ROUGHNESS=0.95;
 	world_camera.fov=63
 
 func road_x(z:float)->float:
+	# Logic: Execute step-by-step processing for road_x
 	return sin(z*0.017)*13.0+sin(z*0.044)*3.0
 
 func raw_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for raw_height
 	# Broad ridges with a low-amplitude surface. Road shoulders and firing lanes
 	# are graded approaches, not the old high-frequency walls of noise.
 	var lane=sin(z*0.013)*1.3
@@ -117,6 +126,7 @@ func raw_height(x:float,z:float)->float:
 	return lerpf(lane,hill,smoothstep(9.0,44.0,off))
 
 func in_fire_lane(p:Vector3)->bool:
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	for area in AREAS:
 		var a=Vector2(area.x,area.y)
 		var b=Vector2(road_x(area.y),area.y+5)
@@ -126,6 +136,7 @@ func in_fire_lane(p:Vector3)->bool:
 	return false
 
 func height_at(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for height_at
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
 	var h=raw_height(x,z)
@@ -142,13 +153,16 @@ func height_at(x:float,z:float)->float:
 	return h
 
 func on_ground(p:Vector3)->Vector3:
+	# Logic: Execute step-by-step processing for on_ground
 	return Vector3(p.x,surface_height(p.x,p.z),p.z)
 
 func road_point(progress:float)->Vector3:
+	# Logic: Execute step-by-step processing for road_point
 	var z=ROAD_START-progress
 	return on_ground(Vector3(road_x(z),0,z))
 
 func ground_chunk(x:float,z:float):
+	# Logic: Execute step-by-step processing for ground_chunk
 	var body=Prop.new()
 	body.material_kind="soil"
 	body.battle_world=self
@@ -176,9 +190,11 @@ func ground_chunk(x:float,z:float):
 	terrain_meshes+=1
 
 func tri(st:SurfaceTool,a:Vector3,b:Vector3,c:Vector3):
+	# Logic: Execute step-by-step processing for tri
 	for v in [a,c,b]:st.add_vertex(v)
 
 func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=self):
+	# Logic: Execute step-by-step processing for solid
 	var body=Prop.new()
 	body.material_kind=kind
 	body.battle_world=self
@@ -194,6 +210,7 @@ func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=
 	return body
 
 func tree(p:Vector3,height:float,variant:int):
+	# Logic: Execute step-by-step processing for tree
 	var tree_root=Prop.new()
 	tree_root.battle_world=self
 	tree_root.material_kind="wood"
@@ -225,6 +242,7 @@ func tree(p:Vector3,height:float,variant:int):
 	for v in [Vector3(1.4,0,0),Vector3(-1.4,0,0),Vector3(0,0,1.4),Vector3(0,0,-1.4)]:covers.append(on_ground(p+v))
 
 func rock(p:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for rock
 	var body=Prop.new()
 	body.material_kind="rock"
 	body.battle_world=self
@@ -245,6 +263,7 @@ func rock(p:Vector3,radius:float):
 	for j in range(4):covers.append(on_ground(p+Vector3(cos(j*PI/2),0,sin(j*PI/2))*(radius+1.1)))
 
 func build_nest(index:int):
+	# Step: Instantiate and position node hierarchy into scene tree for build_nest
 	var p=on_ground(anchors[index])
 	anchors[index]=p
 	var facing=(Vector3(road_x(p.z),p.y,p.z+15)-p).normalized()
@@ -295,6 +314,7 @@ func build_nest(index:int):
 		covers.append(flank-facing*0.9)
 
 func build_lighting():
+	# Step: Instantiate and position node hierarchy into scene tree for build_lighting
 	ambient=WorldEnvironment.new()
 	var env=Environment.new()
 	env.background_mode=Environment.BG_SKY
@@ -330,6 +350,7 @@ func build_lighting():
 	add_child(sun)
 
 func build_navigation():
+	# Step: Instantiate and position node hierarchy into scene tree for build_navigation
 	navigation=AStarGrid2D.new()
 	navigation.region=Rect2i(-45,-213,91,427)
 	navigation.cell_size=Vector2(STEP,STEP)
@@ -348,9 +369,11 @@ func build_navigation():
 		if navigation.is_in_boundsv(v):navigation.set_point_weight_scale(v,1.7)
 
 func cell(p:Vector3)->Vector2i:
+	# Logic: Execute step-by-step processing for cell
 	return Vector2i(roundi(p.x/STEP),roundi(p.z/STEP))
 
 func nearest_cell(p:Vector3)->Vector2i:
+	# Logic: Execute step-by-step processing for nearest_cell
 	var c=cell(p).clamp(navigation.region.position,navigation.region.end-Vector2i.ONE)
 	if not navigation.is_point_solid(c):return c
 	for radius in range(1,5):
@@ -361,6 +384,7 @@ func nearest_cell(p:Vector3)->Vector2i:
 	return c
 
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
+	# Logic: Execute step-by-step processing for path_between
 	var from=nearest_cell(a)
 	var to=nearest_cell(b)
 	var key=Vector4i(from.x,from.y,to.x,to.y)
@@ -380,6 +404,7 @@ func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	return result
 
 func geometry_updated(point:Vector3):
+	# Step: Update internal simulation state and refresh cached coordinates
 	geometry_revision+=1
 	path_cache.clear()
 	navigation_heights.clear()
@@ -403,12 +428,14 @@ func geometry_updated(point:Vector3):
 			navigation.set_point_solid(v,blocked)
 
 func cover_changed(point:Vector3,since:int)->bool:
+	# Logic: Execute step-by-step processing for cover_changed
 	if geometry_revision-since>32:return true
 	for change in geometry_changes:
 		if change.revision>since and change.point.distance_squared_to(point)<100:return true
 	return false
 
 func queue_cut(body,point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for queue_cut
 	# Limit geometry work, coalesce close hits and keep the queue bounded under MG fire.
 	for cut in pending_cuts:
 		if cut.body==body and cut.local.distance_squared_to(body.to_local(point))<0.25:
@@ -417,6 +444,7 @@ func queue_cut(body,point:Vector3,radius:float):
 	if pending_cuts.size()<96:pending_cuts.append({"body":body,"local":body.to_local(point),"radius":radius})
 
 func _process(_delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	cut_cooldown=maxf(0,cut_cooldown-_delta)
 	if cut_cooldown>0:return
 	for body in active_cuts.duplicate():
@@ -430,6 +458,7 @@ func _process(_delta):
 		cut_jobs+=1
 
 func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,soil_depth:float=0.13):
+	# Logic: Execute step-by-step processing for blast
 	# Fragmentation radius is separate from excavation. A grenade makes a shallow
 	# scar in soil, while close hits can still breach timber and thin walls.
 	var surface=surface_height(point.x,point.z)
@@ -443,6 +472,7 @@ func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,
 		body.damage_at(power*(1.0-distance/(radius+1.0)),point,1.25,true)
 
 func carve_ground(center:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for carve_ground
 	var first=Vector2i(floori((center.x-radius)/24)*24,floori((center.z-radius)/24)*24)
 	var last=Vector2i(floori((center.x+radius)/24)*24,floori((center.z+radius)/24)*24)
 	for x in range(first.x,last.x+1,24):
@@ -451,12 +481,15 @@ func carve_ground(center:Vector3,radius:float):
 			if body!=null:body.carve(center,radius)
 
 func dig(point:Vector3,width:float=1.0,depth:float=0.42):
+	# Logic: Execute step-by-step processing for dig
 	var ground=surface_height(point.x,point.z)
 	carve_ground(Vector3(point.x,ground+width-depth,point.z),width)
 
 func nearby_door(_point:Vector3,_distance:float=2.6):return null
+	# Logic: Execute step-by-step processing for nearby_door
 
 func fell_tree(body):
+	# Logic: Execute step-by-step processing for fell_tree
 	if body.destroyed:return
 	var origin=body.global_position
 	body.destroyed=true
@@ -470,6 +503,7 @@ func fell_tree(body):
 	geometry_updated(log_body.position)
 
 func cover_candidates(p:Vector3,radius:float)->Array:
+	# Logic: Execute step-by-step processing for cover_candidates
 	var key=Vector2i(floori(p.x/20),floori(p.z/20))
 	var candidates:Array=[]
 	for x in range(-2,3):
@@ -480,6 +514,7 @@ func cover_candidates(p:Vector3,radius:float)->Array:
 	return candidates.slice(0,16)
 
 func pine_mesh(variant:int)->ArrayMesh:
+	# Logic: Execute step-by-step processing for pine_mesh
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var prng=RandomNumberGenerator.new()
@@ -512,6 +547,7 @@ func pine_mesh(variant:int)->ArrayMesh:
 	return st.commit()
 
 func base_surface_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for base_surface_height
 	# Spawn and path heights match the actual two triangles of the 4 m terrain cell.
 	# Sampling the unsimplified noise could place an actor underneath a triangle.
 	var gx=floorf(x/4)*4
@@ -526,6 +562,7 @@ func base_surface_height(x:float,z:float)->float:
 	return a+(c-d)*u+(d-a)*v
 
 func surface_height(x:float,z:float)->float:
+	# Logic: Execute step-by-step processing for surface_height
 	var key=Vector2i(floori(x/24)*24,floori(z/24)*24)
 	if not soil_edits.has(key):return base_surface_height(x,z)
 	var gx=clampi(floori(x-key.x),0,23)
@@ -540,6 +577,7 @@ func surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func deform_ground(body,point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for deform_ground
 	# Store one height per vertex, rather than replaying every previous explosion
 	# and shovel stroke on every future edit or navigation query.
 	var key=Vector2i(roundi(body.position.x),roundi(body.position.z))
@@ -585,6 +623,7 @@ func deform_ground(body,point:Vector3,radius:float):
 	geometry_updated(point)
 
 func build_secondary_nest(area:int):
+	# Step: Instantiate and position node hierarchy into scene tree for build_secondary_nest
 	var center=anchors[area]
 	var facing=(Vector3(road_x(center.z),center.y,center.z+5)-center).normalized()
 	var side=facing.cross(Vector3.UP)

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: player.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for player.gd.
+# ==============================================================================
 extends CharacterBody3D
 
 const Art = preload("res://scripts/art.gd")

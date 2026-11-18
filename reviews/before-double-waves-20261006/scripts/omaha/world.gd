@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: world.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for world.gd.
+# ==============================================================================
 extends "res://scripts/ardennes/world.gd"
 const Armor=preload("res://scripts/omaha/armor.gd")
 const Wire=preload("res://scripts/omaha/wire.gd")

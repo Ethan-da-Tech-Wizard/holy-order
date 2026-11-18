@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: armor.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Coastal defense bunker and armored vehicle damage modeling system.
+# ==============================================================================
 extends "res://scripts/ardennes/prop.gd"
 # Each hull panel has its own wear. Concrete keeps its ballistic strength;
 # thin landing-craft plating becomes penetrable before a panel fails.
@@ -13,12 +19,14 @@ var render_index:int=-1
 var render_origin=Vector3.ZERO
 
 func demolish():
+	# Logic: Execute step-by-step processing for demolish
 	if destroyed:return
 	if render_batch!=null:render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
 	super.demolish()
 	if is_instance_valid(structure):structure.check_supports()
 
 func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=false)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	wear+=amount
 	bullet_mark(point)
@@ -49,6 +57,7 @@ func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=fals
 	return true
 
 func modulate_damage():
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if has_meta("scarred"):return
 	set_meta("scarred",true)
 	if render_batch!=null and render_batch.use_colors:render_batch.set_instance_color(render_index,Color(0.50,0.52,0.48))
@@ -60,6 +69,7 @@ func modulate_damage():
 	if hull_panel:penetrable=true
 
 func unbatch():
+	# Logic: Execute step-by-step processing for unbatch
 	if render_batch==null:return
 	render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
 	render_batch=null
@@ -75,6 +85,7 @@ func unbatch():
 		if child is MeshInstance3D:child.show()
 
 func commit_cut(point:Vector3,radius:float):
+	# Logic: Execute step-by-step processing for commit_cut
 	unbatch()
 	super.commit_cut(point,radius)
 	if is_instance_valid(structure):structure.check_supports()

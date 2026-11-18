@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: mg_nest.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Fixed heavy machine gun emplacement controller managing tray reloading, traverse limits, and suppressive fire cones.
+# ==============================================================================
 extends Node3D
 
 # Breda modello 37: 8 mm ammunition in 20-round rigid feed trays.
@@ -21,6 +27,7 @@ var muzzle: Marker3D
 var flash: MeshInstance3D
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var metal=Art.material(Color("404742"),0.72,0.43)
 	var wood=Art.material(Color("635c43"))
 	# Low tripod behind a U-shaped sandbag emplacement, open at the rear.
@@ -78,34 +85,41 @@ func _ready():
 	box.add_child(label)
 
 func operator_position() -> Vector3:
+	# Logic: Execute step-by-step processing for operator_position
 	return global_position+Vector3(0,0,-1.0)
 
 func usable() -> bool:
+	# Logic: Execute step-by-step processing for usable
 	return health>0 and (rounds>0 or spare_trays>0 or reload_time>0)
 
 func claim(actor) -> bool:
+	# Logic: Execute step-by-step processing for claim
 	if not usable():return false
 	if is_instance_valid(operator) and operator!=actor:return false
 	operator=actor
 	return true
 
 func release(actor):
+	# Logic: Execute step-by-step processing for release
 	if operator==actor:
 		operator=null
 		# An interrupted reload consumes nothing and grants nothing.
 		reload_time=0
 
 func track(point: Vector3):
+	# Logic: Execute step-by-step processing for track
 	var delta=point-pivot.global_position
 	var angle=atan2(-delta.x,-delta.z)
 	pivot.rotation.y=PI+clampf(wrapf(angle-PI,-PI,PI),-1.23,1.23)
 	pivot.rotation.x=clampf(atan2(delta.y,Vector2(delta.x,delta.z).length()),-0.26,0.28)
 
 func in_arc(point: Vector3) -> bool:
+	# Logic: Execute step-by-step processing for in_arc
 	var delta=point-pivot.global_position
 	return Vector3(0,0,1).dot(Vector3(delta.x,0,delta.z).normalized())>0.33
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if game.phase!="playing":return
 	cooldown=maxf(-delta,cooldown-delta)
 	if reload_time>0:
@@ -123,6 +137,7 @@ func _physics_process(delta):
 			try_fire(game.player.camera.global_position-game.player.camera.global_basis.z*180)
 
 func try_fire(target: Vector3) -> bool:
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if not is_instance_valid(operator) or cooldown>0.000001 or reload_time>0 or rounds==0 or health<=0 or not in_arc(target):return false
 	# The barrel's actual ray must be clear, even when the gunner can see over cover.
 	var obstruction=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(muzzle.global_position,target,1))
@@ -144,6 +159,7 @@ func try_fire(target: Vector3) -> bool:
 	return true
 
 func receive_equipment_damage(_item: String, amount: float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	health=maxf(0,health-amount)
 	game.sounds.at("clang",global_position,-5)
 	if health==0:

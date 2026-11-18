@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: player.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for player.gd.
+# ==============================================================================
 extends "res://scripts/ardennes/player.gd"
 const Wire=preload("res://scripts/omaha/wire.gd")
 var last_fired:float=-999

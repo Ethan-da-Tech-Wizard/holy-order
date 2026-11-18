@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: audio.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Winter woodland acoustic environment controller managing wind whistling, footstep crunches in snow, and distant echoes.
+# ==============================================================================
 extends "res://scripts/audio.gd"
 
 var frame_voices:int=0
@@ -6,6 +12,7 @@ var voices:Array[AudioStreamPlayer3D]=[]
 var next_voice:int=0
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	if not enabled:return
 	for i in range(32):
@@ -16,6 +23,7 @@ func _ready():
 		streams[key]=load("res://assets/audio/"+key+".wav")
 
 func at(sound:String,pos:Vector3,volume:float=0,pitch:float=1.0):
+	# Logic: Execute step-by-step processing for at
 	if not enabled or not streams.has(sound):return
 	if voice_frame!=Engine.get_process_frames():
 		voice_frame=Engine.get_process_frames()

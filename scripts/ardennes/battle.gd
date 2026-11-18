@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: battle.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ardennes mission orchestrator coordinating squad movement, ambush waves, defensive lines, and battle outcomes.
+# ==============================================================================
 extends Node3D
 
 const World=preload("res://scripts/ardennes/world.gd")
@@ -76,6 +82,7 @@ var fall_events:Array=[]
 var profile_enabled:bool=OS.has_environment("HOLY_ORDER_PROFILE")
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
 	combat_seed=int(get_tree().get_meta("battle_seed",0))
@@ -113,6 +120,7 @@ func _ready():
 	preload("res://scripts/graphics.gd").install(self)
 
 func register_inputs():
+	# Logic: Execute step-by-step processing for register_inputs
 	var bindings={"move_forward":KEY_W,"move_back":KEY_S,"move_left":KEY_A,"move_right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"crouch":KEY_C,"prone":KEY_Z,"objectives":KEY_J,"lean_left":KEY_Q,"lean_right":KEY_E,"reload":KEY_R,"interact":KEY_F,"grenade":KEY_G,"weapon_sword":KEY_1,"weapon_rifle":KEY_2,"weapon_fists":KEY_3,"weapon_shovel":KEY_4,"inventory":KEY_TAB,"pause":KEY_ESCAPE,"fullscreen":KEY_F11}
 	for action in bindings:
 		if not InputMap.has_action(action):InputMap.add_action(action)
@@ -128,11 +136,13 @@ func register_inputs():
 		InputMap.action_add_event(action,event)
 
 func new_squad(team:int,order:String,temperament:String,anchor:Vector3)->int:
+	# Logic: Execute step-by-step processing for new_squad
 	var i=squads.size()
 	squads.append({"team":team,"order":order,"temperament":temperament,"anchor":anchor,"objective":anchor,"leader":null,"members":[],"contact":Vector3.ZERO,"contact_age":999.0})
 	return i
 
 func make_convoy():
+	# Logic: Execute step-by-step processing for make_convoy
 	# One twelve-man rifle squad is the planned load in each CCKW, not its maximum capacity.
 	# Nine loads = 108 seats; the player replaces one passenger. Seven central loads = 84 seats.
 	for i in range(9):
@@ -182,6 +192,7 @@ func make_convoy():
 			engines.append(engine)
 
 func make_germans():
+	# Logic: Execute step-by-step processing for make_germans
 	for i in range(8):
 		var anchor=world.anchors[i]
 		var sq=new_squad(0,"hold","cautious",anchor)
@@ -227,6 +238,7 @@ func make_germans():
 				staged_launchers.append(actor)
 
 func begin():
+	# Logic: Execute step-by-step processing for begin
 	phase="playing"
 	player.camera.current=true
 	world.world_camera.current=false
@@ -236,6 +248,7 @@ func begin():
 	toast("COVERED TRANSPORT  •  LOOK OUT THE REAR  •  HOLD FIRE UNTIL DISMOUNT",7)
 
 func _unhandled_input(event):
+	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if event.is_action_pressed("fullscreen"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if DisplayServer.window_get_mode()==DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if event.is_action_pressed("pause"):
@@ -248,19 +261,23 @@ func _unhandled_input(event):
 	if phase=="title" and event is InputEventKey and event.pressed and event.keycode==KEY_ENTER:begin()
 
 func pause_game(menu:String="paused"):
+	# Logic: Execute step-by-step processing for pause_game
 	phase=menu
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	for engine in engines:engine.stream_paused=true
 
 func resume_game():
+	# Logic: Execute step-by-step processing for resume_game
 	phase="playing"
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 	for engine in engines:engine.stream_paused=false
 
 func _notification(what):
+	# Logic: Execute step-by-step processing for _notification
 	if what==NOTIFICATION_APPLICATION_FOCUS_OUT and phase=="playing" and not test_mode:pause_game()
 
 func _process(delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	visual_elapsed+=delta
 	if phase!="playing":return
 	if is_physics_processing():think_budget(delta)
@@ -272,11 +289,13 @@ func _process(delta):
 	damage_flash=maxf(0,damage_flash-delta)
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	var started=Time.get_ticks_usec() if profile_enabled else 0
 	step_battle(delta)
 	if profile_enabled and Time.get_ticks_usec()-started>8000:print("PROFILE battle_tick ",Time.get_ticks_usec()-started)
 
 func step_battle(delta):
+	# Logic: Execute step-by-step processing for step_battle
 	if phase!="playing":return
 	elapsed+=delta
 	step_convoy(delta)
@@ -300,6 +319,7 @@ func step_battle(delta):
 			effects.erase(effect)
 
 func think_budget(delta:float):
+	# Logic: Execute step-by-step processing for think_budget
 	# Distribute decisions across rendered frames, including those between physics
 	# ticks. A slow frame cannot produce an unbounded catch-up spike.
 	if elapsed<=3 or actors.is_empty():return
@@ -312,6 +332,7 @@ func think_budget(delta:float):
 		if actor.alive:actor.think(elapsed)
 
 func update_squads():
+	# Step: Update internal simulation state and refresh cached coordinates
 	for sq in squads:
 		if sq.leader==null or not sq.leader.alive:
 			sq.leader=null
@@ -323,6 +344,7 @@ func update_squads():
 	if dismounted:tactics.update(self)
 
 func report_contact(actor,point:Vector3):
+	# Logic: Execute step-by-step processing for report_contact
 	var sq=squads[actor.squad]
 	sq.contact=point
 	sq.contact_age=0
@@ -334,6 +356,7 @@ func report_contact(actor,point:Vector3):
 				other.contact_age=1
 
 func rebuild_spatial():
+	# Step: Instantiate and position node hierarchy into scene tree for rebuild_spatial
 	spatial.clear()
 	cover_reservations.clear()
 	for actor in actors:
@@ -347,6 +370,7 @@ func rebuild_spatial():
 			cover_reservations[reservation].append(actor)
 
 func separation_for(actor)->Vector3:
+	# Logic: Execute step-by-step processing for separation_for
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
 	var result=Vector3.ZERO
 	for dx in [-1,0,1]:
@@ -361,13 +385,16 @@ func separation_for(actor)->Vector3:
 	return result.limit_length(1.0)
 
 func actor_alive(actor)->bool:
+	# Logic: Execute step-by-step processing for actor_alive
 	if actor==null or not is_instance_valid(actor):return false
 	return actor.health>0 if actor==player else actor.alive and not actor.staged
 
 func actor_aim(actor)->Vector3:
+	# Logic: Execute step-by-step processing for actor_aim
 	return actor.aim_point()
 
 func acquire_target(actor):
+	# Logic: Execute step-by-step processing for acquire_target
 	var candidates=friendlies.duplicate() if actor.team==0 else enemies.duplicate()
 	if actor.team==0:candidates.append(player)
 	var nearest:Array=[]
@@ -389,6 +416,7 @@ func acquire_target(actor):
 	return null
 
 func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	# Check the likely dispersion cone and nearby allies' motion, not only the center ray.
 	var length=from.distance_to(to)
 	var axis=(to-from).normalized()
@@ -414,6 +442,7 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	return false
 
 func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
+	# Logic: Execute step-by-step processing for safe_explosive_target
 	var friends=friendlies if actor.team==1 else enemies
 	for other in friends:
 		if not other.alive:continue
@@ -423,6 +452,7 @@ func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
 	return true
 
 func can_lob(from:Vector3,to:Vector3)->bool:
+	# Logic: Execute step-by-step processing for can_lob
 	var last=from
 	for i in range(1,7):
 		var t=i/6.0
@@ -433,6 +463,7 @@ func can_lob(from:Vector3,to:Vector3)->bool:
 	return true
 
 func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var direction=(aim-from).normalized()
 	var right=direction.cross(Vector3.UP).normalized()
 	var up=right.cross(direction).normalized()
@@ -482,12 +513,14 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	emit_noise(from,260,source.team,"gunshot")
 
 func hurt_actor(actor,damage:float,source:Vector3,kind:String):
+	# Logic: Execute step-by-step processing for hurt_actor
 	if not actor_alive(actor):return
 	if actor.truck!=null and actor.truck.has_method("passenger_damage"):
 		damage=actor.truck.passenger_damage(damage,kind)
 	actor.take_damage(damage,source,kind)
 
 func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
+	# Logic: Execute step-by-step processing for notify_projectile
 	var line=to-from
 	var sq_len=line.length_squared()
 	if sq_len<0.001:return
@@ -500,13 +533,16 @@ func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
 			near_misses+=1
 
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
+	# Logic: Execute step-by-step processing for emit_noise
 	for actor in actors:
 		if actor.team!=team and actor.alive:actor.hear_noise(point,radius,team,kind)
 
 func damage_environment(hit:Dictionary,amount:float,radius:float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if hit.collider.has_method("damage_at"):hit.collider.damage_at(amount,hit.position,radius)
 
 func tracer(from:Vector3,to:Vector3,color:Color):
+	# Logic: Execute step-by-step processing for tracer
 	if effects.size()>64:return
 	var root=Node3D.new()
 	add_child(root)
@@ -520,6 +556,7 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	effects.append({"node":root,"time":0.055})
 
 func impact(point:Vector3,color:Color):
+	# Logic: Execute step-by-step processing for impact
 	if effects.size()>64:return
 	var node=Art.sphere(self,0.055,point,Art.material(color))
 	node.mesh.radial_segments=6
@@ -527,6 +564,7 @@ func impact(point:Vector3,color:Color):
 	effects.append({"node":node,"time":0.15})
 
 func scripted_strike(vehicle,shooter,is_lead:bool):
+	# Logic: Execute step-by-step processing for scripted_strike
 	# Eligibility is evaluated against the live vehicle and launcher. No teleport,
 	# invulnerable performer, or replacement target is created for a missing truck.
 	shooter.fausts-=1
@@ -536,6 +574,7 @@ func scripted_strike(vehicle,shooter,is_lead:bool):
 	say("Panzerfaust! Front of the arriving column!" if is_lead else "They've hit the last truck in the kill zone!",4,"SGT. HAYES")
 
 func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
+	# Logic: Execute step-by-step processing for launch_faust
 	var from=source.eye()+Vector3(0,0.12,0)
 	var goal=aim
 	if not scripted:
@@ -546,15 +585,18 @@ func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
 	emit_noise(from,260,source.team,"explosion")
 
 func throw_grenade(from:Vector3,direction:Vector3):
+	# Logic: Execute step-by-step processing for throw_grenade
 	spawn_grenade(from,direction.normalized()*15.0+Vector3(0,5.0,0),1,player,player.last_grenade_type)
 
 func bot_grenade(actor,target:Vector3):
+	# Logic: Execute step-by-step processing for bot_grenade
 	var from=actor.eye()
 	var flight=1.6
 	var velocity=(target-from)/flight+Vector3(0,9.0*flight*0.5,0)
 	spawn_grenade(from,velocity,actor.team,actor)
 
 func spawn_grenade(from:Vector3,velocity:Vector3,team:int,source,grenade_kind:String=""):
+	# Step: Instantiate and position node hierarchy into scene tree for spawn_grenade
 	if grenade_kind=="":grenade_kind="m24" if team==0 else "mk2"
 	var node=Node3D.new()
 	add_child(node)
@@ -569,6 +611,7 @@ func spawn_grenade(from:Vector3,velocity:Vector3,team:int,source,grenade_kind:St
 	grenades_live.append({"node":node,"velocity":velocity,"age":0.0,"fuse":randf_range(4.0,4.8),"source":source,"team":team,"kind":grenade_kind})
 
 func step_projectiles(delta:float):
+	# Logic: Execute step-by-step processing for step_projectiles
 	for grenade in grenades_live.duplicate():
 		grenade.age+=delta
 		grenade.fuse-=delta
@@ -613,6 +656,7 @@ func step_projectiles(delta:float):
 			rockets.erase(rocket)
 
 func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade"):
+	# Logic: Execute step-by-step processing for explode
 	for actor in actors+[player]:
 		if not actor_alive(actor):continue
 		var aim=actor_aim(actor)
@@ -653,6 +697,7 @@ func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade
 	effects.append({"node":root,"time":1.1})
 
 func add_wreck_fire(point:Vector3):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var smoke=GPUParticles3D.new()
 	add_child(smoke)
 	smoke.position=point
@@ -700,10 +745,12 @@ func add_wreck_fire(point:Vector3):
 	light.omni_range=7
 
 func vehicle_wrecked(vehicle,_scripted:bool):
+	# Logic: Execute step-by-step processing for vehicle_wrecked
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	# A local wreck is a traffic obstruction. Other trucks keep trying to pass it.
 
 func truck_dismounted(vehicle):
+	# Logic: Execute step-by-step processing for truck_dismounted
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	if not dismounted:
 		dismounted=true
@@ -714,6 +761,7 @@ func truck_dismounted(vehicle):
 	tactics.update(self)
 
 func actor_died(actor,kind:String):
+	# Logic: Execute step-by-step processing for actor_died
 	death_causes[kind]=int(death_causes.get(kind,0))+1
 	if kind=="fall":
 		fall_events.append({"index":actor.index,"position":str(actor.position),"surface":world.surface_height(actor.position.x,actor.position.z),"state":actor.state})
@@ -740,6 +788,7 @@ func actor_died(actor,kind:String):
 		sounds.play("victory",-10)
 
 func interact():
+	# Logic: Execute step-by-step processing for interact
 	if player.truck!=null:
 		if player.truck.stopped:player.truck.dismount("orders")
 		else:toast("Stay seated. Weapons remain safe until the truck stops and we dismount.",3)
@@ -772,6 +821,7 @@ func interact():
 	loot(nearest)
 
 func loot(actor)->Dictionary:
+	# Logic: Execute step-by-step processing for loot
 	if actor.looted:return {}
 	var taken_grenades=mini(actor.grenades,maxi(0,4-player.grenades))
 	var result={"rounds":0,"grenades":taken_grenades,"caliber":actor.spec.caliber}
@@ -787,6 +837,7 @@ func loot(actor)->Dictionary:
 	return result
 
 func objective_target()->Vector3:
+	# Logic: Execute step-by-step processing for objective_target
 	if player.truck!=null:return world.road_point(Truck.END_PROGRESS)
 	var best=INF
 	var goal=world.anchors[6]
@@ -798,6 +849,7 @@ func objective_target()->Vector3:
 	return goal
 
 func objective_text()->String:
+	# Logic: Execute step-by-step processing for objective_text
 	if player.truck!=null:
 		if player.truck.disabled:return "Wheels hit. Await dismount orders."
 		return "Stay seated. Watch the road behind."
@@ -807,33 +859,40 @@ func objective_text()->String:
 	return "Clear both ridges • %d / 8 hilltops secured"%cleared
 
 func toast(text:String,duration:float=3):
+	# Logic: Execute step-by-step processing for toast
 	toast_text=text
 	toast_time=duration
 
 func say(text:String,duration:float=5,who:String="THE KNIGHT"):
+	# Logic: Execute step-by-step processing for say
 	subtitle=text
 	subtitle_time=duration
 	speaker=who
 
 func defeat():
+	# Logic: Execute step-by-step processing for defeat
 	if phase!="playing":return
 	phase="defeat"
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	for engine in engines:engine.stop()
 
 func retry():
+	# Logic: Execute step-by-step processing for retry
 	get_tree().set_meta("ardennes_retry",true)
 	get_tree().reload_current_scene()
 
 func leave_mg():pass
+	# Logic: Execute step-by-step processing for leave_mg
 
 func _exit_tree():
+	# Logic: Execute step-by-step processing for _exit_tree
 	for engine in engines:
 		if is_instance_valid(engine):
 			engine.stop()
 			engine.stream=null
 
 func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,mounted:bool=false):
+	# Logic: Execute step-by-step processing for drop_weapon
 	var drop=Drop.new()
 	drop.game=self
 	drop.kind=kind
@@ -846,6 +905,7 @@ func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,
 	return drop
 
 func swap_weapon(drop):
+	# Logic: Execute step-by-step processing for swap_weapon
 	if player.has_rifle:drop_weapon(player.gun_kind,player.ammo,player.rifle_health,player.position,player.rotation.y)
 	var loaded=drop.rounds
 	if drop.kind in ["mg34","mg42"] and loaded>50:
@@ -860,6 +920,7 @@ func swap_weapon(drop):
 	toast("Carrying %s%s. Previous firearm dropped."%[Kit.DATA[drop.kind].name," — BROKEN" if drop.condition<=0 else ""],3)
 
 func cover_occupied(actor,point:Vector3)->bool:
+	# Logic: Execute step-by-step processing for cover_occupied
 	var cell=Vector3i(floori(point.x/3),actor.team,floori(point.z/3))
 	for x in [-1,0,1]:
 		for z in [-1,0,1]:
@@ -868,6 +929,7 @@ func cover_occupied(actor,point:Vector3)->bool:
 	return false
 
 func drop_pack():
+	# Logic: Execute step-by-step processing for drop_pack
 	if player.ammo_pack.containers.is_empty():return
 	var bundle=AmmoBundle.new()
 	bundle.game=self
@@ -879,11 +941,13 @@ func drop_pack():
 	hud.last_phase=""
 
 func ambush_candidates()->Array:
+	# Logic: Execute step-by-step processing for ambush_candidates
 	var candidates=trucks.filter(func(t):return not t.destroyed and not t.unloaded and not t.disabled and t.has_passengers() and t.progress>=540 and t.progress<=Truck.END_PROGRESS+1)
 	candidates.sort_custom(func(a,b):return a.progress>b.progress)
 	return candidates
 
 func launcher_can_hit(shooter,vehicle)->bool:
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if shooter==null or not shooter.alive or shooter.fausts<=0:return false
 	var point=vehicle.to_global(Vector3(0,1.4,-1.8))
 	if shooter.eye().distance_to(point)>78:return false
@@ -892,6 +956,7 @@ func launcher_can_hit(shooter,vehicle)->bool:
 	return hit.is_empty() or hit.collider.get("truck_owner")==vehicle
 
 func decide_ambush(candidates:Array):
+	# Logic: Execute step-by-step processing for decide_ambush
 	if ambush_outcome!="pending":return
 	ambush_outcome="skipped"
 	if candidates.is_empty():return
@@ -910,6 +975,7 @@ func decide_ambush(candidates:Array):
 	dismount_at=elapsed+5.5
 
 func step_convoy(delta:float):
+	# Logic: Execute step-by-step processing for step_convoy
 	for truck in trucks:truck.tick(delta)
 	if ambush_outcome=="pending":
 		var candidates=ambush_candidates()
@@ -927,6 +993,7 @@ func step_convoy(delta:float):
 	column_stopped=convoy_settled
 
 func acquire_vehicle(actor):
+	# Logic: Execute step-by-step processing for acquire_vehicle
 	if actor.team!=0:return null
 	var best=null
 	var score=INF

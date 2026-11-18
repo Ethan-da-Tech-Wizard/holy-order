@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: weapon_review.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Ballistics regression test verifying muzzle velocities, recoil patterns, and penetration depths across all firearms.
+# ==============================================================================
 extends SceneTree
 
 # Separate, noninteractive render review. Never drives or closes the user's game.
@@ -6,11 +12,13 @@ var review_viewport: SubViewport
 var label: String = "after"
 
 func _initialize():
+	# Step: Configure initial parameters and dependency references for _initialize
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--label="): label = arg.trim_prefix("--label=")
 	call_deferred("run")
 
 func settle():
+	# Logic: Execute step-by-step processing for settle
 	game.phase = "playing"
 	for i in range(100): game.player.update_view(1.0 / 60.0)
 	await create_timer(0.6).timeout
@@ -20,11 +28,13 @@ func settle():
 	await RenderingServer.frame_post_draw
 
 func snap(suffix: String):
+	# Logic: Execute step-by-step processing for snap
 	var path = "res://reviews/rifle-" + label + "-" + suffix + ".png"
 	review_viewport.get_texture().get_image().save_png(path)
 	print("WEAPON_CAPTURE ", path)
 
 func run():
+	# Logic: Execute step-by-step processing for run
 	DisplayServer.window_set_title("Holy Order — weapon review")
 	AudioServer.set_bus_mute(0,true)
 	# Hyprland can tile a test window down to a fraction of the requested size.

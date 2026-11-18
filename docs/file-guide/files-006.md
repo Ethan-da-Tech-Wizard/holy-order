@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: files-006.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Directory inventory tracking audio samples, fonts, icons, shaders, and imported asset metadata.
+============================================================================== -->
+
 # Files 6 of 6 — Holy Order
 
 [All pages](../FILE_GUIDE.md) · [Project guide](../PROJECT_GUIDE.md)

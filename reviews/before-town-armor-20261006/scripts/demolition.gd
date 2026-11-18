@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: demolition.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for demolition.gd.
+# ==============================================================================
 extends Node3D
 
 # Period-style, preassembled field demolition satchel. The 30 m line and

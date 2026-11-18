@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: view_smoothing.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Camera motion interpolation decoupler bridging fixed-step physics ticks and variable rendering frame rates.
+# ==============================================================================
 extends RefCounted
 # The body uses fixed-step interpolation; mouse look and viewmodel animation stay
 # on render frames. Only interpolate the eye position, never the mouse rotation.

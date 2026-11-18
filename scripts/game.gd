@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: game.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Central game loop orchestration manager coordinating player state, squad AI, objective tracking, and mission transitions.
+# ==============================================================================
 extends Node3D
 
 const World = preload("res://scripts/world.gd")
@@ -45,6 +51,7 @@ var patrol_greeter: Node3D
 var post_quip_time: float = -1
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps = 60
 	register_inputs()
 	world = World.new()
@@ -106,6 +113,7 @@ func _ready():
 	preload("res://scripts/graphics.gd").install(self)
 
 func register_inputs():
+	# Logic: Execute step-by-step processing for register_inputs
 	var bindings = {"move_forward":KEY_W,"move_back":KEY_S,"move_left":KEY_A,"move_right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"crouch":KEY_C,"prone":KEY_Z,"objectives":KEY_J,"lean_left":KEY_Q,"lean_right":KEY_E,"reload":KEY_R,"interact":KEY_F,"grenade":KEY_G,"weapon_sword":KEY_1,"weapon_rifle":KEY_2,"weapon_fists":KEY_3,"weapon_shovel":KEY_4,"weapon_demolition":KEY_5,"detonate":KEY_B,"inventory":KEY_TAB,"pause":KEY_ESCAPE,"fullscreen":KEY_F11}
 	for action in bindings:
 		if not InputMap.has_action(action): InputMap.add_action(action)
@@ -119,6 +127,7 @@ func register_inputs():
 		InputMap.action_add_event(action,event)
 
 func _unhandled_input(event):
+	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if event.is_action_pressed("fullscreen"):
 		var full = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -135,10 +144,12 @@ func _unhandled_input(event):
 		begin()
 
 func _notification(what):
+	# Logic: Execute step-by-step processing for _notification
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and phase == "playing":
 		pause_game("paused")
 
 func _process(delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	visual_elapsed += delta
 	subtitle_time = maxf(0,subtitle_time-delta)
 	if phase != "playing": return
@@ -157,6 +168,7 @@ func _process(delta):
 			tea_scene()
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if phase != "playing": return
 	for grenade in grenades_live.duplicate():
 		grenade.age += delta
@@ -179,6 +191,7 @@ func _physics_process(delta):
 			grenades_live.erase(grenade)
 
 func begin():
+	# Logic: Execute step-by-step processing for begin
 	phase = "playing" if "--self-test" in OS.get_cmdline_user_args() else "briefing"
 	world.menu_knight.visible = false
 	player.camera.current = true
@@ -186,36 +199,44 @@ func begin():
 	toast("An isolated sentry ahead. The main position lies beyond him.",5)
 
 func pause_game(next_phase: String):
+	# Logic: Execute step-by-step processing for pause_game
 	phase = next_phase
 	player.holding_attack = false
 	player.power_hold = 0
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func resume_game():
+	# Logic: Execute step-by-step processing for resume_game
 	phase = "playing"
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func restart_game():
+	# Logic: Execute step-by-step processing for restart_game
 	get_tree().set_meta("restart_playing",true)
 	get_tree().reload_current_scene()
 
 func restart_to_title():
+	# Logic: Execute step-by-step processing for restart_to_title
 	get_tree().reload_current_scene()
 
 func quit_game():
+	# Logic: Execute step-by-step processing for quit_game
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().quit()
 
 func defeat():
+	# Logic: Execute step-by-step processing for defeat
 	pause_game("defeat")
 
 func remaining() -> int:
+	# Logic: Execute step-by-step processing for remaining
 	var count = 0
 	for enemy in enemies:
 		if enemy.alive: count += 1
 	return count
 
 func enemy_down(enemy):
+	# Logic: Execute step-by-step processing for enemy_down
 	corpses.append({"enemy":enemy,"looted":false,"weapon_taken":enemy.sentry,"lint":1+enemy.index%3})
 	if enemy.sentry and enemy.weapon_health>0:
 		rifle_drop = Art.rifle(self)
@@ -235,6 +256,7 @@ func enemy_down(enemy):
 		spawn_patrol()
 
 func spawn_patrol():
+	# Step: Instantiate and position node hierarchy into scene tree for spawn_patrol
 	if is_instance_valid(patrol_vehicle): return
 	quest = "patrol"
 	subtitle_time = 0
@@ -256,6 +278,7 @@ func spawn_patrol():
 	toast("POSITION CLEARED  •  Meet the British patrol on the road",6)
 
 func objective_text() -> String:
+	# Logic: Execute step-by-step processing for objective_text
 	match quest:
 		"sentry": return "Defeat the isolated sentry"
 		"rifle": return "Recover the sentry's rifle"
@@ -264,6 +287,7 @@ func objective_text() -> String:
 	return "First Contact complete"
 
 func objective_target() -> Vector3:
+	# Logic: Execute step-by-step processing for objective_target
 	match quest:
 		"sentry": return enemies[0].position+Vector3(0,2.4,0)
 		"rifle": return enemies[0].position+Vector3(0,1.8,0)
@@ -272,11 +296,13 @@ func objective_target() -> Vector3:
 	return Vector3.ZERO
 
 func interaction_visible(point: Vector3, allowed=null) -> bool:
+	# Logic: Execute step-by-step processing for interaction_visible
 	var ray=PhysicsRayQueryParameters3D.create(player.camera.global_position,point,1)
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
 	return hit.is_empty() or hit.collider==allowed
 
 func nearest_interaction() -> Dictionary:
+	# Logic: Execute step-by-step processing for nearest_interaction
 	if player_mounted:return {"kind":"leave_mg"}
 	var best: Dictionary={}
 	var distance: float=3.2
@@ -311,6 +337,7 @@ func nearest_interaction() -> Dictionary:
 	return best
 
 func interaction_prompt() -> String:
+	# Logic: Execute step-by-step processing for interaction_prompt
 	var item=nearest_interaction()
 	match item.get("kind",""):
 		"mg":return "F  •  USE BREDA M37  /  %d LOADED + %d TRAYS"%[mg_nest.rounds,mg_nest.spare_trays]
@@ -325,6 +352,7 @@ func interaction_prompt() -> String:
 	return ""
 
 func recover_rifle(corpse: Dictionary):
+	# Logic: Execute step-by-step processing for recover_rifle
 	if corpse.weapon_taken or corpse.enemy.weapon_health<=0:return
 	corpse.weapon_taken=true
 	corpse.enemy.model.gun.hide()
@@ -337,6 +365,7 @@ func recover_rifle(corpse: Dictionary):
 	toast("Recovered Carcano  •  %d loaded rounds"%player.ammo,3)
 
 func interact():
+	# Logic: Execute step-by-step processing for interact
 	var item=nearest_interaction()
 	match item.get("kind",""):
 		"mg":enter_mg()
@@ -383,20 +412,24 @@ func interact():
 		"door":item.door.use()
 
 func damage_environment(hit: Dictionary, amount: float, radius: float):
+	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if hit.is_empty():return
 	if hit.collider.has_method("damage_at"):
 		hit.collider.damage_at(amount,hit.position,radius)
 
 func toast(message: String, duration: float = 3):
+	# Logic: Execute step-by-step processing for toast
 	toast_text = message
 	toast_time = duration
 
 func say(line: String, duration: float = 5, who: String = "THE KNIGHT"):
+	# Logic: Execute step-by-step processing for say
 	subtitle = line
 	subtitle_time = duration
 	speaker = who
 
 func rifle_pickup_scene():
+	# Logic: Execute step-by-step processing for rifle_pickup_scene
 	if pickup_played or not rifle_available: return
 	pickup_played = true
 	phase = "cinematic"
@@ -441,6 +474,7 @@ func rifle_pickup_scene():
 	pickup.tween_callback(finish_pickup_scene)
 
 func finish_pickup_scene():
+	# Logic: Execute step-by-step processing for finish_pickup_scene
 	rifle_available = false
 	player.has_rifle = true
 	player.rifle_health = enemies[0].weapon_health
@@ -460,6 +494,7 @@ func finish_pickup_scene():
 	post_quip_time = 8.5
 
 func tea_scene():
+	# Logic: Execute step-by-step processing for tea_scene
 	if tea_played: return
 	tea_played = true
 	phase = "cinematic"
@@ -516,12 +551,15 @@ func tea_scene():
 	)
 
 func squad(team: int) -> Array:
+	# Logic: Execute step-by-step processing for squad
 	return enemies if team==0 else friendlies
 
 func hostile_targets(team: int) -> Array:
+	# Logic: Execute step-by-step processing for hostile_targets
 	return [player]+friendlies if team==0 else enemies
 
 func emit_noise(pos: Vector3, radius: float, source_team: int=1, kind: String="gunshot"):
+	# Logic: Execute step-by-step processing for emit_noise
 	for actor in enemies+friendlies:
 		if not actor.alive:continue
 		if kind=="footstep" and actor.team==source_team:continue
@@ -535,9 +573,11 @@ func emit_noise(pos: Vector3, radius: float, source_team: int=1, kind: String="g
 			actor.hear_noise(pos,kind)
 
 func alert_near(pos: Vector3, radius: float):
+	# Logic: Execute step-by-step processing for alert_near
 	emit_noise(pos,radius)
 
 func player_can_see(actor) -> bool:
+	# Logic: Execute step-by-step processing for player_can_see
 	var target=actor.eye_position()
 	if player.camera.is_position_behind(target):return false
 	var ray=PhysicsRayQueryParameters3D.create(player.camera.global_position,target,1|4)
@@ -545,11 +585,13 @@ func player_can_see(actor) -> bool:
 	return not hit.is_empty() and hit.collider==actor
 
 func share_contact(source, point: Vector3):
+	# Logic: Execute step-by-step processing for share_contact
 	for actor in squad(source.team):
 		if actor!=source and actor.alive and actor.position.distance_to(source.position)<38:
 			actor.hear_contact(point)
 
 func assault_can_move(actor) -> bool:
+	# Logic: Execute step-by-step processing for assault_can_move
 	var assault: Array=[]
 	for ally in squad(actor.team):
 		if ally.alive and ally.role=="assault":assault.append(ally)
@@ -562,6 +604,7 @@ func assault_can_move(actor) -> bool:
 	return assault[slot]==actor
 
 func notify_projectile(start: Vector3, end: Vector3, source_team: int):
+	# Logic: Execute step-by-step processing for notify_projectile
 	var segment=end-start
 	var length_sq=segment.length_squared()
 	if length_sq<0.001:return
@@ -573,6 +616,7 @@ func notify_projectile(start: Vector3, end: Vector3, source_team: int):
 			actor.near_miss(start)
 
 func fire_projectile(origin: Vector3, aim: Vector3, source, damage: float, environment_damage: float, extra_exclude: Array=[]):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var team=1 if source==player else source.team
 	var end=origin+(aim-origin).normalized()*180
 	var query=PhysicsRayQueryParameters3D.create(origin,end,1|2|4|8|16)
@@ -597,6 +641,7 @@ func fire_projectile(origin: Vector3, aim: Vector3, source, damage: float, envir
 	tracer(origin,end,Color("ecc583"))
 
 func enter_mg():
+	# Logic: Execute step-by-step processing for enter_mg
 	if not mg_nest.claim(player):return
 	player_mounted=true
 	player.global_position=mg_nest.operator_position()
@@ -610,6 +655,7 @@ func enter_mg():
 	toast("BREDA M37  •  LMB fire / RMB aim / F dismount",4)
 
 func leave_mg():
+	# Logic: Execute step-by-step processing for leave_mg
 	if not player_mounted:return
 	mg_nest.release(player)
 	player_mounted=false
@@ -618,12 +664,14 @@ func leave_mg():
 	player.camera.fov=player.HIP_FOV
 
 func tracer(start: Vector3, end: Vector3, color: Color):
+	# Logic: Execute step-by-step processing for tracer
 	var mat = Art.material(color).duplicate()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var trace = Art.segment(self,start,end,0.009,mat)
 	get_tree().create_timer(0.055).timeout.connect(trace.queue_free)
 
 func impact(pos: Vector3, color: Color):
+	# Logic: Execute step-by-step processing for impact
 	var mat = Art.material(color)
 	for i in range(5):
 		var p = Art.sphere(self,0.035,pos,mat)
@@ -633,6 +681,7 @@ func impact(pos: Vector3, color: Color):
 		tw.finished.connect(p.queue_free)
 
 func throw_grenade(pos: Vector3, direction: Vector3):
+	# Logic: Execute step-by-step processing for throw_grenade
 	var root = Node3D.new()
 	add_child(root)
 	root.position = pos+direction*0.6
@@ -642,6 +691,7 @@ func throw_grenade(pos: Vector3, direction: Vector3):
 	grenades_live.append({"node":root,"velocity":direction*14+Vector3(0,3,0),"fuse":4.0,"age":0.0})
 
 func explode(pos: Vector3, power: float=340, radius: float=4.4):
+	# Logic: Execute step-by-step processing for explode
 	emit_noise(pos,210,1,"blast")
 	sounds.at("rifle",pos,7)
 	impact(pos,Color("e5b373"))
@@ -669,6 +719,7 @@ func explode(pos: Vector3, power: float=340, radius: float=4.4):
 			equipment.receive_hit(115,pos)
 
 func capture_title():
+	# Logic: Execute step-by-step processing for capture_title
 	await get_tree().create_timer(3).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://reviews/start-screen.png")
@@ -676,6 +727,7 @@ func capture_title():
 	get_tree().quit()
 
 func run_tests():
+	# Logic: Execute step-by-step processing for run_tests
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	var tests = load("res://tests/encounter_test.gd").new()
@@ -683,6 +735,7 @@ func run_tests():
 	tests.run(self)
 
 func run_visual_check():
+	# Logic: Execute step-by-step processing for run_visual_check
 	var check_script=load("res://tests/visual_check.gd").new()
 	add_child(check_script)
 	check_script.run(self)

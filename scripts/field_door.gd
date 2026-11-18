@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: field_door.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Interactive door and barricade state machine managing rotation physics, breach thresholds, and navigation obstruction.
+# ==============================================================================
 extends Node3D
 
 const Art=preload("res://scripts/art.gd")
@@ -8,6 +14,7 @@ var base_angle: float=0
 var width: float=1.72
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("field_door")
 	base_angle=rotation.y
 	leaf=Art.solid(self,Vector3(width,2.18,0.10),Vector3(width/2,1.09,0),Art.material(Color("514937")),0,"wood")
@@ -19,9 +26,11 @@ func _ready():
 	)
 
 func available() -> bool:
+	# Logic: Execute step-by-step processing for available
 	return is_instance_valid(leaf) and not leaf.destroyed
 
 func use():
+	# Logic: Execute step-by-step processing for use
 	if moving or not available():return
 	opened=not opened
 	moving=true
@@ -34,4 +43,5 @@ func use():
 	)
 
 func interaction_position() -> Vector3:
+	# Logic: Execute step-by-step processing for interaction_position
 	return to_global(Vector3(width/2,1.0,0))

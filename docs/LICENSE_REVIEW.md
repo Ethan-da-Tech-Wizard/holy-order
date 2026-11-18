@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: LICENSE_REVIEW.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: License compliance verification covering the Godot engine, original scripts, custom procedural audio, and fonts.
+============================================================================== -->
+
 # License review — Holy Order
 
 Reviewed 2026-10-12. Original project code retains **MIT** terms in [LICENSE](../LICENSE).

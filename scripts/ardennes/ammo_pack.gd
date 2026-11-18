@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: ammo_pack.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Wearable soldier ammunition pouch tracking carried clips and drop-on-death mechanics.
+# ==============================================================================
 extends RefCounted
 # Scenario carry limits: 24 space units / 7.5 kg of spare ammunition. These are
 # a playable belt-and-pack allowance, not a claim that every soldier had this load.
@@ -19,28 +25,33 @@ const FEEDS={
 var containers:Array=[]
 
 func space_used()->float:
+	# Logic: Execute step-by-step processing for space_used
 	var n=0.0
 	for item in containers:n+=FEEDS[item.kind].space
 	return n
 
 func weight_used()->float:
+	# Logic: Execute step-by-step processing for weight_used
 	var n=0.0
 	for item in containers:n+=FEEDS[item.kind].empty_kg+item.rounds*FEEDS[item.kind].round_kg
 	return n
 
 func rounds_for(caliber:String)->int:
+	# Logic: Execute step-by-step processing for rounds_for
 	var n=0
 	for item in containers:
 		if FEEDS[item.kind].caliber==caliber:n+=item.rounds
 	return n
 
 func rounds_of(kind:String)->int:
+	# Logic: Execute step-by-step processing for rounds_of
 	var n=0
 	for item in containers:
 		if item.kind==kind:n+=item.rounds
 	return n
 
 func add_rounds(kind:String,requested:int)->int:
+	# Logic: Execute step-by-step processing for add_rounds
 	if requested<=0:return 0
 	var spec=FEEDS[kind]
 	var remaining=mini(requested,spec.max-rounds_of(kind))
@@ -62,6 +73,7 @@ func add_rounds(kind:String,requested:int)->int:
 	return accepted
 
 func take_rounds(caliber:String,count:int,preferred:String="")->int:
+	# Logic: Execute step-by-step processing for take_rounds
 	var remaining=count
 	var order=containers.duplicate()
 	order.sort_custom(func(a,b):return int(a.kind==preferred)>int(b.kind==preferred))
@@ -75,11 +87,13 @@ func take_rounds(caliber:String,count:int,preferred:String="")->int:
 	return count-remaining
 
 func adjust(caliber:String,value:int,kind:String):
+	# Logic: Execute step-by-step processing for adjust
 	var existing=rounds_for(caliber)
 	if value<existing:take_rounds(caliber,existing-maxi(0,value),kind)
 	elif value>existing:add_rounds(kind,value-existing)
 
 func description()->Array[String]:
+	# Logic: Execute step-by-step processing for description
 	var lines:Array[String]=[]
 	var totals:Dictionary={}
 	for item in containers:

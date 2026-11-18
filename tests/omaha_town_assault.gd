@@ -1,9 +1,17 @@
+# ==============================================================================
+# Program: omaha_town_assault.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Combined-arms assault simulation test coordinating infantry advance with armored vehicle support.
+# ==============================================================================
 extends SceneTree
 var g
 var attack=[]
 var snapshots=[]
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()
 	root.add_child(g)

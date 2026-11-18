@@ -1,3 +1,10 @@
+# ==============================================================================
+# Program: launcher_test.py
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Unit test suite for Holy Order launcher. Verifies menu routing,
+#          single-instance lock arbitration, and window focus fallbacks.
+# ==============================================================================
 """Check menu routing and cross-mission locking without opening a desktop window."""
 import fcntl
 import importlib.util
@@ -13,6 +20,7 @@ spec.loader.exec_module(launcher)
 
 
 class LauncherTest(unittest.TestCase):
+    # Test Setup: Initialize temporary environment and mock game asset tree
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -28,6 +36,7 @@ class LauncherTest(unittest.TestCase):
         self.patches.start()
         self.addCleanup(self.patches.stop)
 
+    # Test 1: Verify all campaign shortcuts open unified menu scene
     def test_every_legacy_shortcut_opens_same_menu(self):
         for mission in ("ardennes", "desert", "omaha"):
             child = Mock(pid=12345)
@@ -40,6 +49,7 @@ class LauncherTest(unittest.TestCase):
             self.assertTrue((self.runtime / "main/process.json").exists())
             self.assertFalse((self.runtime / mission).exists())
 
+    # Test 2: Verify existing running instance is focused rather than spawning duplicate
     def test_second_shortcut_focuses_running_main_instead_of_loading_another_game(self):
         folder = self.runtime / "main"
         folder.mkdir(parents=True)
@@ -50,6 +60,7 @@ class LauncherTest(unittest.TestCase):
                 focus.assert_called_once_with(folder)
                 start.assert_not_called()
 
+    # Test 3: Verify backward compatibility with pre-update legacy locks
     def test_running_pre_update_mission_is_also_respected(self):
         folder = self.runtime / "ardennes"
         folder.mkdir(parents=True)

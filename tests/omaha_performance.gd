@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: omaha_performance.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: High-load benchmark profiling draw call count, memory usage, and entity pooling during coastal landings.
+# ==============================================================================
 extends SceneTree
 var g
 var frames=[]
@@ -5,13 +11,16 @@ var render_frames=[]
 var measuring=false
 var render_last:int=0
 func _process(_delta):
+	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if not measuring:return false
 	var now=Time.get_ticks_usec()
 	if render_last>0:render_frames.append((now-render_last)/1000.0)
 	render_last=now
 	return false
 func _initialize():call_deferred("run")
+	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()

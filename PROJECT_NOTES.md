@@ -1,3 +1,10 @@
+<!-- ==============================================================================
+# Program: PROJECT_NOTES.md
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Preserves foundational architecture documentation, gameplay systems design, rendering notes, and weapon ballistics math.
+============================================================================== -->
+
 # Holy Order
 
 A Godot game prototype following a displaced knight through desert, winter-convoy, and Omaha-inspired combat scenarios.

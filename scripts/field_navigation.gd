@@ -1,3 +1,9 @@
+# ==============================================================================
+# Program: field_navigation.gd
+# Programmer: Ethan-da-Tech-Wizard
+# Last Modified: November 18, 2026
+# Purpose: Dynamic tactical navigation graph sampling walkable terrain, trench floors, and dynamic obstacles.
+# ==============================================================================
 extends Node3D
 
 # A small tactical ground graph, refreshed locally when a door moves or geometry
@@ -16,18 +22,22 @@ var revision: int=0
 var door_rids: Array[RID]=[]
 
 func _ready():
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	probe=CapsuleShape3D.new()
 	probe.radius=0.36
 	probe.height=1.82
 	call_deferred("build")
 
 func id_for(cell: Vector2i) -> int:
+	# Logic: Execute step-by-step processing for id_for
 	return cell.x-MIN_CELL.x+(cell.y-MIN_CELL.y)*WIDTH
 
 func inside(cell: Vector2i) -> bool:
+	# Logic: Execute step-by-step processing for inside
 	return cell.x>=MIN_CELL.x and cell.x<=MAX_CELL.x and cell.y>=MIN_CELL.y and cell.y<=MAX_CELL.y
 
 func sample(cell: Vector2i):
+	# Logic: Execute step-by-step processing for sample
 	var x=cell.x*STEP
 	var z=cell.y*STEP
 	var space=get_world_3d().direct_space_state
@@ -52,6 +62,7 @@ func sample(cell: Vector2i):
 	graph.set_point_disabled(id,not valid)
 
 func link(cell: Vector2i):
+	# Logic: Execute step-by-step processing for link
 	var source=id_for(cell)
 	for dx in range(-1,2):
 		for dz in range(-1,2):
@@ -74,6 +85,7 @@ func link(cell: Vector2i):
 			elif not allowed and connected:graph.disconnect_points(source,destination)
 
 func build():
+	# Step: Instantiate and position node hierarchy into scene tree for build
 	rebuilding=true
 	for i in range(3):
 		await get_tree().physics_frame
@@ -95,20 +107,24 @@ func build():
 	revision+=1
 
 func update_doors():
+	# Step: Update internal simulation state and refresh cached coordinates
 	door_rids.clear()
 	for door in get_tree().get_nodes_in_group("field_door"):
 		if not door.opened:door_rids.append(door.leaf.get_rid())
 
 func mark_dirty(point: Vector3):
+	# Logic: Execute step-by-step processing for mark_dirty
 	dirty[Vector2i(roundi(point.x/STEP),roundi(point.z/STEP))]=true
 	cooldown=0.15
 
 func _physics_process(delta):
+	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	cooldown=maxf(0,cooldown-delta)
 	if ready_for_paths and not rebuilding and not dirty.is_empty() and cooldown==0:
 		refresh()
 
 func refresh():
+	# Logic: Execute step-by-step processing for refresh
 	rebuilding=true
 	update_doors()
 	var cells: Dictionary={}
@@ -130,11 +146,13 @@ func refresh():
 	rebuilding=false
 
 func floor_point(point: Vector3) -> Vector3:
+	# Logic: Execute step-by-step processing for floor_point
 	if not ready_for_paths:return point
 	var id=graph.get_closest_point(point)
 	return graph.get_point_position(id) if id>=0 else point
 
 func path_between(start: Vector3, destination: Vector3) -> PackedVector3Array:
+	# Logic: Execute step-by-step processing for path_between
 	if not ready_for_paths:return PackedVector3Array()
 	var a=graph.get_closest_point(start)
 	var b=graph.get_closest_point(destination)
@@ -142,5 +160,6 @@ func path_between(start: Vector3, destination: Vector3) -> PackedVector3Array:
 	return graph.get_point_path(a,b,false)
 
 func line_clear(start: Vector3, destination: Vector3, height: float=1.25) -> bool:
+	# Logic: Execute step-by-step processing for line_clear
 	var ray=PhysicsRayQueryParameters3D.create(start+Vector3(0,height,0),destination+Vector3(0,height,0),1)
 	return get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
