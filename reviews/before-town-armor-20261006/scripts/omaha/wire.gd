@@ -1,25 +1,58 @@
-# ==============================================================================
-# Program: wire.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for wire.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/wire.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## One 8 m segment of barbed wire on the Omaha beach.
+##
+## Role: placed by the Omaha world in rows (Layout.WIRE_ROWS). It blocks movement
+## (collision layers 1 and 128, the latter used by AI to recognise wire) until
+## it is breached: by an engineer's bangalore torpedo (deploy(), a 2 s fuse then
+## an explosion), by 16 close shovel strikes, or by blasts. A breach opens a
+## local gap that the AI paths through (world.gaps_by_row).
+## The model is a shared baked mesh (static `wire_mesh`) of posts, rails and a
+## helical coil, so the beach can hold many segments cheaply.
 extends StaticBody3D
 const Art=preload("res://scripts/art.gd")
+
+## The Omaha battle controller.
 var game
+
+## Index of the wire row (0 at the sea side).
 var row:int=0
+
+## True once a gap has been opened.
 var broken:bool=false
+
+## True while a bangalore is set and burning.
 var charge:bool=false
+
+## Seconds until the charge explodes (2 s).
 var fuse:float=0
+
+## Index of the engineer who set the charge.
 var carrier_index:int=-1
+
+## Visual node holding the wire mesh.
 var bars:Node3D
+
+## Always "metal"; allows shared damage code to treat wire like a prop.
 var material_kind:String="metal"
+
+## Mirrors `broken` for code that checks destroyed bodies.
 var destroyed:bool=false
+
+## Segment length along x in metres (8).
 var width:float=8.0
+
+## MultiMesh slot if the visual was batched by the world, else null.
 var visual_batch:MultiMesh
+
+## Slot index in visual_batch.
 var visual_index:int=-1
+
+## The single shared baked wire mesh.
 static var wire_mesh:Mesh
 
+## Godot lifecycle hook: sets collision (box 8 x 1.25 x 1.45 m) and builds the shared mesh on first use (3 posts, 3 horizontal strands, and a 48-step helical coil with barbs), visible up to 380 m.
 func _ready():
 	collision_layer=1|128
 	collision_mask=0
@@ -51,6 +84,7 @@ func _ready():
 	mesh.visibility_range_end=380
 	bars.add_child(mesh)
 
+## Adds one thin low-poly rod between two points (4 sides, open ended) to build the wire model.
 func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
 	var mesh=Art.segment(parent,a,b,radius,mat)
 	mesh.mesh.radial_segments=4
@@ -58,6 +92,8 @@ func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
 	mesh.mesh.cap_top=false
 	mesh.mesh.cap_bottom=false
 
+## Sets a bangalore torpedo on this segment. Fails if broken, already charged, the engineer is dead, has none left, or is more than 4.2 m away.
+## [param actor] the engineer. Returns true if the charge was set.
 func deploy(actor)->bool:
 	if broken or charge or not actor.alive or actor.bangalores<=0:return false
 	if actor.position.distance_to(position)>4.2:return false
@@ -71,6 +107,8 @@ func deploy(actor)->bool:
 	game.toast("BANGALORE SET • CLEAR THE WIRE",3)
 	return true
 
+## Counts down the fuse each physics step (called by the battle controller) and explodes: breaches the wire and detonates 6 m / 140 damage at the segment.
+## [param delta] seconds.
 func tick(delta:float):
 	if not charge or broken:return
 	fuse-=delta
@@ -78,6 +116,7 @@ func tick(delta:float):
 		breach()
 		game.explode(position+Vector3(0,0.2,0),6.0,140,null,"bangalore")
 
+## Opens the gap: removes collision and the visual, registers the gap with the world for pathing, counts the breach and shows a toast.
 func breach():
 	if broken:return
 	broken=true
@@ -90,6 +129,8 @@ func breach():
 	game.breaches+=1
 	game.toast("WIRE BREACHED • A LOCAL GAP IS OPEN",4)
 
+## Wire resists ordinary weapons: only hits of 90 damage or more (shovel strikes) count as cuts; 16 cuts breach. Always returns true.
+## [param amount] damage points. [param explosive] true for blasts (ignored here).
 func damage_at(amount:float,_point:Vector3,_radius:float=0.2,explosive:bool=false)->bool:
 	# Rifle bullets and fragmentation do not conveniently erase entire wire rows.
 	# A player can finish an isolated segment with repeated close shovel strokes.

@@ -1,13 +1,20 @@
-# ==============================================================================
-# Program: player.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for player.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/player.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Omaha version of the player: starts on a landing craft's deck and has a
+## Garand, a bit of wading and wire-cutting.
+##
+## Differences from the Ardennes player: starts with an M1 Garand (8 rounds, 96
+## spare); is seated differently: walks on the boat deck (`deck_position`) until the ramp drops and then steps off; wading
+## in the sea is capped at 4.4 m/s and limited to z <= 35; far plane 750 m; the
+## shovel can cut barbed wire.
 extends "res://scripts/ardennes/player.gd"
 const Wire=preload("res://scripts/omaha/wire.gd")
+
+## Time of the last shot; reserved for AI awareness, currently unused.
 var last_fired:float=-999
 
+## Godot lifecycle hook: runs the base setup, then replaces the starting kit with a Garand and 96 spare rounds, and extends the camera range.
 func _ready():
 	super._ready()
 	ammo_pack.containers.clear()
@@ -15,6 +22,8 @@ func _ready():
 	ammo_pack.add_rounds("garand",96)
 	camera.far=750
 
+## Steps off the boat once it has arrived and the player is beyond the ramp
+## hinge (z < -6.4), and gives a small forward and downward velocity into the water.
 func dismount():
 	if truck==null or not truck.arrived:return
 	var p=truck.seat_transform(seat).origin
@@ -40,6 +49,7 @@ func _physics_process(delta):
 			position.z=35
 			game.toast("Deep water • head for the beach",2)
 
+## Like the base shovel stroke but a hit on wire cuts it instead: each strike adds a cut, and 16 cuts breach the segment.
 func dig_stroke():
 	# Preserve digging; close shovel work can cut one wire segment if every engineer falls.
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return

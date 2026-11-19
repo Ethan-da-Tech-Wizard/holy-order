@@ -1,44 +1,116 @@
-# ==============================================================================
-# Program: boat.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for boat.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/boat.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## One Higgins-style landing craft for the Omaha mission: hull panels, ramp,
+## scripted approach, passenger seating, unloading and departure.
+##
+## Role: 40 are created by omaha/battle.gd (20 per wave); the controller sets
+## `game`, `index`, `wave`, `lane_x` and fills `occupants` (27 riflemen incl.
+## engineers) and `crew` (3). Like the trucks in Ardennes the boat is moved
+## by script, not physics: each frame update_course() sets its position from
+## the game clock.
+## Timeline per boat: wave 0 holds offshore (z about 430), approaches over
+## APPROACH_SECONDS (32 s) to LAND_Z (20), drops the ramp, waits for the
+## troops to leave, then reverses out to sea and disappears at EXIT_Z. Wave 1
+## starts the same cycle SECOND_WAVE_DELAY (120 s) later.
+## The hull is made of armor.gd panels with real hit points, so craft can be
+## shot up; the crew is protected by a small shield, not invulnerable.
 extends Node3D
 const Art=preload("res://scripts/art.gd")
 const Armor=preload("res://scripts/omaha/armor.gd")
+
+## Duration (s) of the final run-in from the approach point to the beach.
 const APPROACH_SECONDS:float=32.0
+
+## z where the craft grounds (20 m in the surf).
 const LAND_Z:float=20.0
 const SECOND_WAVE_DELAY:float=240.0
+
+## The Omaha battle controller.
 var game
+
+## Craft number 0..39; used for the hull number and wobble phase.
 var index:int=0
+
+## 0 for the first wave, 1 for the second.
 var wave:int=0
+
+## x of the craft's lane.
 var lane_x:float=0
+
+## Passenger soldiers (27).
 var occupants:Array=[]
+
+## Coxswain and two gunners (3); crew[2] stands at the stern.
 var crew:Array=[]
+
+## Hull armour panels.
 var parts:Array=[]
+
+## Hinged front ramp; rotates from raised (0) to lowered (-0.52 PI).
 var ramp:Node3D
+
+## True once it has landed (no more bobbing).
 var stopped:bool=false
+
+## True when nobody is left aboard.
 var unloaded:bool=false
+
+## True from the moment it lands.
 var arrived:bool=false
+
+## Reserved; unused (craft are only disabled in this version).
 var destroyed:bool=false
+
+## Reserved; unused.
 var disabled:bool=false
+
+## Game time of landing, or -1.
 var landed_at:float=-1
+
+## Reserved; unused.
 var dismount_reason:String=""
+
+## Structural hit points (12000); damage is tracked but does not sink the boat.
 var health:float=12000
+
+## Count of bullets hitting the hull (statistic).
 var bullet_hits:int=0
+
+## Total damage the hull took (statistic).
 var total_damage:float=0
+
+## Engine sound player, or null.
 var engine_loop=null
+
+## Foam strip behind the craft; hidden while it is on the beach.
 var wake:MeshInstance3D
+
+## Game time at which the craft started leaving.
 var departure_at:float=-1
+
+## True while reversing out to sea.
 var departing:bool=false
+
+## True once the craft is gone (hidden, collisions off, crew frozen).
 var departed:bool=false
+
+## Next time the passengers' transforms are rewritten (throttled for the reserve).
 var passenger_pose_at:float=-1
+
+## Sideways drift (m) when leaving, so the craft pass between the incoming lanes.
 const RETURN_LANE_OFFSET:float=6.0
+
+## z of the offshore holding area (430).
 const HOLD_Z:float=430.0
+
+## z where wave 0 starts its run-in (270).
 const APPROACH_Z:float=270.0
+
+## z at which a departing craft is removed (330).
 const EXIT_Z:float=330.0
 
+## Godot lifecycle hook: builds the hull (floor, 12 side sections, bow plate, engine hood, ramp with bars, rails, hull numbers "PA 26-nn", coxswain's shield and wheel), the wake and finishes by merging box visuals into MultiMeshes (excluding the ramp and wake).
 func _ready():
 	var paint=Art.material(Color("565f59"),0.65,0.64)
 	var dark=Art.material(Color("222e2e"),0.40,0.65)
@@ -80,6 +152,8 @@ func _ready():
 	update_course(0)
 	preload("res://scripts/vehicle_visuals.gd").batch_boxes(self,[ramp,wake])
 
+## Adds one hull armour panel (an Armor with a box collider, flagged hull_panel and on layer 128 too so AI can recognise vessel hits).
+## [param size] box size. [param p] local position. [param mat] material. [param strength] hit points. [param parent] parent node (the ramp for ramp panels).
 func part(size:Vector3,p:Vector3,mat:Material,strength:float,parent:Node3D=self):
 	var body=Armor.new()
 	body.material_kind="metal"
@@ -99,6 +173,7 @@ func part(size:Vector3,p:Vector3,mat:Material,strength:float,parent:Node3D=self)
 	parts.append(body)
 	return body
 
+## World transform of passenger seat `seat`: three per row (x -0.8, 0, +0.8), rows 0.78 m apart along the bay. After landing each row slides toward the ramp 2.55 m/s with a 0.36 s stagger per row (up to z = -6.95), so troops file off in order.
 func seat_transform(seat:int)->Transform3D:
 	var row=int(seat/3)
 	var p=Vector3((seat%3-1)*0.80,0.27,-4.25+row*0.78)
@@ -107,9 +182,13 @@ func seat_transform(seat:int)->Transform3D:
 		p.z=maxf(-6.95,p.z-t*2.55)
 	return global_transform*Transform3D(Basis.IDENTITY,p)
 
+## World transform of crew slot 0/1 (gunners at the sides) or 2 (coxswain at the stern).
 func crew_transform(slot:int)->Transform3D:
 	return global_transform*Transform3D(Basis.IDENTITY,Vector3(0 if slot==2 else (-1.12 if slot==0 else 1.12),0.38,4.4 if slot==2 else 3.35))
 
+## Sets the craft's position and yaw from game time `now`: circles slowly offshore before its time, runs in over 32 s, bobs on the swell (±8 cm, tiny roll) until grounded, and when departing reverses
+## and turns 180 degrees while drifting sideways into the gap between lanes.
+## [param now] game.elapsed in seconds.
 func update_course(now:float):
 	if departing:
 		var t=maxf(0,now-departure_at)
@@ -134,6 +213,8 @@ func update_course(now:float):
 		position.y+=sin(now*2.1+index)*0.08
 		rotation.z=sin(now*1.3+index)*0.011
 
+## Per-tick update called by the battle controller: moves the craft, lowers the ramp on arrival (about 3.3 s), lets AI passengers off when their seat passes the ramp, decides when to depart (everyone out for 24 s, or 36 s after the last occupant died), removes the departed craft, keeps passengers glued to their seats and animates their legs.
+## [param delta] physics step in seconds.
 func tick(delta:float):
 	if departed:return
 	update_course(game.elapsed)
@@ -171,6 +252,7 @@ func tick(delta:float):
 			if engine_loop!=null:engine_loop.play()
 	# The offshore reserve is concealed and cannot be targeted. Its crowded
 	# passenger transforms need not all be rewritten sixty times per second.
+	# The second-wave craft are concealed offshore until they approach, so their crowded passenger transforms need only update ten times a second.
 	if wave==1 and game.elapsed<SECOND_WAVE_DELAY and game.elapsed<passenger_pose_at:return
 	passenger_pose_at=game.elapsed+0.10
 	for actor in occupants:
@@ -187,12 +269,15 @@ func tick(delta:float):
 			crew[i].global_position=crew_transform(i).origin
 			if not crew[i].mounted:crew[i].rotation.y=rotation.y
 
+## True if the player or any living soldier is still aboard.
 func has_passengers()->bool:
 	if game.player.truck==self:return true
 	for actor in occupants:
 		if actor.alive and actor.truck==self:return true
 	return false
 
+## World point German gunners aim at: the nearest occupied passenger (or the bay panel when empty), so damaged plating can expose real people.
+## [param shooter] the actor that will shoot (decides which is nearest).
 func target_point(shooter)->Vector3:
 	# Aim at the nearest occupied bay panel; hull wear can expose actual passengers.
 	var nearest=to_global(Vector3(0,0.95,-3.5))
@@ -209,10 +294,12 @@ func target_point(shooter)->Vector3:
 		if shooter.position.distance_squared_to(p)<distance:nearest=p
 	return nearest
 
+## Passengers cannot leave by F: it only shows a toast (hold fast until the ramp is down, then follow the file).
 func dismount(_reason:String="orders"):
 	# F cannot bypass the packed crew or open the ramp at sea.
 	if not arrived:game.toast("HOLD FAST • THE COXSWAIN WILL DROP THE RAMP",3)
 	else:game.toast("FOLLOW THE FILE • THE RAMP IS DOWN",3)
 
+## Records hull damage from an armour panel (accumulates total_damage).
 func receive_part_damage(amount:float,_point:Vector3,_explosive:bool,_part=null):
 	total_damage+=amount
