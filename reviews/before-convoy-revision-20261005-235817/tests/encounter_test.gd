@@ -4,32 +4,48 @@
 # Last Modified: November 19, 2026
 # Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for encounter_test.gd.
 # ==============================================================================
+## End-to-end gameplay test of the desert mission, covering controls, combat, loot and both cinematics.
+##
+## Unlike the SceneTree tests this is a Node: the mission's test scene instantiates it and calls
+## `run(game)`. It drives the real input actions (Input.action_press) and game methods, records
+## each assertion, writes reviews/encounter-tests.json and quits with exit code 0 only when all pass.
+## It deliberately uses the same public methods as the player and the real cinematics
+## instead of granting outcomes directly.
 extends Node
 
+# {check, passed} records, and the descriptions of failures.
 var checks: Array = []
 var failures: Array[String] = []
 
+## Record and print one result; failures are also collected for the exit code.
 func check(condition: bool, description: String):
 	checks.append({"check":description,"passed":condition})
 	print(("PASS " if condition else "FAIL ")+description)
 	if not condition: failures.append(description)
 
+## Wait about `count` ticks of 60 Hz, scaled to the project's physics rate.
 func ticks(count: int):
 	for i in range(count): await get_tree().physics_frame
 
+## Run the full scenario in order. Later checks rely on state left by earlier ones (kills, loot).
+## @param g The mission controller.
 func run(g):
+	# Initial state: title screen, six defenders (a sentry far from the rest), sword-only player and key bindings.
 	check(g.phase=="title","Launch stops at the start screen")
 	check(g.enemies.size()==6 and g.remaining()==6,"Six defenders; sentry separated from the line")
 	check(g.enemies[0].position.distance_to(g.enemies[1].position)>35,"First sentry is over 35 metres from the group")
 	check(g.player.weapon==0 and not g.player.has_rifle and g.player.ammo==0,"Player starts with sword, armour and no firearm")
 	check(InputMap.action_get_events("lean_left")[0].physical_keycode==KEY_Q and InputMap.action_get_events("lean_right")[0].physical_keycode==KEY_E,"Q/E are lean; F remains available for loot")
+	# Nothing may happen on the title screen.
 	await ticks(5)
 	check(g.player.health==100 and g.enemies[0].shots_fired==0,"World is safe and idle at the title screen")
+	# Start the game with the AI frozen and its cooldown maxed, so movement tests are not disturbed.
 	g.begin()
 	for e in g.enemies:
 		e.cooldown=999
 		e.set_physics_process(false)
 	await ticks(3)
+	# Movement: sprinting forward must move the player at least 1 m and use stamina.
 	var before = g.player.position
 	Input.action_press("move_forward")
 	Input.action_press("sprint")
@@ -37,6 +53,7 @@ func run(g):
 	Input.action_release("move_forward")
 	Input.action_release("sprint")
 	check(g.player.position.z<before.z-1.0 and g.player.stamina<100,"W plus Shift moves the player and consumes stamina")
+	# Melee charge: sprint plus aim at speed above 9 m/s.
 	g.player.velocity=Vector3.ZERO
 	g.player.position=Vector3(18,0.04,25)
 	Input.action_press("move_forward")
@@ -47,6 +64,7 @@ func run(g):
 	Input.action_release("move_forward")
 	Input.action_release("sprint")
 	Input.action_release("aim")
+	# Stances: prone, lean and crouch each change view height or collision.
 	g.player.velocity=Vector3.ZERO
 	g.player.prone=true
 	await ticks(18)
@@ -63,6 +81,7 @@ func run(g):
 	check(g.player.eye_height<1.3 and g.player.shape.shape.height<1.4,"Crouching lowers eyes and collision height")
 	Input.action_release("crouch")
 	await ticks(18)
+	# Traversal: mantle a low sandbag wall and end up on top of it.
 	g.player.position=Vector3(5,0.01,30.0)
 	g.player.rotation=Vector3.ZERO
 	g.player.head.rotation=Vector3.ZERO
@@ -70,6 +89,7 @@ func run(g):
 	check(g.player.try_mantle(),"Space can mantle the low sandbag wall")
 	await ticks(34)
 	check(g.player.position.y>0.95,"Mantle lands above the cover rather than inside it")
+	# A real physics wall must occlude the enemy raycast.
 	# A real physics wall must occlude the enemy raycast.
 	g.player.position=Vector3(0,0.03,30)
 	await ticks(2)
@@ -79,6 +99,7 @@ func run(g):
 	wall.queue_free()
 	await ticks(3)
 	check(g.enemies[0].can_see_player(),"Sentry sees the player when the obstruction is removed")
+	# Melee kill of the sentry with a sword hit; he drops the rifle.
 	g.player.position=g.enemies[0].position+Vector3(1.45,0,0.6)
 	g.player.velocity=Vector3.ZERO
 	await ticks(3)
@@ -87,22 +108,28 @@ func run(g):
 	check(not g.enemies[0].alive and g.remaining()==5,"Sword collision defeats the isolated sentry")
 	check(g.rifle_available,"The sentry drops the recoverable rifle")
 	# Exercise the real cinematic rather than granting its outcome directly.
+	# Exercise the real cinematic rather than granting its outcome directly.
 	g.rifle_pickup_scene()
 	check(g.phase=="cinematic","Pickup animation suspends combat")
+	# Wait for the cinematic to finish (3.5 s real time), then check the rifle, six rounds and the subtitle.
 	await get_tree().create_timer(3.5).timeout
 	check(g.phase=="playing" and g.player.has_rifle and g.player.ammo==6 and g.player.reserve==0,"Pickup returns to first person with exactly six rounds and no reserve")
 	check(g.subtitle.contains("innately understands"),"Requested rifle quip appears as a subtitle")
+	# Loot: the body gives lint once and ammunition once; repeating must not duplicate it.
 	g.interact()
 	var lint_before = g.lint
 	g.interact()
 	check(lint_before>0 and g.lint==lint_before,"Body loot yields lint once; repeat interaction cannot duplicate it")
 	check(g.player.ammo==6 and g.player.reserve==18,"Looting supplies three six-round clips exactly once")
+	# Reload with a full rifle must not waste reserve.
 	g.player.reload_weapon()
 	check(g.player.ammo==6 and g.player.reserve==18,"Reloading a full rifle does not waste reserve ammunition")
+	# Weapon stowing: each weapon selection shows or hides the slung rifle, sheathed sword and fists correctly.
 	g.player.select_weapon(0)
 	check(g.player.slung.visible and not g.player.sheathed.visible,"Rifle is slung while the sword is drawn")
 	g.player.select_weapon(2)
 	check(g.player.slung.visible and g.player.sheathed.visible and g.player.fists.visible,"Fists mode stows both rifle and sword")
+	# Rifle shot at a defender, then exhaust the six rounds and check that no seventh shot fires.
 	g.player.select_weapon(1)
 	g.player.position=g.enemies[2].position+Vector3(0,0,-3)
 	g.player.velocity=Vector3.ZERO
@@ -111,6 +138,7 @@ func run(g):
 	g.player.cooldown=0
 	g.player.attack()
 	check(not g.enemies[2].alive and g.player.hit_count==1,"Rifle raycast hits and defeats a defender")
+	# Aim up at the sky (head pitch -1.1) so the shots cannot kill anyone.
 	g.player.camera.rotation=Vector3.ZERO
 	g.player.head.rotation=Vector3(-1.1,0,0)
 	for i in range(5):
@@ -120,9 +148,11 @@ func run(g):
 	g.player.cooldown=0
 	g.player.attack()
 	check(g.player.ammo==0 and g.player.shot_count==6,"An empty rifle cannot fire a seventh shot")
+	# Reload takes 145 ticks and conserves ammunition.
 	g.player.reload_weapon()
 	await ticks(145)
 	check(g.player.ammo==6 and g.player.reserve==12,"R reloads from reserves with ammunition conserved")
+	# Gauntlet melee kills a defender with three hits; lint accumulates across bodies.
 	g.player.select_weapon(2)
 	g.player.position=g.enemies[1].position+Vector3(0,0,1.4)
 	g.player.head.rotation=Vector3.ZERO
@@ -133,14 +163,17 @@ func run(g):
 	check(not g.enemies[1].alive,"Steel gauntlets can defeat a defender")
 	g.interact()
 	check(g.lint>lint_before,"Lint stacks across multiple bodies")
+	# Supply crate: three grenades and its ammunition effect.
 	g.player.position=g.grenade_crate.position+Vector3(1,0,0)
 	g.interact()
 	check(g.player.grenades==3 and g.player.reserve==36,"Supply crate adds three grenades without adding rifle ammunition")
+	# Thrown grenade kills a nearby defender and leaves no live grenades.
 	var blast_target = g.enemies[3]
 	g.player.position=Vector3(25,0,-20)
 	g.throw_grenade(blast_target.position+Vector3(0,1.0,-1),Vector3.DOWN)
 	await ticks(50)
 	check(not blast_target.alive and g.grenades_live.is_empty(),"Thrown impact grenade detonates and damages a nearby defender")
+	# Power attack with the gauntlets (a held attack of 1.2 s).
 	g.player.select_weapon(2)
 	g.player.position=g.enemies[4].position+Vector3(0,0,-1.4)
 	g.player.velocity=Vector3.ZERO
@@ -151,11 +184,13 @@ func run(g):
 	g.player.attack(1.2)
 	await ticks(12)
 	check(not g.enemies[4].alive,"A held gauntlet power attack deals a heavier blow")
+	# Inventory pauses damage; then lethal damage must reach the defeat screen.
 	g.pause_game("inventory")
 	var health_before=g.player.health
 	g.player.take_damage(100,g.enemies[2].position)
 	check(g.player.health==health_before,"Inventory pauses incoming damage")
 	g.resume_game()
+	# Restore health and resume; killing the last defender opens the patrol rendezvous.
 	g.player.health=10
 	g.player.take_damage(20,g.enemies[2].position)
 	check(g.phase=="defeat","Zero health reaches the defeat/retry screen")
@@ -166,6 +201,7 @@ func run(g):
 	check(g.phase=="playing" and g.remaining()==0 and g.quest=="patrol","Last kill opens the road rendezvous, not an immediate ending")
 	check(is_instance_valid(g.patrol_vehicle) and g.patrol_vehicle.position==g.patrol_point,"Patrol vehicle spawns on its fixed road location")
 	check(not g.tea_played,"Player must approach the patrol before the greeting")
+	# British patrol cinematic: the tea epilogue, with timed subtitles (11.1 s and 3.4 s) matching the scripted scene.
 	g.player.position=g.patrol_point+Vector3(-3,0,5)
 	await ticks(3)
 	check(g.phase=="cinematic" and g.speaker=="BRITISH PATROL LEADER","British patrol begins the tea epilogue")
@@ -173,6 +209,7 @@ func run(g):
 	check(g.subtitle.contains("desert-sand blend"),"Passing soldier delivers the requested tea punchline")
 	await get_tree().create_timer(3.4).timeout
 	check(g.phase=="victory","Tea scene ends at the test-complete screen")
+	# Final report and quit with the result code.
 	var report={"passed":failures.is_empty(),"checks":checks,"failures":failures,"scope":"Automated headless encounter and input checks, including both cinematics. Human playtesting remains pending."}
 	var file=FileAccess.open("res://reviews/encounter-tests.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(report,"  "))
