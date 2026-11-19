@@ -4,25 +4,50 @@
 # Last Modified: November 19, 2026
 # Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for truck.gd.
 # ==============================================================================
+## Armoured troop truck in the Ardennes convoy.
+##
+## Nine instances drive along the road spline (`progress` in metres from the start, see
+## world.road_point). Each is built from damageable armour panels (armored_panel.gd), six
+## wheels with separate health, and seat transforms for 12 passengers. The truck steers around
+## disabled trucks, stops at the road end (progress 665), is declared stuck if it barely moves,
+## and drops its passengers when disabled, stuck, arrived, wrecked or when its crew is gone.
+## `game` (the Ardennes battle controller) sets `index` and calls `tick()` each physics step.
 extends Node3D
 
+# Art helpers, armour panel class and the weapon kit (soldier models for the cab crew).
 const Art=preload("res://scripts/art.gd")
 const Kit=preload("res://scripts/ardennes/weapons.gd")
+
+# Battle controller.
 var game
+
+# Truck number 0..8 (truck 4 carries the player).
 var index:int=0
+
+# Distance along the road in metres, and speed in m/s.
 var progress:float=0
 var speed:float=0
 var health:float=900
+
+# State flags: destroyed (wrecked), stopped (halted), disabled (cannot move), unloaded (passengers are out), arrived (reached the road end).
 var destroyed:bool=false
 var stopped:bool=false
+
+# Passengers (soldiers), armour panels, wheel panels, and per-wheel health (600 each).
 var occupants:Array=[]
 var parts:Array=[]
 var wheels:Array=[]
 var ring_gunner
+
+# Looping engine sound player, if any.
 var engine_loop:AudioStreamPlayer3D
+
+# Statistics: total damage taken, bullets that hit, time of the last hit.
 var total_damage:float=0
 
+## Build chassis, engine, cab, troop compartment, wheels and tail gate from armour panels.
 func _ready():
+	# Materials: olive paint, wood benches, dark steel and rubber.
 	var olive=Art.material(Color("535c43"),0.18,0.83)
 	var wood=Art.material(Color("655d46"))
 	var steel=Art.material(Color("333b38"),0.68,0.61)
@@ -32,10 +57,12 @@ func _ready():
 	part(Vector3(1.7,0.68,1.50),Vector3(0,1.43,-2.25),olive,"metal")
 	part(Vector3(2.2,0.6,1.35),Vector3(0,1.35,-1.35),olive,"metal")
 	part(Vector3(2.17,0.14,1.35),Vector3(0,2.52,-1.39),olive,"metal")
+	# Per side: cab door, side armour, bench, upper armour, roof hoops and three wheels.
 	for x in [-1.07,1.07]:
 		part(Vector3(0.07,0.92,1.30),Vector3(x,1.86,-1.34),olive,"metal")
 		part(Vector3(0.11,0.79,3.87),Vector3(x,1.82,0.97),wood,"wood")
 		part(Vector3(0.34,0.13,3.50),Vector3(x*0.79,1.68,1),wood,"wood")
+		# Wheels are panels so bullets can hit them; each remembers its index in wheel_health and is drawn with a rotating tyre and hub instead of the default box.
 		for z in [-2.25,1.08,2.25]:
 			var hub=Node3D.new()
 			add_child(hub)
@@ -46,6 +73,7 @@ func _ready():
 			disk.rotation.z=PI/2
 			wheels.append(hub)
 	part(Vector3(2.17,0.78,0.10),Vector3(0,1.81,2.91),wood,"wood")
+	# Front lamps.
 	for x in [-0.88,0.88]:
 		Art.box(self,Vector3(0.20,0.20,0.055),Vector3(x,1.63,-3.05),Art.material(Color("dbd1a9")))
 	for x in [-1.0,0,1.0]:
@@ -72,6 +100,7 @@ func _ready():
 		ring.ring_segments=6
 		Art.mesh(self,ring,Vector3(0,2.65,-1.25),steel)
 		Art.segment(self,Vector3(0,2.63,-1.75),Vector3(0,3.04,-1.75),0.045,steel)
+	# Place the truck on the road, then merge same-material boxes into draw batches (wheels excluded because they spin).
 	update_transform()
 
 func part(size:Vector3,offset:Vector3,mat:Material,kind:String):
@@ -80,14 +109,18 @@ func part(size:Vector3,offset:Vector3,mat:Material,kind:String):
 	parts.append(body)
 	return body
 
+## World transform of a passenger seat: two benches facing each other, 0.6 m apart per row.
+## @param seat Seat index; even seats on the left, odd on the right.
 func seat_transform(seat:int)->Transform3D:
 	var side=-1 if seat%2==0 else 1
 	var offset=Vector3(side*0.69,1.32,-0.50+float(seat/2)*0.61)
 	return global_transform*Transform3D(Basis(Vector3.UP,-side*PI/2),offset)
 
+## Transform of the rear-facing gunner position (seat 1).
 func gunner_transform()->Transform3D:
 	return global_transform*Transform3D(Basis.IDENTITY,Vector3(0,1.40,-1.05))
 
+## Move the truck to its place on the road and align it to the slope and heading.
 func update_transform():
 	position=game.world.road_point(progress)
 	var ahead=game.world.road_point(progress+1.0)
@@ -115,6 +148,8 @@ func receive_part_damage(amount:float,point:Vector3,explosive:bool):
 	total_damage+=harm
 	if health<=0:wreck(false)
 
+## Wreck the truck: scorch the visuals, injure and eject the passengers, burn and leave an obstacle.
+## @param scripted true when the wreck was ordered by the ambush script.
 func wreck(scripted:bool):
 	if destroyed:return
 	destroyed=true
@@ -125,10 +160,13 @@ func wreck(scripted:bool):
 	game.vehicle_wrecked(self,scripted)
 	for i in range(parts.size()):
 		if i%3==1:parts[i].carve(parts[i].global_position,0.8)
+	# Burnt-black material applied to all panels and batches.
 	var scorch=Art.material(Color("292a25"),0.3,0.92)
 	for item in parts:
 		for mesh in item.owned_meshes():mesh.material_override=scorch
+	# Fire at the engine bay.
 	game.add_wreck_fire(global_position+Vector3(0,1.7,-1.9))
+	# Passengers take 24-48 damage and get out if still alive; the player takes 45.
 	# All passengers were hittable during the drive. The wreck's blast also reaches them.
 	for actor in occupants.duplicate():
 		if actor.alive:actor.take_damage(randf_range(108,155),global_position,"explosion")
