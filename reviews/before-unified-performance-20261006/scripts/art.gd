@@ -1,17 +1,46 @@
-# ==============================================================================
-# Program: art.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for art.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/art.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Procedural 3D art library: every model in the game (knight, soldiers, weapons,
+## props, trucks) is assembled at runtime from primitive meshes, so the project
+## ships no imported 3D assets and nothing streams from disk at load time.
+##
+## Role in the app: a static utility class. Gameplay scripts (player.gd, enemy.gd,
+## village.gd, the ardennes/ and omaha/ scripts) call Art.box / Art.soldier / ...
+## with a parent node, a size and a position and get back the created nodes.
+## It calls carcano_model.gd for the detailed rifle and breakable.gd for solids
+## that can be destroyed.
+##
+## Conventions shared by every builder here:
+##   - units are metres; +Y is up; a character's forward direction is -Z, so
+##     front details (webbing, visors, lamps) sit at negative Z;
+##   - builders add their nodes to `parent` and return the root they made;
+##   - materials are cached by value, so hundreds of soldiers share a handful
+##     of StandardMaterial3D objects (fewer draw-state changes, less memory).
+## Limits: shapes are deliberately low-poly boxes and cylinders; nothing here
+## is animated except via the legs/body nodes soldier() returns.
 extends RefCounted
 
 const Carcano = preload("res://scripts/carcano_model.gd")
 const Breakable = preload("res://scripts/breakable.gd")
+
+## Material cache keyed by the string form of (color, metallic, roughness).
+## Shared across all scenes for the life of the process; never freed.
 static var materials: Dictionary = {}
+
+## Cache of rounded-box meshes keyed by size and bevel, so identical
+## beveled_box() calls reuse a single ArrayMesh.
 static var bevel_meshes: Dictionary = {}
 
+## Returns a shared StandardMaterial3D for the given look.
+## [param color] albedo colour.
+## [param metal] metallic 0..1 (0 cloth/wood/paint, ~0.8 steel).
+## [param rough] roughness 0..1 (low = shiny).
+## Callers must NOT mutate the result because it is shared; use .duplicate()
+## first (shield() does this to turn off backface culling).
 static func material(color: Color, metal: float = 0.0, rough: float = 0.85) -> StandardMaterial3D:
+	# Value-based key: Color has no stable hash for Dictionary use, and
+	# string-building is cheap next to creating a material.
 	var key = str(color) + str(metal) + str(rough)
 	if materials.has(key):
 		return materials[key]
@@ -22,6 +51,13 @@ static func material(color: Color, metal: float = 0.0, rough: float = 0.85) -> S
 	materials[key] = m
 	return m
 
+## Wraps a Mesh in a MeshInstance3D at a local position and attaches it.
+## [param parent] node that will own the instance.
+## [param shape] mesh resource to draw.
+## [param pos] position in the parent's local space (metres).
+## [param mat] material applied through material_override (replaces any
+## surface material on the mesh).
+## Returns the new MeshInstance3D so callers can rotate or scale it.
 static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var obj = MeshInstance3D.new()
 	obj.mesh = shape
@@ -30,14 +66,22 @@ static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> Me
 	parent.add_child(obj)
 	return obj
 
+## Adds a plain box mesh (no collision) of `size` (x, y, z metres) centred on `pos`.
 static func box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var b = BoxMesh.new()
 	b.size = size
 	return mesh(parent, b, pos, mat)
 
+## Adds a box with softly rounded edges, used on organic parts (torso, boots,
+## gauntlet) where a sharp cube would look like a crate.
+## [param bevel] rounding radius in metres; keep it below half the smallest
+## dimension or the inner box inverts.
+## The mesh is built once per (size, bevel) and cached in bevel_meshes.
 static func beveled_box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, bevel: float = 0.003) -> MeshInstance3D:
 	var key = str(size)+str(bevel)
 	if not bevel_meshes.has(key):
+		# Subdividing 3x per axis gives enough vertices near each corner to be
+		# pushed onto a rounded surface in the loop below.
 		var source = BoxMesh.new()
 		source.size = size
 		source.subdivide_width = 3
@@ -46,6 +90,10 @@ static func beveled_box(parent: Node3D, size: Vector3, pos: Vector3, mat: Materi
 		var arrays = source.get_mesh_arrays()
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+
+		# `inner` is the box shrunk by the bevel; every vertex is projected to its
+		# nearest point on that shrunken box then pushed out by `bevel`, which is
+		# exactly a rounded-box (Minkowski sum with a sphere).
 		var inner = size*0.5-Vector3.ONE*bevel
 		for i in range(vertices.size()):
 			var closest = vertices[i].clamp(-inner,inner)
@@ -54,12 +102,22 @@ static func beveled_box(parent: Node3D, size: Vector3, pos: Vector3, mat: Materi
 			normals[i] = normal
 		arrays[Mesh.ARRAY_VERTEX] = vertices
 		arrays[Mesh.ARRAY_NORMAL] = normals
+
+		# Tangents were generated for the flat box and are wrong after warping;
+		# dropping them makes the engine skip tangent-space shading.
 		arrays[Mesh.ARRAY_TANGENT] = null
 		var result = ArrayMesh.new()
 		result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 		bevel_meshes[key] = result
 	return mesh(parent,bevel_meshes[key],pos,mat)
 
+## Adds a cylinder or cone frustum standing on its local Y axis.
+## [param radius] bottom radius in metres.
+## [param height] total height in metres, centred on `pos`.
+## [param top] top radius; the default -1 means "same as bottom". 0 makes a
+## cone (the sword tip uses it with 4 sides to get a flat diamond point).
+## [param sides] radial segments; low counts (4, 10, 12) are used on purpose
+## for faceted metal parts and to save triangles.
 static func cylinder(parent: Node3D, radius: float, height: float, pos: Vector3, mat: Material, top: float = -1.0, sides: int = 20) -> MeshInstance3D:
 	var c = CylinderMesh.new()
 	c.bottom_radius = radius
@@ -68,6 +126,8 @@ static func cylinder(parent: Node3D, radius: float, height: float, pos: Vector3,
 	c.radial_segments = sides
 	return mesh(parent, c, pos, mat)
 
+## Adds a sphere of `radius` (24 x 12 segments); scale the returned node to
+## make ellipsoids such as heads, helmets and pauldrons.
 static func sphere(parent: Node3D, radius: float, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var s = SphereMesh.new()
 	s.radius = radius
@@ -76,6 +136,13 @@ static func sphere(parent: Node3D, radius: float, pos: Vector3, mat: Material) -
 	s.rings = 12
 	return mesh(parent, s, pos, mat)
 
+## Adds a collidable, destructible box: a Breakable static body with a visual
+## box and a matching BoxShape3D. Used for walls, truck chassis and crates.
+## [param angle] yaw in radians around Y.
+## [param kind] material kind forwarded to Breakable ("wood", "stone", ...)
+## which decides how it takes damage.
+## Collision layer 1 (the world layer); mask 0 because a static wall never
+## needs to detect anything itself.
 static func solid(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, angle: float = 0.0, kind: String = "wood") -> StaticBody3D:
 	var body = Breakable.new()
 	body.material_kind=kind
@@ -92,16 +159,25 @@ static func solid(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, an
 	body.add_child(cs)
 	return body
 
+## Adds a cylinder stretched between two points (limbs, rails, shield edges).
+## [param a] start point, [param b] end point, [param radius] thickness.
 static func segment(parent: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> MeshInstance3D:
 	var c = cylinder(parent, radius, a.distance_to(b), (a + b) * 0.5, mat)
 	var axis = (b - a).normalized()
+
+	# A quaternion from UP to the axis is undefined when they are parallel
+	# (dot ~ +-1); in that case the default upright cylinder is already right.
 	if absf(axis.dot(Vector3.UP)) < 0.999:
 		c.quaternion = Quaternion(Vector3.UP, axis)
 	return c
 
+## Builds the Carcano rifle model (see carcano_model.gd) under `parent`.
 static func rifle(parent: Node3D) -> Node3D:
 	return Carcano.build(parent)
 
+## Builds the knight's longsword with the blade along +Y and the grip near the
+## origin, so a node can be rotated about its hand position.
+## Returns the sword's root Node3D.
 static func sword(parent: Node3D) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -110,6 +186,8 @@ static func sword(parent: Node3D) -> Node3D:
 	var leather = material(Color("45362a"))
 	box(root, Vector3(0.065, 0.9, 0.019), Vector3(0, 0.61, 0), steel)
 	box(root, Vector3(0.018, 0.86, 0.024), Vector3(0, 0.62, 0), dark)
+
+	# A 4-sided cone squashed on Z becomes a flat diamond blade tip.
 	var tip = cylinder(root, 0.043, 0.16, Vector3(0, 1.14, 0), steel, 0, 4)
 	tip.scale.z = 0.27
 	box(root, Vector3(0.33, 0.045, 0.048), Vector3(0, 0.14, 0), dark)
@@ -117,6 +195,8 @@ static func sword(parent: Node3D) -> Node3D:
 	sphere(root, 0.05, Vector3(0, -0.13, 0), dark)
 	return root
 
+## Builds an entrenching shovel (wooden shaft, steel blade, gauntlet grip),
+## used as the player's digging tool; blade end is +Y.
 static func shovel(parent: Node3D) -> Node3D:
 	var root=Node3D.new()
 	parent.add_child(root)
@@ -128,10 +208,15 @@ static func shovel(parent: Node3D) -> Node3D:
 	gauntlet(root,Vector3(0,-0.02,0),Vector3.ZERO)
 	return root
 
+## Builds the knight's heater shield: a flat pentagon face with a metal rim
+## and a red cross. Origin is the centre of the face.
 static func shield(parent: Node3D) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
 	var outline = PackedVector2Array([Vector2(-0.32, 0.4), Vector2(0.32, 0.4), Vector2(0.34, -0.12), Vector2(0, -0.57), Vector2(-0.34, -0.12)])
+
+	# Hand-built triangle fan: the pentagon is split into three triangles that
+	# all start at vertex 0. Winding order [0, i+1, i] sets the face direction.
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in range(1, 4):
@@ -139,6 +224,9 @@ static func shield(parent: Node3D) -> Node3D:
 			st.add_vertex(Vector3(v.x, v.y, -0.02))
 	st.generate_normals()
 	var mat = material(Color("d0c6a7"), 0.08, 0.8).duplicate()
+
+	# Shield is a single-sided sheet, so disable culling or it vanishes when
+	# seen from behind.
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mesh(root, st.commit(), Vector3.ZERO, mat)
 	var edge = material(Color("5a6362"), 0.72, 0.38)
@@ -151,6 +239,8 @@ static func shield(parent: Node3D) -> Node3D:
 	box(root, Vector3(0.40, 0.075, 0.012), Vector3(0, 0.09, 0.004), red)
 	return root
 
+## Builds an armoured glove and forearm cuff. Used on both the knight and the
+## shovel, which is why it takes its own position and Euler rotation (radians).
 static func gauntlet(parent: Node3D, pos: Vector3, angle: Vector3) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -168,6 +258,9 @@ static func gauntlet(parent: Node3D, pos: Vector3, angle: Vector3) -> Node3D:
 			beveled_box(root, Vector3(0.025, 0.025, 0.031), Vector3(-0.041+i*0.027, 0.083+j*0.02, -0.035+j*0.01), steel)
 	return root
 
+## Builds the player's armoured knight figure (tabard, helmet, pauldrons,
+## gauntlets and a carried sword named "CarriedSword" so the player script can
+## find and hide it). Returns the root Node3D; origin is at the feet.
 static func knight(parent: Node3D) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -176,16 +269,22 @@ static func knight(parent: Node3D) -> Node3D:
 	var red = material(Color("82362e"))
 	var steel = material(Color("7b8784"), 0.76, 0.40)
 	var leather = material(Color("423529"))
+
+	# Torso: tapered steel cylinder, then front and back linen tabards with a red cross.
 	cylinder(root, 0.28, 0.63, Vector3(0, 1.16, 0), steel, 0.25, 12)
 	box(root, Vector3(0.38, 0.82, 0.025), Vector3(0, 1.00, -0.28), linen)
 	box(root, Vector3(0.065, 0.36, 0.012), Vector3(0, 1.23, -0.30), red)
 	box(root, Vector3(0.25, 0.065, 0.012), Vector3(0, 1.29, -0.309), red)
 	box(root,Vector3(0.45,0.98,0.028),Vector3(0,0.94,0.265),linen)
 	box(root, Vector3(0.48, 0.055, 0.34), Vector3(0, 0.98, 0), leather)
+
+	# One iteration per leg: thigh column plus a boxy sabaton foot.
 	for x in [-0.13, 0.13]:
 		cylinder(root, 0.10, 0.68, Vector3(x, 0.49, 0), steel)
 		box(root, Vector3(0.19, 0.16, 0.34), Vector3(x, 0.09, -0.07), steel)
 	cylinder(root, 0.19, 0.26, Vector3(0, 1.56, 0), mail, 0.17)
+
+	# Helmet: dome, brow band and eye slit (dark bar) with rivets below.
 	var dome = sphere(root,0.205,Vector3(0,1.80,0),steel)
 	dome.scale = Vector3(1,1.05,1.1)
 	cylinder(root,0.185,0.19,Vector3(0,1.67,-0.04),steel,0.20,10)
@@ -195,6 +294,8 @@ static func knight(parent: Node3D) -> Node3D:
 	for x in [-0.11, -0.065, 0.065, 0.11]:
 		for y in [1.65, 1.70]:
 			sphere(root, 0.011, Vector3(x, y, -0.199), material(Color("192323")))
+
+	# Arms are two-point segments; hands (gauntlets) are placed at their ends.
 	segment(root, Vector3(-0.31, 1.38, 0), Vector3(-0.39, 0.96, -0.23), 0.11, steel)
 	segment(root, Vector3(0.31, 1.38, 0), Vector3(0.47, 0.9, -0.05), 0.11, steel)
 	for x in [-0.31,0.31]:
@@ -204,12 +305,21 @@ static func knight(parent: Node3D) -> Node3D:
 			box(root,Vector3(0.22,0.15,0.07),Vector3(x*0.44,y,-0.14),steel)
 	gauntlet(root,Vector3(-0.39,0.94,-0.23),Vector3(0,0,0))
 	gauntlet(root,Vector3(0.47,0.92,-0.05),Vector3(0,0,0))
+
+	# The sword name is a lookup key for player.gd; the rotation of 2.9 rad
+	# (about 166 degrees) points the blade up and back like a carried weapon.
 	var blade = sword(root)
 	blade.name = "CarriedSword"
 	blade.position = Vector3(0.47, 0.92, -0.1)
 	blade.rotation.z = 2.9
 	return root
 
+## Builds an infantry soldier (German field grey/green by default, British when
+## `british` is true: lighter cloth, broad brimmed helmet, SMLE magazine).
+## Returns a Dictionary the AI scripts animate:
+##   "root" Node3D at the feet, "body" Node3D torso/head/arms (bobbed or
+##   leaned), "legs" Array[Node3D] with hip pivots (swing for walking),
+##   "gun" the rifle Node3D (aimed at targets).
 static func soldier(parent: Node3D, british: bool = false) -> Dictionary:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -235,6 +345,8 @@ static func soldier(parent: Node3D, british: bool = false) -> Dictionary:
 	box(body, Vector3(0.027, 0.061, 0.045), Vector3(0, 1.64, -0.162), skin)
 	for x in [-0.067, 0.067]:
 		box(body, Vector3(0.038, 0.013, 0.012), Vector3(x, 1.68, -0.163), boots)
+
+	# Each leg is its own pivot at hip height so rotation.x swings the whole leg.
 	var legs: Array[Node3D] = []
 	for x in [-0.135, 0.135]:
 		var leg = Node3D.new()
@@ -258,6 +370,7 @@ static func soldier(parent: Node3D, british: bool = false) -> Dictionary:
 		box(gun,Vector3(0.093,0.12,0.085),Vector3(0,0.01,-0.89),material(Color("303737"),0.65))
 	return {"root": root, "body": body, "legs": legs, "gun": gun}
 
+## Builds a small enamel mug with a rim and handle; a decorative pickup prop.
 static func teacup(parent: Node3D) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -279,6 +392,9 @@ static func teacup(parent: Node3D) -> Node3D:
 	mesh(root,handle,Vector3(0.075,0,0),enamel).rotation.x = PI/2
 	return root
 
+## Builds a 1930s-style British light truck (cab, bonnet, canvas tilt cargo
+## bed, four wheels). The chassis is a destructible solid; origin is at ground
+## level, the cab faces -Z and the cargo bed extends toward +Z.
 static func patrol_truck(parent: Node3D) -> Node3D:
 	var root = Node3D.new()
 	parent.add_child(root)
@@ -319,6 +435,9 @@ static func patrol_truck(parent: Node3D) -> Node3D:
 		box(root,Vector3(0.07,1.30,0.07),Vector3(x,1.93,2.4),dark)
 	box(root,Vector3(1.99,0.10,2.4),Vector3(0,2.60,1.4),canvas)
 	box(root,Vector3(1.92,0.6,0.08),Vector3(0,1.42,2.53),paint)
+
+	# Wheels at the four corners: tyre and hub cylinders are rotated 90 degrees
+	# about Z so their axis lies along X.
 	for x in [-1.00,1.00]:
 		for z in [-1.52,1.69]:
 			var tyre = cylinder(root,0.47,0.28,Vector3(x,0.47,z),rubber,-1,16)
