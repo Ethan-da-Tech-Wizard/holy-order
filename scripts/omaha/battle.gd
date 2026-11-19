@@ -1,9 +1,30 @@
-# ==============================================================================
-# Program: battle.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha Beach D-Day amphibious assault master controller. Manages landing craft flotilla approach waves, beach obstacle demolition triggers, seawall shingle advances, bunker suppression objectives, and high-tide level progression.
-# ==============================================================================
+## Battle controller for the Omaha mission ("The Longest Shore", scenes/omaha.tscn).
+##
+## Story and flow: the player is one of 1,200 Americans (two waves of 20 landing
+## craft, 30 men each) landing against 250 German defenders (100 on the
+## beach and bluffs, 150 in the village) with three Panzer IVs. The beach has
+## wire, obstacles and mines; engineers blow gaps with bangalore torpedoes; the
+## objective is to take three bunker exits ("secured") and then clear the village
+## and tanks. Phases are those of the Ardennes controller plus an intro
+## cinematic while the craft approaches (`intro_active`, Enter to skip) and a
+## "landing_aborted" defeat if the craft leaves with the player on it.
+## Role: extends the Ardennes controller, reusing its services (shoot, explosions,
+## noise, loot, tracers) and overriding the parts that must scale to ~1,500
+## actors:
+##   - actors are split into active attackers/defenders; think() is budgeted per
+##     side (defenders 4 and attackers 20 per frame at most);
+##   - perception uses a 32 m target grid (target_cells) and a fog line
+##     (FOG_LINE) beyond which Germans cannot see the sea;
+##   - far soldiers are drawn as instanced LOD figures (update_lod) and only
+##     the nearest 16/36/60 (by graphics quality) use full models;
+##   - heavy projectiles (tank shells, bazooka rockets) are simulated with
+##     gravity and ray steps; tracers and muzzle flashes are MultiMesh pools;
+##   - the village garrison and the tanks wake only when the player or an ally gets
+##     near or a guard is hurt (activate_town).
+## Helpers: omaha/world.gd, boat.gd, actor.gd, tank.gd, rocket_team.gd, wire.gd,
+## layout.gd (all numeric layout), interface.gd, player.gd, audio.gd.
+## Test hooks as in the Ardennes controller (`--battle-test`, tree meta "battle_seed", "battle_test",
+## "omaha_retry", `--battle-preview`).
 extends "res://scripts/ardennes/battle.gd"
 const Layout=preload("res://scripts/omaha/layout.gd")
 const Coast=preload("res://scripts/omaha/world.gd")
@@ -15,64 +36,160 @@ const CoastalAudio=preload("res://scripts/omaha/audio.gd")
 const Armor=preload("res://scripts/omaha/armor.gd")
 const Panzer=preload("res://scripts/omaha/tank.gd")
 const RocketTeam=preload("res://scripts/omaha/rocket_team.gd")
+
+## z beyond which Germans cannot see (sea haze 95 m in front of the waterline).
 const FOG_LINE:float=95.0
+
+## The 40 landing craft (20 per wave).
 var boats:Array=[]
+
+## Time (s) the first wave grounds (equals Boat.APPROACH_SECONDS).
 var first_landing_at:float=Boat.APPROACH_SECONDS
+
+## Time the second wave grounds (first landing + 120 s).
 var second_wave_at:float=Boat.APPROACH_SECONDS+Boat.SECOND_WAVE_DELAY
+
+## Set when wave 0 lands.
 var first_wave_landed:bool=false
+
+## Set when wave 1 lands.
 var second_wave_landed:bool=false
+
+## Wire gaps opened (shown in the HUD).
 var breaches:int=0
+
+## Capture progress (0..10 s) of each of the eight bunker sectors.
 var capture:Array[float]=[0,0,0,0,0,0,0,0]
+
+## Seconds (0..12) the village has been free of guards and tanks while attackers are inside.
 var town_control:float=0
+
+## Number of sectors whose capture reached 10 s.
 var secured:int=0
+
+## Key -> MultiMesh for far-LOD soldier figures per team and weapon.
 var lod_batches:Dictionary={}
+
+## Reserved timer for LOD updates (runs every frame).
 var lod_timer:float=0
+
+## Countdown to the next mine check (0.3 s).
 var mine_timer:float=0
+
+## Round-robin index into active_defenders for think().
 var defender_cursor:int=0
+
+## Round-robin index into active_attackers.
 var attacker_cursor:int=0
+
+## Graphics quality (0 low, 1 standard, 2 high) mirrored from graphics.gd.
 var quality:int=0
+
+## Statistic: shots aimed at the player.
 var shots_at_player:int=0
+
+## Statistic: shots aimed at AI soldiers.
 var shots_at_ai:int=0
+
+## Statistic: bullets that went through a damaged hull.
 var boat_penetrations:int=0
+
+## Statistic: flamethrower hits.
 var flame_hits:int=0
+
+## Number of simulation ticks run.
 var sim_ticks:int=0
+
+## Statistic: mines triggered.
 var mine_detonations:int=0
+
+## Reserved; unused.
 var corpse_lod_timer:float=0
+
+## Bangalore recovery claims {actor, until}, so two soldiers do not fetch the same one.
 var claimed_charges:Dictionary={}
+
+## Muzzle flashes {p, until} drawn from a MultiMesh pool of 96.
 var flashes:Array=[]
+
+## MultiMesh drawing the flashes.
 var flash_batch:MultiMeshInstance3D
+
+## Wire segments with a burning bangalore.
 var active_charges:Array=[]
+
+## True once wave two has been released from the reserve.
 var wave_two_released:bool=false
+
+## Active tracer records.
 var tracers:Array=[]
+
+## MultiMesh drawing tracers.
 var tracer_batch:MultiMeshInstance3D
+
+## Count of soldiers currently drawn with a full model.
 var detailed_soldiers:int=0
+
+## Countdown to re-ranking which soldiers are detailed.
 var detail_timer:float=0
+
+## Instance id -> true for actors drawn in detail.
 var detailed:Dictionary={}
+
+## Min corner (x, z) of the area holding any actor, for fast projectile culling.
 var occupied_min=Vector2.ZERO
+
+## Max corner of that area.
 var occupied_max=Vector2.ZERO
+
+## Think budget for defenders.
 var defender_credit:float=0
+
+## Think budget for attackers.
 var attacker_credit:float=0
+
+## Living, staged-out, non-riding Americans considered for thinking.
 var active_attackers:Array=[]
+
+## Same for Germans.
 var active_defenders:Array=[]
+
+## Per team: cell (32 m) -> actors in it; used by acquire_target.
 var target_cells:Array=[{},{}]
+
+## Key -> MultiMesh holding corpse and dropped-weapon visuals (batch_remains).
 var remains_batches:Dictionary={}
+
+## The three Panzer IVs.
 var tanks:Array=[]
+
+## Eight bazooka teams (four per wave).
 var rocket_teams:Array=[]
+
+## Shells and rockets in flight (max 32).
 var heavy_projectiles:Array=[]
+
+## True during the approach cinematic.
 var intro_active:bool=false
+
+## True if the player's craft left without them.
 var landing_aborted:bool=false
+
+## Explosion kind in progress ("tank_shell", "bazooka", ...), read by world.blast to scale craters.
 var active_blast_kind:String=""
+
+## Reserved; unused.
 var team_timer:float=0
+
+## True once the village garrison and tanks are activated.
 var town_active:bool=false
+
+## Size (m) of the target grid cells.
 const TARGET_CELL:float=32.0
 
+## Godot lifecycle hook: seeds the RNG (default 19440606), builds the world, sound, player, landing force, defenders, armour, spatial grid, LOD
+## batches, flashes, tracers and HUD, puts the camera offshore for the title, applies the graphics quality and honours retry/preview flags.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
 	combat_seed=int(get_tree().get_meta("battle_seed",19440606))
@@ -114,10 +231,8 @@ func _ready():
 		begin()
 	if "--battle-preview" in OS.get_cmdline_user_args():begin()
 
+## Creates (but does not yet add) a Soldier with team, weapon, index and squad. Indexes: Americans first, Germans after AMERICANS_TOTAL.
 func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
-	# --- CONTRACT: Function `add_soldier` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for add_soldier
 	var a=Soldier.new()
 	a.game=self
 	a.team=team_id
@@ -127,10 +242,9 @@ func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
 	a.position=p
 	return a
 
+## Creates 40 boats; each with a squad of 27 passengers and 3 crew. The player takes seat 25 of a first-wave craft in the middle of the line.
+## Weapons by seat: BAR at 4 and 15, carbine every sixth seat, Garand otherwise; a flamethrower at seat 17 in every third craft. Engineers (seats 3, 12 and 21) carry three bangalores. Wave two is created in the reserve (staged) and released later. Crew: two M1919 gunners on mounts and one coxswain with a carbine.
 func make_landing_force():
-	# --- CONTRACT: Function `make_landing_force` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for make_landing_force
 	# Twenty craft per wave, each with 27 passengers, two gunners and a driver.
 	# The player replaces one passenger: exactly 600 Americans in each wave.
 	for wave in range(2):
@@ -197,10 +311,8 @@ func make_landing_force():
 				engines.append(engine)
 				engine.finished.connect(func():if phase=="playing" and not craft.arrived:engine.play())
 
+## Creates the German garrison: eight sector squads of 11 (MG42 gunners in bunkers and field nests for 4, the rest riflemen), 12 trench riflemen, and the 150 town guards placed at the village's firing stations.
 func make_defenders():
-	# --- CONTRACT: Function `make_defenders` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for make_defenders
 	for sector_id in range(8):
 		var sq=new_squad(0,"hold","cautious",world.anchors[sector_id])
 		for j in range(11):
@@ -253,10 +365,8 @@ func make_defenders():
 		squads[sq].members.append(a)
 		a.set_reserve(true)
 
+## Creates three Panzer IVs at the village's back edge and eight bazooka teams (carrier in seat 19 of boats 2, 7, 12 and 17 in each wave).
 func make_armor():
-	# --- CONTRACT: Function `make_armor` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for make_armor
 	for i in range(3):
 		var tank=Panzer.new()
 		tank.game=self
@@ -276,10 +386,8 @@ func make_armor():
 			add_child(pair)
 			rocket_teams.append(pair)
 
+## Starts play: offshore intro camera, engine loops and the coxswain's briefing. [param skip_approach] true jumps straight to the ramp.
 func begin(skip_approach:bool=false):
-	# --- CONTRACT: Function `begin` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for begin
 	phase="playing"
 	intro_active=true
 	player.camera.current=false
@@ -290,49 +398,37 @@ func begin(skip_approach:bool=false):
 	toast("FIRST WAVE • HOLD FAST • 2 BROWNINGS PER CRAFT",6)
 	if skip_approach:skip_intro()
 
+## Skips the approach by setting the clock to just before landing and ticking the craft once.
 func skip_intro():
-	# --- CONTRACT: Function `skip_intro` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for skip_intro
 	if not intro_active:return
 	elapsed=first_landing_at-0.6
 	for craft in boats:craft.tick(0.0)
 	end_intro()
 	reset_physics_interpolation()
 
+## Hands the camera to the player with a toast.
 func end_intro():
-	# --- CONTRACT: Function `end_intro` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for end_intro
 	intro_active=false
 	player.camera.current=true
 	world.world_camera.current=false
 	toast("RAMP OPENING • FOLLOW THE CREW WITH WASD",5)
 
+## The player's craft left without them: defeat with a "landing aborted" message.
 func missed_landing():
-	# --- CONTRACT: Function `missed_landing` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for missed_landing
 	landing_aborted=true
 	phase="defeat"
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	toast("The craft returned to sea. Deploy again and walk down the ramp.",10)
 
+## Enter skips the approach; everything else is handled by the Ardennes controller.
 func _unhandled_input(event):
-	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
-	# Invariants:
-	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
-	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
-	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if phase=="playing" and intro_active and event is InputEventKey and event.pressed and event.keycode==KEY_ENTER:
 		skip_intro()
 		return
 	super._unhandled_input(event)
 
+## Called by a craft on landing: stops its engine, starts the dismounted phase on the first landing and shows the sergeant's orders for each wave.
 func boat_landed(craft):
-	# --- CONTRACT: Function `boat_landed` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for boat_landed
 	if craft.engine_loop!=null:craft.engine_loop.stop()
 	if craft.wave==0 and not first_wave_landed:
 		first_wave_landed=true
@@ -343,10 +439,8 @@ func boat_landed(craft):
 		second_wave_landed=true
 		say("Second wave ashore! Push through the gaps and take the bluff exits!",6,"SGT. HAYES")
 
+## Applies the graphics preset and enables normal maps and triplanar mapping on concrete and masonry above Low.
 func apply_quality():
-	# --- CONTRACT: Function `apply_quality` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for apply_quality
 	quality=preload("res://scripts/graphics.gd").quality(get_tree())
 	preload("res://scripts/graphics.gd").apply(self)
 	world.concrete.normal_enabled=quality>0
@@ -355,10 +449,8 @@ func apply_quality():
 	world.masonry.uv1_triplanar=quality>0
 
 
+## One simulation tick: clock, intro camera, boats, release of wave two at 120 s, activation of the village, tanks, rocket teams, heavy projectiles, wire charges, spatial refresh (0.25 s), squads (1 s), bullets and effects, LOD and mine checks.
 func step_battle(delta):
-	# --- CONTRACT: Function `step_battle` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for step_battle
 	if phase!="playing":return
 	elapsed+=delta
 	if intro_active and player.truck!=null:
@@ -407,10 +499,8 @@ func step_battle(delta):
 		mine_timer=0.3
 		check_mines()
 
+## Spends separate think budgets: defenders earn 1.5 decisions per active defender per second (max 4 per frame) and attackers 1.5 (max 20 per frame), round-robin.
 func think_budget(delta:float):
-	# --- CONTRACT: Function `think_budget` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for think_budget
 	# Spend the budget on living, active fighters, not offshore reserves or drivers.
 	defender_credit=minf(defender_credit+minf(delta,0.05)*active_defenders.size()*1.5,8.0)
 	attacker_credit=minf(attacker_credit+minf(delta,0.05)*active_attackers.size()*1.5,40.0)
@@ -427,8 +517,8 @@ func think_budget(delta:float):
 		attacker_cursor+=1
 		if actor.alive:actor.think(elapsed)
 
+## Replaces dead squad leaders with a living, non-driver member.
 func update_squads():
-	# Step: Update internal simulation state and refresh cached coordinates
 	for sq in squads:
 		if sq.leader==null or not sq.leader.alive:
 			sq.leader=null
@@ -438,10 +528,8 @@ func update_squads():
 					a.leader=true
 					break
 
+## Push-away vector from neighbours within about 1 m, cached for about 0.1 s per actor to save time.
 func separation_for(actor)->Vector3:
-	# --- CONTRACT: Function `separation_for` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for separation_for
 	if elapsed<actor.separation_at:return actor.separation_cache
 	actor.separation_at=elapsed+0.10+float(actor.index%3)*0.008
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
@@ -459,10 +547,10 @@ func separation_for(actor)->Vector3:
 	actor.separation_cache=result.limit_length(1)
 	return actor.separation_cache
 
+## Perception rule: whether `observer` can notice `other`. Germans cannot see beyond the fog line; the target must be within weapon range and the
+## observer's gun arc (for mounted guns); unless the target recently fired (5 s), is remembered or the observer faces it,
+## it is missed when behind the observer (dot < 0.2 beyond 9 m), prone and slow beyond 42 m, or crouched and slow beyond 120 m.
 func can_detect(observer,other)->bool:
-	# --- CONTRACT: Function `can_detect` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for can_detect
 	if not actor_alive(other):return false
 	if other.position.z>FOG_LINE and observer.team==0:return false
 	var offset=actor_aim(other)-observer.eye()
@@ -482,10 +570,8 @@ func can_detect(observer,other)->bool:
 		if posture=="crouch" and speed<2.5 and distance>120:return false
 	return true
 
+## Chooses a visible target for `observer`: scans the enemy target grid cells nearest first, keeping the 10 nearest detectable actors (the player included for Germans, with no bonus), then returns the first with a clear sight ray and remembers it for 6 s.
 func acquire_target(observer):
-	# --- CONTRACT: Function `acquire_target` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for acquire_target
 	var nearest=[]
 	var cells=target_cells[1-observer.team]
 	var ordered=[]
@@ -519,19 +605,15 @@ func acquire_target(observer):
 			return other
 	return null
 
+## Inserts {actor, d} into a distance-sorted list capped at 10.
 func insert_nearest(list:Array,actor,distance:float):
-	# --- CONTRACT: Function `insert_nearest` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for insert_nearest
 	var slot=0
 	while slot<list.size() and list[slot].d<distance:slot+=1
 	list.insert(slot,{"actor":actor,"d":distance})
 	if list.size()>10:list.pop_back()
 
+## Chooses the landing craft a German should fire at: nearest with passengers, visible and in range.
 func acquire_vehicle(observer):
-	# --- CONTRACT: Function `acquire_vehicle` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for acquire_vehicle
 	if observer.team!=0:return null
 	var selected=null
 	var best=INF
@@ -550,8 +632,8 @@ func acquire_vehicle(observer):
 			best=d
 	return selected
 
+## Friendly-fire check for a shot: allows hitting enemies and (for Germans) craft only.
 func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
-	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var ray=PhysicsRayQueryParameters3D.create(from,to+(to-from).normalized()*0.2,1|2|4|8)
 	ray.exclude=[actor.get_rid()]
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
@@ -561,8 +643,8 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	if obj.get("truck_owner")!=null:return actor.team==0
 	return false
 
+## Fires one bullet with up to six penetration passes. Flamethrowers spawn a flame jet instead. Damage rules as in the Ardennes controller (headshots x1.5 here), with wooden panels and damaged landing-craft plates letting bullets through; tracers on every third round and distant gunfire sounds within 1400 m of the player.
 func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String):
-	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	source.last_fired=elapsed
 	if kind=="flamethrower":
 		flame_jet(source,from,aim)
@@ -617,8 +699,8 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	if ammo_spent%3==0:notify_projectile(from,end,source.team)
 	if source!=player and source.position.distance_squared_to(player.position)<1960000:sounds.at("rifle",from,-6,randf_range(0.80,1.06))
 
+## Rebuilds the 5 m spatial hash, the 32 m target grids, the lists of active attackers/defenders and the bounding box of occupied area.
 func rebuild_spatial():
-	# Step: Instantiate and position node hierarchy into scene tree for rebuild_spatial
 	spatial.clear()
 	cover_reservations.clear()
 	active_attackers.clear()
@@ -644,10 +726,8 @@ func rebuild_spatial():
 		occupied_min=occupied_min.min(Vector2(key)*5-Vector2(10,10))
 		occupied_max=occupied_max.max(Vector2(key)*5+Vector2(15,15))
 
+## Near-miss detection along a bullet's path: clips the path to the occupied area (no work for empty sea), walks it in steps through the spatial cells and alerts nearby enemies within 1.7 m.
 func notify_projectile(from:Vector3,to:Vector3,source_team:int):
-	# --- CONTRACT: Function `notify_projectile` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for notify_projectile
 	var line=to-from
 	var sq=line.length_squared()
 	if sq<0.001 or spatial.is_empty():return
@@ -682,16 +762,14 @@ func notify_projectile(from:Vector3,to:Vector3,source_team:int):
 						actor.near_miss(from)
 						near_misses+=1
 
+## Alerts enemies within `radius`, except gunshots, which are handled by each shooter's last-fired time in can_detect.
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
-	# --- CONTRACT: Function `emit_noise` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for emit_noise
 	if kind=="gunshot":return # Perception uses each actual shooter's last-fired timestamp.
 	for actor in actors:
 		if actor.alive and actor.team!=team and actor.position.distance_squared_to(point)<radius*radius:actor.hear_noise(point,radius,team,kind)
 
+## Creates the tracer MultiMesh pool.
 func build_tracers():
-	# Step: Instantiate and position node hierarchy into scene tree for build_tracers
 	tracer_batch=MultiMeshInstance3D.new()
 	var mesh=BoxMesh.new()
 	mesh.size=Vector3.ONE
@@ -708,10 +786,8 @@ func build_tracers():
 	tracer_batch.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(tracer_batch)
 
+## Adds a short tracer streak.
 func tracer(from:Vector3,to:Vector3,color:Color):
-	# --- CONTRACT: Function `tracer` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for tracer
 	if tracers.size()>=160:return
 	var delta=to-from
 	var distance=delta.length()
@@ -720,8 +796,8 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	var basis=Basis(Quaternion(Vector3.UP,direction)).scaled_local(Vector3(0.045,minf(12,distance),0.045))
 	tracers.append({"from":from,"direction":direction,"distance":distance,"travel":0.0,"basis":basis,"color":color})
 
+## Ages tracers and updates the MultiMesh.
 func update_tracers(delta:float):
-	# Step: Update internal simulation state and refresh cached coordinates
 	var count=0
 	for i in range(tracers.size()-1,-1,-1):
 		var t=tracers[i]
@@ -734,10 +810,8 @@ func update_tracers(delta:float):
 		count+=1
 	tracer_batch.multimesh.visible_instance_count=count
 
+## Flamethrower shot: a ray up to 23 m finds where the jet ends; every actor within 24 m and about 16 degrees (dot > 0.96) of the aim line with an unobstructed line takes 19 fire damage. Draws an orange tracer and a short-lived fireball at the end.
 func flame_jet(source,from:Vector3,aim:Vector3):
-	# --- CONTRACT: Function `flame_jet` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for flame_jet
 	ammo_spent+=1
 	var direction=(aim-from).normalized()
 	var ray=PhysicsRayQueryParameters3D.create(from,from+direction*23,1|2|4|8)
@@ -760,8 +834,8 @@ func flame_jet(source,from:Vector3,aim:Vector3):
 		effects.append({"node":fire,"time":0.22})
 	sounds.at("explosion",from,-20,1.8)
 
+## Creates the muzzle-flash MultiMesh pool.
 func build_flashes():
-	# Step: Instantiate and position node hierarchy into scene tree for build_flashes
 	flash_batch=MultiMeshInstance3D.new()
 	flash_batch.multimesh=MultiMesh.new()
 	flash_batch.multimesh.transform_format=MultiMesh.TRANSFORM_3D
@@ -780,17 +854,15 @@ func build_flashes():
 	flash_batch.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(flash_batch)
 
+## Shows flashes whose time has not run out.
 func update_flashes():
-	# Step: Update internal simulation state and refresh cached coordinates
 	if flash_batch==null:return
 	flashes=flashes.filter(func(f):return f.until>elapsed)
 	for i in range(flashes.size()):flash_batch.multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY,flashes[i].p))
 	flash_batch.multimesh.visible_instance_count=flashes.size()
 
+## Sends an engineer-less soldier to pick up the nearest dead engineer's unused bangalore, with claims so only one soldier tries per charge. Returns true if the soldier is now busy with it.
 func recover_bangalore(actor)->bool:
-	# --- CONTRACT: Function `recover_bangalore` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for recover_bangalore
 	if actor.bangalores>0:return false
 	var closest=null
 	var best=24.0*24.0
@@ -815,10 +887,9 @@ func recover_bangalore(actor)->bool:
 		actor.set_destination(world.on_ground(closest.position))
 	return true
 
+## The next target for an attacking soldier, as a staged plan for its sector: assault stage 0-6 moves up to the bunker line, round to the rear door, inside, then
+## on to the nearest German in the sector (or the village guards), with a flank offset by index.
 func assault_goal(actor)->Vector3:
-	# --- CONTRACT: Function `assault_goal` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for assault_goal
 	var center=world.anchors[actor.sector]
 	var flank=center.x+(15 if actor.index%2==0 else -15)
 	var doorway=world.on_ground(Vector3(center.x,0,center.z-8))
@@ -867,8 +938,9 @@ func assault_goal(actor)->Vector3:
 			return world.on_ground(Vector3((actor.index%9-4)*3,0,Layout.CHURCH+20))
 	return goal
 
+## Once per second: counts defenders and allies near each bunker anchor (35 m) and advances capture timers (10 s) when only allies are present; checks the
+## village (attackers inside, no guards and no tanks, 12 s) and declares victory when 3 exits are secured and the village is controlled after wave two.
 func update_objectives(delta:float):
-	# Step: Update internal simulation state and refresh cached coordinates
 	secured=0
 	for i in range(8):
 		var defenders=0
@@ -895,10 +967,8 @@ func update_objectives(delta:float):
 		Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 		sounds.play("victory",-10)
 
+## Every 0.3 s: detonates any live mine that a living soldier or the player is within 1 m of.
 func check_mines():
-	# --- CONTRACT: Function `check_mines` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check_mines
 	for mine in world.mines:
 		if not mine.live:continue
 		var c=Vector2i(floori(mine.point.x/5),floori(mine.point.z/5))
@@ -913,8 +983,8 @@ func check_mines():
 			mine_detonations+=1
 			explode(mine.point+Vector3(0,0.4,0),4.0,130,null,"mine")
 
+## Creates the instanced far-LOD figures: one low-poly soldier (body, legs, arms, gun with the right feed) per team and weapon kind, in MultiMeshes with stable slots per actor.
 func build_lod_batches():
-	# Step: Instantiate and position node hierarchy into scene tree for build_lod_batches
 	for actor in actors:
 		var key=str(actor.team)+"/"+actor.weapon_kind
 		if lod_batches.has(key):continue
@@ -976,8 +1046,8 @@ func build_lod_batches():
 		batch.multimesh.visible_instance_count=-1
 	update_lod()
 
+## Chooses which actors are drawn in full detail (nearest 16, 36 or 60 by quality, re-ranked every few frames) and updates the instance transforms of the rest; handles prone and crouch poses and gives running soldiers a different animation.
 func update_lod():
-	# Step: Update internal simulation state and refresh cached coordinates
 	var viewpoint=player.position if phase!="title" else world.world_camera.position
 	detail_timer-=get_physics_process_delta_time()
 	if detail_timer<=0:
@@ -1019,18 +1089,14 @@ func update_lod():
 			actor.lod_running=running
 		if was_far!=far:mm.reset_instance_physics_interpolation(i)
 
+## Runs the Ardennes handling (corpse, loot), but cancels its kill-count victory: the mission ends at the exits and the village.
 func actor_died(actor,kind:String):
-	# --- CONTRACT: Function `actor_died` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for actor_died
 	# Keep the established persistent bodies, loot, damaged weapons and finite inventory.
 	super.actor_died(actor,kind)
 	if phase=="victory":phase="playing" # Mission ends at secured exits / town, not a kill counter.
 
+## Draws a corpse or dropped weapon through a shared MultiMesh (96 m cells) instead of its own mesh. Returns {mm, slot} or an empty dictionary when the pool is full.
 func batch_remains(visual:MeshInstance3D)->Dictionary:
-	# --- CONTRACT: Function `batch_remains` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for batch_remains
 	# Persistent bodies and loot keep their hitboxes and inventory, while shared
 	# meshes draw together instead of adding seven draw calls for every casualty.
 	var p=visual.global_position
@@ -1056,19 +1122,15 @@ func batch_remains(visual:MeshInstance3D)->Dictionary:
 	visual.hide()
 	return {"mm":mm,"slot":slot}
 
+## F: while on the craft shows its hold-fast message; otherwise the Ardennes interactions.
 func interact():
-	# --- CONTRACT: Function `interact` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for interact
 	if player.truck!=null:
 		player.truck.dismount()
 		return
 	super.interact()
 
+## Compass target: the ramp lane's first wire row, then the nearest wire gap, then the nearest unsecured bunker rear, then the nearest village guard, then the church.
 func objective_target()->Vector3:
-	# --- CONTRACT: Function `objective_target` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for objective_target
 	if player.truck!=null:return world.on_ground(Vector3(player.truck.lane_x,0,Layout.WIRE_ROWS[0]))
 	if secured>=3:
 		var guard=null
@@ -1094,10 +1156,8 @@ func objective_target()->Vector3:
 			goal=world.bunkers[i].rear
 	return goal
 
+## HUD objective line for the current stage.
 func objective_text()->String:
-	# --- CONTRACT: Function `objective_text` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for objective_text
 	if player.truck!=null:
 		if player.truck.departing:return "MISSED THE RAMP • CRAFT RETURNING TO SEA"
 		if player.truck.arrived:return "WASD off ramp • boat leaves in %ds"%maxi(0,ceili(player.truck.landed_at+36-elapsed))
@@ -1105,23 +1165,17 @@ func objective_text()->String:
 	if player.position.z>Layout.WIRE_ROWS[2]:return "Reach the seawall • follow a wire breach"
 	return "Exits %d/3 • town guards %d • tanks %d"%[mini(secured,3),enemies.filter(func(a):return a.alive and a.role=="town_guard").size(),tanks.filter(func(t):return t.alive).size()]
 
+## Restarts the mission by reloading the scene with the retry flag.
 func retry():
-	# --- CONTRACT: Function `retry` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for retry
 	get_tree().set_meta("omaha_retry",true)
 	get_tree().change_scene_to_file("res://scenes/omaha.tscn")
 
+## Stops audio on exit (base behaviour).
 func _exit_tree():
-	# --- CONTRACT: Function `_exit_tree` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for _exit_tree
 	super._exit_tree()
 
+## Launches a tank shell (160 m/s) or bazooka rocket (90 m/s) toward `aim`, aimed above the target to compensate for gravity (9.8 or 3.5 m/s^2). Max 32 in flight.
 func launch_heavy(source,from:Vector3,aim:Vector3,kind:String):
-	# --- CONTRACT: Function `launch_heavy` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for launch_heavy
 	if heavy_projectiles.size()>=32:return
 	var speed=90.0 if kind=="bazooka" else 160.0
 	var gravity=3.5 if kind=="bazooka" else 9.8
@@ -1142,10 +1196,8 @@ func launch_heavy(source,from:Vector3,aim:Vector3,kind:String):
 	sounds.at("explosion",from,-10 if kind=="bazooka" else -2,0.8)
 	emit_noise(from,260,source.team,"gunshot")
 
+## Moves heavy projectiles in ray steps; on impact detonates just outside the surface, applying rocket damage to tanks directly. Discards shots after 5 s.
 func step_heavy_projectiles(delta:float):
-	# --- CONTRACT: Function `step_heavy_projectiles` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for step_heavy_projectiles
 	for shot in heavy_projectiles.duplicate():
 		var next=shot.p+shot.v*delta+Vector3(0,-0.5*shot.g*delta*delta,0)
 		var q=PhysicsRayQueryParameters3D.create(shot.p,next,1|2|4|8)
@@ -1170,37 +1222,29 @@ func step_heavy_projectiles(delta:float):
 			shot.visual.position=next
 			shot.visual.look_at(next+shot.v)
 
+## Base explosion plus damage to tanks; sets active_blast_kind so the world scales craters.
 func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade"):
-	# --- CONTRACT: Function `explode` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for explode
 	var previous=active_blast_kind
 	active_blast_kind=kind
 	super.explode(point,radius,damage,source,kind)
 	for tank in tanks:tank.receive_blast(point,radius,damage,kind)
 	active_blast_kind=previous
 
+## Wakes the village garrison (releases the staged guards) and refreshes the spatial grid; called when attackers get near or a guard is hurt.
 func activate_town():
-	# --- CONTRACT: Function `activate_town` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for activate_town
 	if town_active:return
 	town_active=true
 	for a in enemies:
 		if a.role=="town_guard":a.set_reserve(false)
 	rebuild_spatial()
 
+## Town guards count as alive even if staged; everything else uses the base rule.
 func actor_alive(actor)->bool:
-	# --- CONTRACT: Function `actor_alive` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for actor_alive
 	if is_instance_valid(actor) and actor is Soldier and actor.role=="town_guard":return actor.alive
 	return super.actor_alive(actor)
 
+## Hitting a sleeping village guard activates the whole garrison first.
 func hurt_actor(actor,damage:float,source:Vector3,kind:String):
-	# --- CONTRACT: Function `hurt_actor` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for hurt_actor
 	if actor is Soldier and actor.role=="town_guard" and actor.staged:
 		activate_town()
 		actor.set_reserve(false)
