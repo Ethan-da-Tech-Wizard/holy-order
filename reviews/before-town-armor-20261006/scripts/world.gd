@@ -1,34 +1,74 @@
-# ==============================================================================
-# Program: world.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for world.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/world.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## The desert battlefield for the first mission: lighting, terrain, rocks,
+## props and the services (blasts, digging, door lookup) the rest of the game
+## calls into. It also owns the village layout and AI navigation grid.
+##
+## Role: the scene root's world child (the Game node, game.gd, is assigned to
+## `game`). It adds itself to group "battle_world" so that Breakable bodies can
+## notify it (geometry_updated) and AI can find it. Everything is generated
+## from code with a fixed RNG seed (19400614, the in-game date) so each run
+## builds the identical map, which keeps tests and screenshots reproducible.
+## Calls: Art (art.gd) for geometry, village.gd for the buildings,
+## field_navigation.gd for pathing; shaders sand/stone/flag in assets/shaders.
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
+
+## Seeded generator for every random placement in the map.
 var rng = RandomNumberGenerator.new()
+
+## Fixed camera that shows the knight on the title screen before play starts.
 var world_camera: Camera3D
+
+## Display knight standing in front of the title-screen camera.
 var menu_knight: Node3D
+
+## Shared sand shader for terrain chunks.
 var ground_material: Material
+
+## Cache of the 8 procedurally deformed rock meshes (variant -> ArrayMesh).
 var rock_shapes: Dictionary = {}
+
+## The Village node (village.gd) holding houses and cover points.
 var village
+
+## The FieldNavigation node (field_navigation.gd).
 var navigation
+
+## Counter incremented every time any breakable changes shape; lets other
+## systems (AI path caches) detect that the world is different.
 var geometry_revision: int = 0
+
+## All soil Breakable chunks, so dig() can carve the ground.
 var terrain_chunks: Array = []
+
+## The Game node; assigned by game.gd after creation.
 var game
 
+## Godot lifecycle hook: builds the whole world in a fixed order: lighting,
+## terrain, village, converts loose props into breakables, creates the
+## navigation grid, then sets up the title-screen knight and camera.
 func _ready():
 	add_to_group("battle_world")
 	rng.seed = 19400614
 	lighting()
 	landscape()
+
+	# Village needs `world` set before it enters the tree so it can call
+	# sandbags()/crate() from its own _ready.
 	village = preload("res://scripts/village.gd").new()
 	village.world = self
 	add_child(village)
+
+	# Runs after the village exists so its decorative meshes are included, but
+	# before navigation is added so the nav grid samples the final colliders.
 	make_loose_props_breakable(self)
 	navigation = preload("res://scripts/field_navigation.gd").new()
 	add_child(navigation)
+
+	# Title-screen set piece: a knight beside the first rock, camera at 66 degrees FOV.
 	menu_knight = Art.knight(self)
 	menu_knight.position = Vector3(7, 0, 22)
 	menu_knight.rotation.y = -2.48
@@ -39,6 +79,8 @@ func _ready():
 	world_camera.fov = 66
 	world_camera.far = 550
 	world_camera.current = true
+
+	# Soft cool fill light so the knight's armour is readable against the shadowed side.
 	var fill = OmniLight3D.new()
 	fill.position = Vector3(9.5,3.0,24.5)
 	fill.light_color = Color("b5c8d0")
@@ -46,6 +88,11 @@ func _ready():
 	fill.omni_range = 7
 	add_child(fill)
 
+## Creates the Environment (procedural sky, ACES tonemapping, light fog,
+## contrast/saturation tuning) and the sun DirectionalLight3D.
+## Costly effects (volumetric fog, glow, SSAO) are defined but disabled; they
+## are only ever enabled by quality settings (see graphics.gd, which turns
+## them off again for performance).
 func lighting():
 	var env = Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -89,6 +136,9 @@ func lighting():
 	we.environment = env
 	add_child(we)
 	var sun = DirectionalLight3D.new()
+
+	# Low sun (28 degrees above the horizon) from the north-east gives long,
+	# dramatic shadows across the sand; 4 shadow splits out to 115 m.
 	sun.rotation_degrees = Vector3(-28, -38, 0)
 	sun.light_color = Color("ffe1b1")
 	sun.light_energy = 1.25
@@ -99,33 +149,50 @@ func lighting():
 	sun.shadow_normal_bias = 1.5
 	add_child(sun)
 
+## Builds the ground and scenery: sand chunks, far ground blocks, rock
+## outcrops, pebbles, desert shrubs and drifting dust particles.
 func landscape():
 	ground_material = ShaderMaterial.new()
 	ground_material.shader = load("res://assets/shaders/sand.gdshader")
 	# Individually editable soil chunks. Digging changes the surface and collision.
+	# The playable area is tiled with 12 m soil blocks (24 m deep) so that
+	# digging can carve each one independently, instead of one huge mesh.
 	for x in range(-84,84,12):
 		for z in range(-108,72,12):
 			var chunk=Art.solid(self,Vector3(12,24,12),Vector3(x+6,-12,z+6),ground_material,0,"soil")
 			terrain_chunks.append(chunk)
 	# Far ground is physical too; these large blocks frame the bounded encounter.
+	# Four huge blocks frame the playable area so nothing can be walked or fall off the edge.
 	for entry in [[Vector3(-217,-12,0),Vector3(266,24,700)],[Vector3(217,-12,0),Vector3(266,24,700)],
 		[Vector3(0,-12,-229),Vector3(168,24,242)],[Vector3(0,-12,211),Vector3(168,24,278)]]:
 		terrain_chunks.append(Art.solid(self,entry[1],entry[0],ground_material,0,"soil"))
+
+	# Hand-placed landmark rock at the player's start, then six more large
+	# rocks as cover near the route.
 	rock(Vector3(0,0,48),Vector3(3.8,2.8,3.1),true)
 	for p in [Vector3(-5,0,42),Vector3(8,0,38),Vector3(-35,0,27),Vector3(34,0,7),Vector3(-36,0,-35),Vector3(35,0,-61)]:
 		rock(p,Vector3(rng.randf_range(2,3.8),rng.randf_range(1.5,2.5),rng.randf_range(2,4)),true)
+
+	# 90 scattered boulders, kept out of the road corridor (x near 42) and out
+	# of the village footprint so they never block the main fight.
 	for i in range(90):
 		var p=Vector3(rng.randf_range(-90,90),0,rng.randf_range(-115,65))
 		if absf(p.x-42)<7:continue
 		if absf(p.x)<37 and p.z> -76 and p.z<57:continue
 		rock(p,Vector3(rng.randf_range(2,7),rng.randf_range(1.1,6),rng.randf_range(2,6)),true)
+
+	# 130 tiny pebbles (non-colliding) for ground texture.
 	for i in range(130):
 		var p=Vector3(rng.randf_range(-65,65),0,rng.randf_range(-85,57))
 		if absf(p.x)<32 and p.z<22:continue
 		rock(p,Vector3(rng.randf_range(0.12,0.5),rng.randf_range(0.07,0.25),rng.randf_range(0.1,0.4)),false)
+
+	# A ring of 22 giant rocks ~175 m out forms the distant dunes/horizon.
 	for i in range(22):
 		var angle=TAU*i/22.0
 		rock(Vector3(cos(angle)*175,0,sin(angle)*160-25),Vector3(rng.randf_range(24,55),rng.randf_range(10,35),rng.randf_range(22,45)),true)
+
+	# 45 shrubs of 4 thin stems each, skipped inside the central area.
 	for i in range(45):
 		var bush=Node3D.new()
 		add_child(bush)
@@ -136,6 +203,8 @@ func landscape():
 		for j in range(4):
 			var stem=Art.box(bush,Vector3(0.035,rng.randf_range(0.16,0.4),0.035),Vector3(rng.randf_range(-0.1,0.1),0.14,rng.randf_range(-0.1,0.1)),Art.material(Color("706441")))
 			stem.rotation.z=rng.randf_range(-0.6,0.6)
+
+	# Light wind-blown dust, 100 particles drifting along +X over the whole map.
 	var dust=CPUParticles3D.new()
 	dust.position=Vector3(0,2,-10)
 	dust.amount=100
@@ -158,6 +227,10 @@ func landscape():
 	dust.material_override=Art.material(Color("d3bd91"))
 	add_child(dust)
 
+## Spawns one rock as a Breakable ("rock" kind) with a deformed-sphere mesh.
+## [param pos] ground position, [param size] approximate extents in metres.
+## [param collide] currently unused: every rock gets a box collider
+## (the argument is kept for API compatibility with callers).
 func rock(pos: Vector3, size: Vector3, collide: bool):
 	var root = Art.Breakable.new()
 	root.material_kind="rock"
@@ -168,6 +241,9 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 	var stone = ShaderMaterial.new()
 	stone.shader = preload("res://assets/shaders/stone.gdshader")
 	stone.set_shader_parameter("stone_color",color)
+
+	# Variant derived from position so identical positions reuse a mesh but
+	# neighbours differ; 8 variants keep memory low.
 	var variant = absi(int(pos.x*7+pos.z*13)) % 8
 	var s = Art.mesh(root,rock_mesh(variant),Vector3(0,size.y*0.30,0),stone)
 	s.scale = size*0.62
@@ -180,6 +256,10 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 		c.position.y = size.y*0.30
 		root.add_child(c)
 
+## Returns one of 8 cached rock meshes: a UV sphere distorted by fractal
+## noise (so no two variants look alike), flattened at the bottom, with
+## normals regenerated afterwards so lighting follows the rough surface.
+## [param variant] 0..7 noise seed selector.
 func rock_mesh(variant: int) -> ArrayMesh:
 	if rock_shapes.has(variant): return rock_shapes[variant]
 	var source = SphereMesh.new()
@@ -202,6 +282,9 @@ func rock_mesh(variant: int) -> ArrayMesh:
 		p.y = maxf(-0.72,p.y+sin(p.y*10+uneven*3)*0.025)
 		vertices[i]=p
 	arrays[Mesh.ARRAY_VERTEX] = vertices
+
+	# Old normals/tangents no longer match the deformed vertices; they are
+	# dropped and rebuilt by SurfaceTool.generate_normals() below.
 	arrays[Mesh.ARRAY_NORMAL] = null
 	arrays[Mesh.ARRAY_TANGENT] = null
 	var raw = ArrayMesh.new()
@@ -213,6 +296,10 @@ func rock_mesh(variant: int) -> ArrayMesh:
 	rock_shapes[variant]=result
 	return result
 
+## Builds a row of sandbags as one Breakable ("sandbag" kind) with a single
+## box collider and 3 stacked rows of squashed spheres for the visuals.
+## [param pos] centre on the ground. [param length] bags per row.
+## [param angle] yaw in radians. Returns the Breakable body.
 func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 	var root=Art.Breakable.new()
 	root.material_kind="sandbag"
@@ -226,6 +313,9 @@ func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 	collision.position.y=0.55
 	root.add_child(collision)
 	var bags=[Art.material(Color("a18b66")),Art.material(Color("b39b72")),Art.material(Color("998460"))]
+
+	# Alternate rows are shifted half a bag, like a real running bond, with
+	# small random yaw and three colours for a worn look.
 	for row in range(3):
 		for i in range(length):
 			var bag=Art.sphere(root,0.5,Vector3((i-(length-1)*0.5)*0.72+(0.13 if row%2 else -0.06),0.2+row*0.35,0),bags[rng.randi_range(0,2)])
@@ -233,6 +323,8 @@ func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 			bag.rotation.y=rng.randf_range(-0.1,0.1)
 	return root
 
+## Builds a wooden crate with dark plank straps (destructible).
+## [param pos] ground position; [param size] default 1.1 x 0.9 x 0.9 m.
 func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 	var wood = Art.material(Color("736c4c"))
 	var dark = Art.material(Color("4e4b36"))
@@ -242,6 +334,9 @@ func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 	for y in [-0.25,0.25]:
 		Art.box(root,Vector3(size.x+0.015,0.065,size.z+0.018),Vector3(0,y,0),dark)
 
+## Builds an open-fronted canvas tent: back wall, two side walls, a pitched
+## roof with guy lines and two poles. Canvas is double-sided (culling off)
+## because the walls are thin sheets.
 func tent(pos: Vector3):
 	var root = Node3D.new()
 	add_child(root)
@@ -259,6 +354,10 @@ func tent(pos: Vector3):
 	for z in [-3.0,3.0]:
 		Art.cylinder(root,0.045,3,Vector3(0,1.5,z),Art.material(Color("514737")))
 
+## Places the original single-room outpost: sandbag lines, crates, tents,
+## a ruined outbuilding, the Italian flag, a map table and the broken
+## threshold at the player's spawn. Nothing in the repo calls it any more:
+## village.gd supplies the current mission layout, so this is a leftover.
 func fortifications():
 	# Forward sentry, then the six-man outpost. Open ends permit a sword-only route.
 	sandbags(Vector3(0,0,7),3)
@@ -306,10 +405,18 @@ func fortifications():
 		rock(Vector3(x,0,39),Vector3(1.2,2.6,1.3),true)
 	Art.solid(self,Vector3(3.5,0.16,2),Vector3(0,0.08,38.7),Art.material(Color("686c65")))
 
+## Callback from Breakable and FieldDoor whenever geometry changes: bumps the
+## revision counter and marks the navigation grid dirty around `point`.
 func geometry_updated(point: Vector3):
 	geometry_revision+=1
 	if is_instance_valid(navigation):navigation.mark_dirty(point)
 
+## Applies an explosion to all breakable bodies within `radius`.
+## [param point] world centre. [param power] damage at the centre (default 300).
+## [param radius] metres (default 4.2).
+## Damage falls off linearly to 20% of power at the edge. Soil is carved
+## with a 1.1 m crater (shifted 0.78 m up so the crater is at the surface
+## where the shell lands); other materials take damage_at with explosive hole sizing.
 func blast(point: Vector3, power: float = 300, radius: float = 4.2):
 	for body in get_tree().get_nodes_in_group("breakable"):
 		if body.destroyed:continue
@@ -321,12 +428,17 @@ func blast(point: Vector3, power: float = 300, radius: float = 4.2):
 		else:
 			body.damage_at(amount,point,minf(1.25,radius-distance+0.25),true)
 
+## Excavates the soil around `point` (used by the shovel): carves a sphere of
+## radius `depth` (default 0.82 m) slightly below the point, in every terrain
+## chunk within reach.
 func dig(point: Vector3, depth: float = 0.82):
 	var centre=point-Vector3(0,depth*0.34,0)
 	for chunk in terrain_chunks:
 		if is_instance_valid(chunk) and not chunk.destroyed and chunk.distance_to_surface(centre)<depth:
 			chunk.carve(centre,depth)
 
+## Returns the closest usable door within `distance` metres of `point`, or
+## null. Destroyed doors are skipped.
 func nearby_door(point: Vector3, distance: float = 2.6):
 	var best=null
 	for door in get_tree().get_nodes_in_group("field_door"):
@@ -337,6 +449,11 @@ func nearby_door(point: Vector3, distance: float = 2.6):
 			best=door
 	return best
 
+## Recursively wraps every plain MeshInstance3D under `node` in a Breakable
+## with a matching box collider, so decorative objects can be shot or
+## blasted. Skips nodes that already have colliders, CSG nodes and particles.
+## Wrapped props smaller than 0.65 m go on layer 16 (small items) instead of
+## the solid world layer, so they never block movement.
 func make_loose_props_breakable(node: Node):
 	# Convert decorative geometry into independently hittable physical props, while
 	# keeping doors and existing breakable bodies as their own objects.
