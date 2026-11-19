@@ -1,16 +1,37 @@
-# ==============================================================================
-# Program: omaha_scale.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_scale.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/omaha_scale.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Scale and behaviour checks for the Omaha landing: reserves, engineers, wire,
+## the sea wall, low-quality infantry movement, instanced remains and wave two.
+##
+## Checks (PASS/FAIL printed, report written; exit 1 if any fail) include:
+##   - all 600 second-wave soldiers sleep with collision disabled until released, and all activate at two minutes;
+##   - every boat has three engineers spread along its file; twenty breach lanes fit a 228 m landing front;
+##     circling reserve hulls stay separated; terrain collision agrees with the rendered height;
+##   - engineer behaviour: approaches intact wire even if a distant gap exists, breaches its own file even when a neighbouring file is
+##     open, plants and retreats immediately; a rifleman does not cross the whole beach to a distant gap;
+##   - every file has a clear short route through the sea wall;
+##   - low-quality swept-capsule movement: stops at concrete, moves through once cover is destroyed, cannot pass intact wire, passes an opened gap;
+##   - instanced remains keep all six damageable parts, a detached body keeps moving, dropped weapons keep finite ammunition and collision, picking one up
+##     transfers its ammunition and frees the drop.
+## Run: godot --headless --path <repo> --script res://tests/omaha_scale.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Collected results.
 var checks=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Records and prints one result. [param label] description. [param ok] pass/fail. [param data] optional detail.
 func check(label:String,ok:bool,data=null):
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
+
+## Runs all the checks and writes the report.
 func run():
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
@@ -155,6 +176,8 @@ func run():
 	await process_frame
 	quit(0 if result.passed==result.total else 1)
 
+## Steps one actor's physics by hand for `seconds` of simulated time (advancing the battle clock), for scenarios where the controller's own loop is disabled.
+## [param actor] soldier to move. [param seconds] simulated seconds.
 func move_for(actor,seconds:float):
 	for i in range(roundi(seconds*Engine.physics_ticks_per_second)):
 		await physics_frame

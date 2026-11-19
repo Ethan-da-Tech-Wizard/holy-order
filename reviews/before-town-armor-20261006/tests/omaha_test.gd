@@ -1,19 +1,42 @@
-# ==============================================================================
-# Program: omaha_test.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_test.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/omaha_test.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Order-of-battle and landing-sequence test for the Omaha mission, run headless.
+##
+## Checks (PASS/FAIL printed with data, written to a JSON report; exit 1 on failure):
+##   - forces: 1,200 Americans (player included) and 250 Germans in two complete 600-person waves;
+##     40 craft, 80 Brownings, 40 protected drivers; 32 fortified MGs and 8 portable MG42s; finite
+##     ammunition and grenades for everyone; 120 AI-only engineers with three charges each; flamethrowers, BARs and carbines;
+##     the player's Garand, grenades, shovel, sword and fists;
+##   - boat sequence: the player starts in the rear row of packed craft, cannot walk or use weapons before the ramp
+##     opens, the reserve circles offshore, ramps stay up until arrival, the first wave arrives together
+##     while the second is offshore, front troops leave before the player, everyone leaves by the ramps, returning craft use clear
+##     lanes and leave the scene before the second approach, and the second wave lands exactly 120 s after the first;
+##   - hull damage: a fresh hull stops rifle rounds, sustained fire makes a panel penetrable;
+##   - bangalores: one carried charge is deployed, a duplicate cannot be armed, the warning fuse is kept.
+## Run: godot --headless --path <repo> --script res://tests/omaha_test.gd
 extends SceneTree
 const Armor=preload("res://scripts/omaha/armor.gd")
+
+## The Omaha battle controller.
 var g
+
+## Collected results.
 var checks:Array=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Records and prints one result. [param label] description. [param ok] pass/fail. [param data] optional detail.
 func check(label:String,ok:bool,data=null):
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
+
+## Awaits `n` physics frames.
 func ticks(n:int):
 	for i in range(n):await physics_frame
+
+## Runs all the checks in order; the landing timeline is advanced by setting the battle clock.
 func run():
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)

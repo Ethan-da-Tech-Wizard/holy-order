@@ -1,21 +1,37 @@
-# ==============================================================================
-# Program: weapon_review.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for weapon_review.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/weapon_review.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Screenshot review of the first-person rifle in the desert mission: renders
+## hip, aiming, bolt-cycle, reload and other poses to reviews/rifle-<label>-<pose>.png
+## and writes a short render timing report.
+##
+## Needs a real renderer. Never drives the user's own game: it builds its own
+## SubViewport (1440 x 900, own world, 4x MSAA) because a tiled test window may be
+## much smaller than requested. Pass `--label=<name>` after `--` to name the set (default
+## "after"); with "before" the aiming FOV is 49 instead of 58 so old and new weapon
+## builds can be compared. The report reviews/rifle-render-check.json holds median and 95th
+## percentile of a stationary preview's frame times and is explicitly not a gameplay benchmark.
+## Run: godot --path <repo> --script res://tests/weapon_review.gd -- --label=after
 extends SceneTree
 
 # Separate, noninteractive render review. Never drives or closes the user's game.
+
+## The desert Game node.
 var game
+
+## Fixed-size viewport that renders the review.
 var review_viewport: SubViewport
+
+## Name used in the output file names.
 var label: String = "after"
 
+## SceneTree entry point: reads --label= and defers to run().
 func _initialize():
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--label="): label = arg.trim_prefix("--label=")
 	call_deferred("run")
 
+## Lets the view model finish its animation (100 manual updates, 0.6 s, a few frames) and the frame finish drawing before a capture; keeps the phase on "playing" because pause logic would stop it.
 func settle():
 	game.phase = "playing"
 	for i in range(100): game.player.update_view(1.0 / 60.0)
@@ -25,14 +41,19 @@ func settle():
 		await process_frame
 	await RenderingServer.frame_post_draw
 
+## Saves the viewport as reviews/rifle-<label>-<suffix>.png and prints WEAPON_CAPTURE.
+## [param suffix] pose name.
 func snap(suffix: String):
 	var path = "res://reviews/rifle-" + label + "-" + suffix + ".png"
 	review_viewport.get_texture().get_image().save_png(path)
 	print("WEAPON_CAPTURE ", path)
 
+## Sets up the scene (everything frozen except the view model), puts the player in the village and captures each pose, then writes the report.
 func run():
 	DisplayServer.window_set_title("Holy Order — weapon review")
 	AudioServer.set_bus_mute(0,true)
+	# Hyprland can tile a test window down to a fraction of the requested size.
+	# Render to a fixed-size GPU viewport so the captures and timing are meaningful.
 	# Hyprland can tile a test window down to a fraction of the requested size.
 	# Render to a fixed-size GPU viewport so the captures and timing are meaningful.
 	review_viewport = SubViewport.new()
@@ -61,6 +82,8 @@ func run():
 	game.player.head.rotation = Vector3.ZERO
 	game.player.camera.rotation = Vector3.ZERO
 	game.player.camera.current = true
+
+	# Arm the player with a loaded rifle at the outpost position so the view shows real sights and weapons.
 	game.player.has_rifle = true
 	game.player.ammo = 6
 	game.player.select_weapon(1)

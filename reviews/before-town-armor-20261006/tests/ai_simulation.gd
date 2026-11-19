@@ -1,14 +1,28 @@
-# ==============================================================================
-# Program: ai_simulation.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for ai_simulation.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/ai_simulation.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Long-running behaviour simulation for the desert mission's enemy AI: does the
+## defending squad react to noise as designed?
+## Scenario: load scenes/main.tscn, put the player at (0, 0.04, 20) with huge health
+## and frozen, kill the sentry and fire a gunshot noise near the outpost. Then
+## run 12 cycles of 150 physics frames at 3x time scale, sampling every soldier
+## (role, state, position, visibility, ammunition) into
+## reviews/ai-simulation.json. Pass criteria: at least one "assault" soldier moved
+## 12 m or more from its start, and the machine gun got manned. It also reports
+## how many soldiers dug in and the MG's shot count.
+## Run: godot --headless --path <repo> --script res://tests/ai_simulation.gd
+## Exit code 0 on success, 1 on failure.
 extends SceneTree
+
+## The desert Game node.
 var g
 func _initialize():call_deferred("run")
+
+## Awaits `n` physics frames.
 func ticks(n):
 	for i in range(n):await physics_frame
+
+## Runs the scenario and writes the report (see class comment).
 func run():
 	g=load("res://scenes/main.tscn").instantiate()
 	root.add_child(g)
@@ -19,12 +33,16 @@ func run():
 	g.player.health=100000
 	g.player.set_physics_process(false)
 	g.player.set_process(false)
+
+	# Skips the rifle pickup cutscene, which would otherwise freeze the phase.
 	g.pickup_played=true
 	g.enemies[0].take_damage(200)
 	g.emit_noise(Vector3(0,1.5,26),175,1,"gunshot")
 	var positions={}
 	for e in g.enemies.slice(1):positions[e.index]=e.position
 	var samples=[]
+
+	# Three-times speed so 1,800 ticks of AI behaviour take reasonable wall time.
 	Engine.time_scale=3
 	var mg_occupied=false
 	var digs=0
@@ -37,6 +55,8 @@ func run():
 			if e.entrenched:digs+=1
 		samples.append(actors)
 		print("AI_SAMPLE ",cycle," ",JSON.stringify(actors))
+
+	# Verdict: every assault soldier must have left its start by 12 m.
 	var assault_moved=true
 	for e in g.enemies:
 		if e.role=="assault" and e.position.distance_to(positions[e.index])<12:assault_moved=false

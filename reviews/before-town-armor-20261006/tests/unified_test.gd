@@ -1,13 +1,28 @@
-# ==============================================================================
-# Program: unified_test.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for unified_test.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/unified_test.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Cross-mission regression test: engine settings, weapon fire rates, the menu
+## and the destruction rules for walls and bunkers, run headless.
+##
+## Checks (PASS/FAIL printed; results summarised in a JSON report; exit code 1 on failure):
+##   - weapon cyclic rates (each automatic weapon in weapons.gd fires its rated
+##     rounds per second at physics rates tested, so the lower 20/30 Hz tick does not change the rate);
+##   - default physics is 30 Hz with interpolation, narrow battle widths;
+##   - the main menu offers all three missions and each loads, and returning to the menu works;
+##   - the Breda M37 keeps its cyclic rate;
+##   - destruction: a town wall blocks bullets, a grenade opens a local hole (not the whole wall),
+##     the remaining wall still stops bullets, and thick bunker concrete survives a hand grenade.
+## Run: godot --headless --path <repo> --script res://tests/unified_test.gd
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
 const Soldier=preload("res://scripts/omaha/actor.gd")
+
+## Collected results {label, ok, data}.
 var checks=[]
+
+## Minimal stand-in for a battle controller: just the few methods an Actor calls while firing
+## (actor_alive, actor_aim, safe_fire_line, shoot) so a gun's rate of fire can be counted
+## in isolation. `bullets` counts how many shots reached shoot().
 class GunRange extends Node3D:
 	var elapsed:float=0
 	var phase:String="playing"
@@ -18,12 +33,20 @@ class GunRange extends Node3D:
 	func actor_aim(_actor):return Vector3(0,1.2,-20)
 	func safe_fire_line(_actor,_from,_to):return true
 	func shoot(_source,_from,_aim,_spread,_damage,_kind):bullets+=1
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Records and prints one result. [param label] description. [param ok] pass/fail. [param data] optional detail.
 func check(label:String,ok:bool,data=null):
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
+
+## Awaits `n` physics frames.
 func ticks(n:int):
 	for i in range(n):await physics_frame
+
+## Runs all the checks (see the class comment).
 func run():
 	set_meta("battle_test",true)
 	var range_scene=GunRange.new()

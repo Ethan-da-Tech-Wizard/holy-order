@@ -1,16 +1,33 @@
-# ==============================================================================
-# Program: omaha_routes.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_routes.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/omaha_routes.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Rule checks for the Omaha attackers' routing and several mission rules.
+##
+## Checks (printed as PASS/FAIL, exit code not set by this script):
+##   - assault_goal() walks a soldier through its stages: to the bunker's rear door
+##     and inside (stage 4), back out the rear once the gun room is clear (stage 5), then on to sweep remaining defenders (stage 6);
+##   - once the sector is clear, column members in the village keep attacking inland;
+##   - a flamethrower burns a visible target in range, but concrete blocks the flame;
+##   - securing three bunkers and clearing the village does not end the mission before wave two lands.
+## Run: godot --headless --path <repo> --script res://tests/omaha_routes.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Collected results {check, ok}.
 var checks=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Records and prints one result.
+## [param label] description. [param ok] pass/fail.
 func check(label:String,ok:bool):
 	checks.append({"check":label,"ok":ok})
 	print("PASS " if ok else "FAIL ",label)
+
+## Runs the checks in the order above.
 func run():
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()
@@ -23,6 +40,8 @@ func run():
 	actor.sector=3
 	var center=g.world.anchors[3]
 	var path=[]
+
+	# Teleport the soldier to each goal in turn so the stage counter advances exactly as it would when walking there.
 	for i in range(5):
 		var p=g.assault_goal(actor)
 		actor.position=p
@@ -36,6 +55,8 @@ func run():
 	actor.position=g.assault_goal(actor)
 	g.assault_goal(actor)
 	check("Squad sweeps remaining strongpoint defenders",actor.assault_stage==6 and g.assault_goal(actor).distance_to(center)>3)
+
+	# Everyone is parked so only the flamethrower fixture can act; positions are chosen 14 m apart on the beach so the target is within the 23 m jet.
 	# Exercise real flame damage and physical shielding independently of random combat.
 	for a in g.actors:
 		a.staged=true
@@ -61,6 +82,8 @@ func run():
 	await physics_frame
 	g.flame_jet(source,source.eye(),target.aim_point())
 	check("Concrete stops flame damage through walls",target.health==before)
+
+	# Victory must come from objectives: here every German and tank is dead and three sectors captured, but the second wave has not landed, so the game must keep playing.
 	# No arbitrary casualty quota: actual objectives determine victory.
 	g.phase="playing"
 	g.player.health=100

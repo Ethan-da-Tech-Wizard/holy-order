@@ -1,22 +1,39 @@
-# ==============================================================================
-# Program: encounter_test.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for encounter_test.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/encounter_test.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Scripted end-to-end test of the first (desert) mission: one long playthrough with
+## assertions at each step, run inside the game itself.
+##
+## Role: created by game.gd when started with `--self-test` (see Game.run_tests); `g` is the Game node.
+## Failures are collected and the process exits with code 1 if any.
+## Sequence covered: title state and layout (six defenders, an isolated sentry over 35 m
+## away); controls (Q/E lean, W + Shift sprint, charge, prone, crouch, mantle a
+## sandbag wall); enemy line of sight against cover; killing the sentry with the sword, the rifle drop,
+## pickup cutscene (six rounds, subtitle) and weapon states (slung rifle,
+## fists); ammunition accounting (six shots only, reload from reserve, looting three clips once, lint once);
+## shooting and gauntlet kills; and the later quest steps through to the end.
+## Run: godot --headless --path <repo> res://scenes/main.tscn -- --self-test   (exit 0 = all passed)
 extends Node
 
+## All check results.
 var checks: Array = []
+
+## Descriptions of the failed checks.
 var failures: Array[String] = []
 
+## Records one assertion and prints it (and remembers failures).
+## [param condition] must be true. [param description] what is being verified.
 func check(condition: bool, description: String):
 	checks.append({"check":description,"passed":condition})
 	print(("PASS " if condition else "FAIL ")+description)
 	if not condition: failures.append(description)
 
+## Awaits `count` physics frames.
 func ticks(count: int):
 	for i in range(maxi(1,roundi(count*Engine.physics_ticks_per_second/60.0))): await get_tree().physics_frame
 
+## Runs the whole scripted playthrough (see the class comment) and quits with 0 or 1.
+## [param g] the Game node under test.
 func run(g):
 	check(g.phase=="title","Launch stops at the start screen")
 	check(g.enemies.size()==6 and g.remaining()==6,"Six defenders; sentry separated from the line")

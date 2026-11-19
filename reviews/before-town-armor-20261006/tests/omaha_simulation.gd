@@ -1,15 +1,37 @@
-# ==============================================================================
-# Program: omaha_simulation.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_simulation.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/omaha_simulation.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## End-to-end observer simulation of the whole Omaha landing: runs the real
+## battle with no human player and records how it develops.
+##
+## Method: loads scenes/omaha.tscn with the fixed seed 19440606, starts it, parks the
+## player far away (the player gets off the craft through the same dismount code
+## but never fights), and advances to the times in `targets` (45, 65, 90, 120,
+## 180, 240, 275, 300, 360, 480 and 600 simulated seconds). At each it writes a
+## snapshot (survivors, current AI states, wire crossings, number stuck, engineers left, spread of
+## positions, shots, penetrations...) to reviews/omaha/simulation-progress.json, and
+## at the end the full report with median and 95th percentile step times to
+## reviews/omaha/simulation.json. Environment variable OMAHA_SIM_END limits the
+## run to targets up to that time. Reported times are headless CPU step times, not GPU frame rate.
+## Run: godot --headless --path <repo> --script res://tests/omaha_simulation.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Snapshot records.
 var snapshots=[]
+
+## Reserved; unused.
 var sample_times=[]
+
+## Wall-clock duration (ms) of every physics step.
 var durations=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Records the state of all living, landed Americans: counts by AI state, stuck soldiers (stuck > 0.5 s), engineers, sorted z and x positions, soldiers beyond the last wire row, plus global counters; prints it and rewrites the progress file.
 func snapshot():
 	var states={}
 	var positions=[]
@@ -35,6 +57,8 @@ func snapshot():
 	print("SNAPSHOT ",JSON.stringify(record))
 	var file=FileAccess.open("res://reviews/omaha/simulation-progress.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(snapshots,"  "))
+
+## Runs the observation to the last target time and writes the final report.
 func run():
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
@@ -42,6 +66,9 @@ func run():
 	root.add_child(g)
 	Engine.max_fps=0
 	await physics_frame
+
+	# Observe without an unattended player death aborting the AI battle.
+	# No team health/ammo buffs: observer is moved away after disembarkation.
 	g.begin()
 	# Observe without an unattended player death aborting the AI battle.
 	# No team health/ammo buffs: observer is moved away after disembarkation.

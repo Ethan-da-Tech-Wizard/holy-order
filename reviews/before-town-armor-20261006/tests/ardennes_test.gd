@@ -1,24 +1,59 @@
-# ==============================================================================
-# Program: ardennes_test.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for ardennes_test.gd.
-# ==============================================================================
+## Archived review snapshot (before-town-armor-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/ardennes_test.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Large behaviour test of the Ardennes mission, run headless.
+##
+## Checks (PASS/FAIL printed, snapshots and a JSON report written; exit 1 on failure):
+##   - forces and setup: the mission starts at its title screen; nine trucks carry 107 allied actors plus the
+##     player (12 per squad, 11 in truck 4) against 80 Germans; twelve road-facing MGs have real gunners; convoy
+##     troops are seated infantry; everyone has finite ammunition and at least two grenades; the player starts with a
+##     20-round BAR, 120 reserve, sword and shovel; the terrain has 300+ chunks and cover sites; tactics data and two wings exist;
+##   - fire discipline: bots refuse shots whose dispersion cone contains a friendly or grenade throws beside allies, yet real
+##     bullets can still wound allies;
+##   - weapons: BAR fire spends one round per shot; broken guns cannot fire but can be swapped; swapping drops the old gun with its exact
+##     remaining rounds; a German gun does not convert .30-06 reserve; reload uses only compatible reserve;
+##   - bodies and loot: a death makes a persistent articulated body with 6 parts and drops the gun with its rounds; bullets
+##     and explosions can dismember it; loot transfers only actual rounds and grenades once, keeps grenade types within the
+##     four-grenade limit and leaves excess on the body; pack space rules (stripper clips small, partial BAR magazine full slot);
+##   - command and wings: command passes to a living subordinate when the commander dies; every dismounted survivor is assigned
+##     to a balanced left or right wing; both wings first clear the ambush hills;
+##   - player controls: crouch and prone toggles, one grenade windup per key press (spam-proof), digging and grenade soil scars;
+##   - truck rules: seated player and AI passengers cannot fire, rear steel protects passengers, a following truck goes around a
+##     disabled one, and the scripted ambush hits only trucks that actually arrive (outcome "triggered" or "skipped");
+##   - an autonomous run: trucks settle and survivors dismount in real time, road MGs engage, and the American force advances and
+##     inflicts casualties without the player.
+## Run: godot --headless --path <repo> --script res://tests/ardennes_test.gd
 extends SceneTree
+
+## The Ardennes battle controller under test.
 var g
+
+## Collected results {check, passed}.
 var checks:Array=[]
+
+## Time-series snapshots recorded during the long scenarios.
 var snapshots:Array=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Awaits `n` physics frames.
 func ticks(n):
 	for i in range(n):await physics_frame
+
+## Records and prints one result. [param ok] pass/fail. [param label] description.
 func check(ok:bool,label:String):
 	checks.append({"check":label,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+label)
+
+## Loads and adds a fresh Ardennes scene, removes the frame cap and waits three physics frames, for scenarios that need a clean battle.
 func make_game():
 	g=load("res://scenes/ardennes.tscn").instantiate()
 	root.add_child(g)
 	Engine.max_fps=0
 	await ticks(3)
+
+## Puts the game back on the title phase, waits (up to 1200 frames) until queued terrain cuts have finished, then frees it so the next scenario starts from scratch.
 func clean():
 	g.phase="title"
 	for i in range(1200):
@@ -26,6 +61,8 @@ func clean():
 		await process_frame
 	g.queue_free()
 	await ticks(4)
+
+## Runs all the scenarios in order (see the class comment).
 func run():
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441223)
