@@ -1,11 +1,15 @@
-# ==============================================================================
-# Program: grade_probe.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for grade_probe.gd.
-# ==============================================================================
+## Diagnostic probe (not a pass/fail test) for the Ardennes terrain: scans a grid of the battlefield and prints
+## the 15 steepest places, so one can confirm that the authored hills stay below the 0.85 slope (about 40 degrees)
+## that actors and the player can walk, before any excavation.
+## Method: base_surface_height is sampled every 8 m over x -160..160 and z -390..390; slope is the larger of the
+## x and z height differences over a 2 m step. Prints STEEP_SLOPES with {x, z, slope} sorted steepest first.
+## Run: godot --headless --path <repo> --script res://reviews/grade_probe.gd
 extends SceneTree
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Loads the Ardennes scene in test mode, scans the grid and prints the steepest cells.
 func run():
 	set_meta("battle_test",true)
 	var g=load("res://scenes/ardennes.tscn").instantiate()
