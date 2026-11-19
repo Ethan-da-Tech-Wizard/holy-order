@@ -1,26 +1,53 @@
-# ==============================================================================
-# Program: breach_review.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated test script verifying runtime performance, physics stability, or behavior correctness for breach_review.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script tests/breach_review.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Verification and screenshots for demolition in the desert village: blasts
+## must open real routes through houses, the abandoned machine gun can be used,
+## the demolition satchel works and everything settles back to static geometry.
+##
+## Needs a renderer for the screenshots (reviews/village-<label>.png: before-breach,
+## after-breach, machine-gun, inventory). Checks printed as PASS/FAIL and written to
+## reviews/breach-review.json; exit code 1 if any fail. Checks include: two overlapping
+## blasts rebuild at least 8 breakable pieces with no pending rebuilds; a ray through
+## the demolished wall is open; the player can man the MG; satchel placement and
+## detonation consume exactly one of the three charges; no breakable is left rebuilding.
+## Run: godot --path <repo> --script res://tests/breach_review.gd
 extends SceneTree
+
+## The desert Game node.
 var g
+
+## Fixed-size render viewport (1440 x 900).
 var view: SubViewport
+
+## Collected results {check, passed}.
 var checks=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
+
+## Awaits `n` physics frames.
 func ticks(n):
 	for i in range(n):await physics_frame
+
+## Records and prints one result.
+## [param ok] pass/fail. [param label] description.
 func check(ok: bool, label: String):
 	checks.append({"check":label,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+label)
+
+## Saves the viewport as reviews/village-<label>.png.
 func capture(label: String):
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/village-"+label+".png")
+
+## Keeps the phase "playing" for 8 rendered frames so animations and effects update before a capture.
 func settle():
 	for i in range(8):
 		g.phase="playing"
 		await process_frame
+
+## Runs the whole scenario (see class comment).
 func run():
 	DisplayServer.window_set_title("Holy Order — destruction verification")
 	AudioServer.set_bus_mute(0,true)
