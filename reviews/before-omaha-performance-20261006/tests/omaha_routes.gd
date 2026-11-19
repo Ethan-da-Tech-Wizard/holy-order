@@ -4,43 +4,64 @@
 # Last Modified: November 19, 2026
 # Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for omaha_routes.gd.
 # ==============================================================================
+## Logic test for Omaha assault routes, flamethrower effects and win conditions.
+##
+## Checks, in order: (1) one soldier steps through the bunker assault stages (rear door, gun room,
+## rear exit, sweep); (2) the flamethrower damages a visible target but concrete blocks the flame;
+## (3) securing the village alone does not win, while three exits plus the village plus the second
+## wave does. Writes reviews/omaha/routes-and-objectives.json; exit code 1 on any failed check.
+## Run: `godot --headless --path . --script res://tests/omaha_routes.gd`.
 extends SceneTree
+
+# Mission instance and check records.
 var g
 var checks=[]
 func _initialize():call_deferred("run")
+
+## Record and print one result (label first, then ok).
 func check(label:String,ok:bool):
 	checks.append({"check":label,"ok":ok})
 	print("PASS " if ok else "FAIL ",label)
 func run():
+	# Deterministic test mode.
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()
 	root.add_child(g)
 	Engine.max_fps=0
 	await physics_frame
+	# Drive the AI manually; the mission's own physics processing is off.
 	g.set_physics_process(false)
+	# Test soldier: first friendly, on foot, in sector 3.
 	var actor=g.friendlies[0]
 	actor.truck=null
 	actor.sector=3
 	var center=g.world.anchors[3]
 	var path=[]
+	# Repeatedly ask for the next goal and teleport to it, which makes the soldier pass every route stage.
 	for i in range(5):
 		var p=g.assault_goal(actor)
 		actor.position=p
 		g.assault_goal(actor)
 		path.append({"stage":actor.assault_stage,"point":str(p)})
+	# After 5 requests the stage should be 4 (inside the bunker, at the centre).
 	check("Assault reaches the rear door then stays inside bunker",actor.assault_stage==4 and actor.position.distance_to(center)<3)
+	# Killing the gun-room MG gunners clears the room.
 	for e in g.enemies:
 		if e.sector==3 and e.role=="bunker_mg":e.alive=false
 	g.assault_goal(actor)
+	# Cleared room leads out through the rear exit (z more than 5 m behind the bunker centre).
 	check("Cleared gun room leads back through rear exit",actor.assault_stage==5 and g.assault_goal(actor).z<center.z-5)
 	actor.position=g.assault_goal(actor)
 	g.assault_goal(actor)
+	# Next stage: sweep remaining defenders, which sends him away from the bunker centre.
 	check("Squad sweeps remaining strongpoint defenders",actor.assault_stage==6 and g.assault_goal(actor).distance_to(center)>3)
+	# Exercise real flame damage and physical shielding independently of random combat.
 	# Exercise real flame damage and physical shielding independently of random combat.
 	for a in g.actors:
 		a.staged=true
 		a.collision_layer=0
 		a.equipment.collision_layer=0
+	# A flamethrower soldier and a target 14 m away at full health.
 	var source=g.friendlies.filter(func(a):return a.weapon_kind=="flamethrower")[0]
 	var target=g.enemies[50]
 	source.staged=false
@@ -54,23 +75,30 @@ func run():
 	await physics_frame
 	await physics_frame
 	g.flame_jet(source,source.eye(),target.aim_point())
+	# Burning target at range: health must go down.
 	check("Flamethrower burns a visible target within range",target.health<100)
 	var before=target.health
+	# Place a concrete wall 6 m wide between them; the same flame must now do nothing.
 	var wall=g.world.strong(Vector3(6,5,1),g.world.on_ground(Vector3(1000,0,-88))+Vector3(0,2.5,0),g.world.concrete)
 	await physics_frame
 	await physics_frame
 	g.flame_jet(source,source.eye(),target.aim_point())
 	check("Concrete stops flame damage through walls",target.health==before)
 	# No arbitrary casualty quota: actual objectives determine victory.
+	# No arbitrary casualty quota: actual objectives determine victory.
 	g.phase="playing"
 	g.player.health=100
 	g.player.truck=null
+	# Player at the far inland end of the map (z -710), all enemies dead.
 	g.player.position=g.world.on_ground(Vector3(0,0,-710))
 	for e in g.enemies:e.alive=false
+	# Capture progress per area: three exits at full (10), the rest empty.
 	g.capture.assign([10.0,10.0,10.0,0.0,0.0,0.0,0.0,0.0])
+	# With the second wave not yet landed, the game must keep playing.
 	g.second_wave_landed=false
 	g.update_objectives(12)
 	check("Securing village does not skip reinforcement objective",g.phase=="playing")
+	# After the second wave lands, the next update gives victory.
 	g.second_wave_landed=true
 	g.update_objectives(1)
 	check("Three exits plus village plus wave two wins",g.phase=="victory")
