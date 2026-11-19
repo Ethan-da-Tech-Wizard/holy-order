@@ -1,21 +1,53 @@
-# ==============================================================================
-# Program: interface.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for interface.gd.
-# ==============================================================================
+## Archived review snapshot (before-village-pass-20261005-205403): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/interface.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Full-screen UI layer for the desert mission: title card, HUD, pause and
+## inventory screens, objectives, subtitles and end screens.
+##
+## Role: a child of the Game node (game.gd sets `game`). Everything except
+## buttons is drawn immediately in _draw() from game state, redrawn every
+## frame, so there are no per-element nodes to keep in sync. Buttons are
+## real Button nodes created by build_menu() inside `panel` whenever the game
+## phase changes or the window is resized.
+## Phases handled (game.phase): cinematic, title, playing, paused, inventory,
+## objectives, briefing, victory, defeat.
+## Reads: game.player (health, stamina, weapon, ammo), game.enemies,
+## game.demolition, game.mg_nest, subtitle/toast/flash timers.
+## Layout is proportional to the control's size (w, h) so it works at any
+## resolution; fixed pixel offsets are used only for HUD boxes pinned to
+## screen corners.
 extends Control
 
+## The Game node (game.gd); the single source of all displayed data.
 var game
+
+## Display font for the title, health number and ammo count.
 var serif = preload("res://assets/fonts/DejaVuSerif.ttf")
+
+## Body font for readable sentences, toasts and subtitles.
 var sans = preload("res://assets/fonts/DejaVuSans.ttf")
+
+## Monospace font for the small capital-letter HUD labels.
 var mono = preload("res://assets/fonts/DejaVuSansMono.ttf")
+
+## Main text colour (warm off-white).
 const cream = Color("e7deca")
+
+## Secondary text colour for captions and key hints.
 const muted = Color("aaa998")
+
+## Accent colour for highlights, objective marker and borders.
 const gold = Color("cbb47e")
+
+## Container for the current phase's Button nodes; replaced on every rebuild.
 var panel: Control
+
+## Last phase the buttons were built for, to detect phase changes.
 var menu_phase: String = ""
 
+## Godot lifecycle hook: stretches over the whole screen, lets mouse events
+## pass through (only the buttons catch clicks), applies the default font and
+## rebuilds buttons when the window is resized (button positions depend on size).
 func _ready():
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -25,23 +57,37 @@ func _ready():
 	self.theme = theme
 	resized.connect(func(): if is_instance_valid(panel): build_menu())
 
+## Per-frame hook: rebuilds the buttons when the game phase changes and asks
+## for a redraw, since _draw() shows live data (health, timers, compass).
 func _process(_delta):
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	if game.phase != menu_phase:
 		menu_phase = game.phase
 		build_menu()
 	queue_redraw()
 
+## Draws one line of text with its baseline at `pos`.
+## [param text] string, [param pos] screen pixels, [param font] one of
+## serif/sans/mono, [param font_size] points, [param color] defaults to cream.
 func label_at(text: String, pos: Vector2, font: Font, font_size: int, color: Color = cream):
 	draw_string(font,pos,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,color)
 
+## Paints the current phase. Order: cinematic bars, title card, in-game HUD,
+## then the shared dim overlay for paused/inventory/objectives/briefing/end
+## screens. Each branch returns early so phases never overlap.
 func _draw():
 	var w = size.x
 	var h = size.y
+
+	# Letterbox bars while a scripted shot plays; subtitles sit inside the lower bar.
 	if game.phase == "cinematic":
 		draw_rect(Rect2(0,0,w,h*0.10),Color("081012"))
 		draw_rect(Rect2(0,h*0.84,w,h*0.16),Color("081012"))
 		draw_subtitles(h*0.88)
 		return
+
+	# Left 51% is a dark panel over the 3D backdrop holding the title text.
 	if game.phase == "title":
 		draw_rect(Rect2(0,0,w*0.51,h),Color(0.035,0.058,0.058,0.93))
 		draw_rect(Rect2(w*0.51,0,w*0.04,h),Color(0.035,0.058,0.058,0.3))
@@ -52,6 +98,8 @@ func _draw():
 		draw_line(Vector2(x,h*0.38),Vector2(w*0.44,h*0.38),Color(gold,0.55),1)
 		label_at("CAPUZZO FRONTIER  /  LIBYA",Vector2(x,h*0.43),mono,14,gold)
 		label_at("14 JUNE 1940",Vector2(x,h*0.465),mono,13,muted)
+
+		# Backstory text, one string per line; the empty string makes a paragraph break.
 		var lines = ["Your order called it the Ark of the Covenant.","It was a machine. When it opened, your brothers", "were scattered across centuries.","", "You arrived alone. Steel on your back.","A sword at your side. A foreign war ahead."]
 		for i in range(lines.size()):
 			label_at(lines[i],Vector2(x,h*0.53+i*24),sans,16,cream)
@@ -61,6 +109,8 @@ func _draw():
 		label_at("A fictional outpost in the opening desert campaign.",Vector2(w*0.62,h*0.915),sans,12,cream)
 		label_at("PLAYABLE PROTOTYPE  •  v"+str(ProjectSettings.get_setting("application/config/version","0.1")),Vector2(x,h-28),mono,11,muted)
 		return
+
+	# A subtle helmet rim, kept clear of the sights and battlefield.
 	if game.phase == "playing":
 		# A subtle helmet rim, kept clear of the sights and battlefield.
 		draw_rect(Rect2(0,0,w,12),Color(0.02,0.03,0.03,0.80))
@@ -68,15 +118,26 @@ func _draw():
 		draw_rect(Rect2(25,31,346,72),Color(0.06,0.085,0.08,0.78))
 		label_at("CAPUZZO  /  FORWARD POSITION",Vector2(42,57),mono,12,gold)
 		label_at(game.objective_text(),Vector2(42,86),sans,16)
+
+		# Objective box top-left, then the compass drawn top-centre.
 		draw_navigation()
+
+		# Crosshair: four short ticks around screen centre; tighter (4 px) when
+		# aiming. Hidden for the rifle when aiming, because the real iron sights
+		# are the reticle.
 		var center = size/2
 		var spread = 4 if game.player.aiming else 7
 		if game.player.weapon != 1 or not game.player.aiming:
 			for v in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:
 				draw_line(center+v*spread,center+v*(spread+5),Color(cream,0.8),1.3)
+
+		# Gold X markers appear around the crosshair for a moment after a hit.
 		if game.hit_flash > 0:
 			for v in [Vector2(-1,-1),Vector2(1,-1),Vector2(-1,1),Vector2(1,1)]:
 				draw_line(center+v*9,center+v*15,gold,2)
+
+		# Bottom-left vitality panel: health number, health bar (current/max
+		# clamped to 0..1) and a thin stamina bar (0..100).
 		draw_rect(Rect2(28,h-135,220,100),Color(0.05,0.075,0.07,0.8))
 		label_at("VITALITY",Vector2(44,h-108),mono,11,muted)
 		label_at(str(int(ceil(game.player.health))),Vector2(44,h-66),serif,33,cream)
@@ -87,47 +148,69 @@ func _draw():
 		var name = ["ARMING SWORD","CARCANO M91","STEEL GAUNTLETS"][game.player.weapon]
 		draw_rect(Rect2(w-284,h-135,255,100),Color(0.05,0.075,0.07,0.8))
 		label_at(name,Vector2(w-265,h-108),mono,13,gold)
+
+		# Right-hand counter: ammo loaded / reserve for the rifle, otherwise a
+		# word; then overridden by state (satchel, reload, mounted gun trays).
 		var count = "%02d  /  %02d" % [game.player.ammo,game.player.reserve] if game.player.weapon == 1 else ("EDGE" if game.player.weapon == 0 else "FISTS")
 		if game.player.reload_time>0: count="RELOADING"
 		label_at(count,Vector2(w-265,h-69),serif,28)
 		label_at("G  %d     TAB  INVENTORY" % game.player.grenades,Vector2(w-265,h-47),mono,11,muted)
 		label_at("1 SWORD   2 RIFLE   3 FISTS   J OBJECTIVES",Vector2(w/2-185,h-36),mono,12,Color(cream,0.75))
+
+		# Sprint-melee charge cue and the heavy-blow charge bar (power_hold of 1.2 s max).
 		if game.player.is_charging:
 			label_at("CHARGE",Vector2(w/2-37,h*0.62),mono,14,gold)
 		if game.player.holding_attack:
 			draw_rect(Rect2(w/2-40,h/2+37,80,4),Color("434d43"))
 			draw_rect(Rect2(w/2-40,h/2+37,80*game.player.power_hold/1.2,4),gold)
+
+		# Context prompt ("F to open", etc.) centred in a box sized to the text.
 		var prompt = game.interaction_prompt()
 		if prompt != "":
 			var width = sans.get_string_size(prompt,HORIZONTAL_ALIGNMENT_LEFT,-1,17).x
 			draw_rect(Rect2(w/2-width/2-18,h*0.67-27,width+36,41),Color(0.05,0.08,0.08,0.88))
 			label_at(prompt,Vector2(w/2-width/2,h*0.67),sans,17,gold)
+
+		# Transient message just below the compass.
 		if game.toast_time > 0:
 			var width = sans.get_string_size(game.toast_text,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
 			draw_rect(Rect2(w/2-width/2-20,171,width+40,42),Color(0.055,0.075,0.07,0.9))
 			label_at(game.toast_text,Vector2(w/2-width/2,198),sans,16,cream)
+
+		# Red vignette on the screen edges that fades with damage_flash.
 		if game.damage_flash > 0:
 			var a = game.damage_flash*0.45
 			draw_rect(Rect2(0,0,w,h),Color(0.6,0.07,0.025,a*0.26))
 			draw_rect(Rect2(0,0,13,h),Color(0.55,0.08,0.04,a))
 			draw_rect(Rect2(w-13,0,13,h),Color(0.55,0.08,0.04,a))
+
+		# Dialogue subtitles near the bottom of the playing screen.
 		draw_subtitles(h*0.76)
 		return
 	# Paused, inventory, success and death all stop simulation, not just input.
+	# One full-screen dim overlay, then a heading, then per-phase text.
 	draw_rect(Rect2(0,0,w,h),Color(0.025,0.045,0.045,0.91))
 	var x = w*0.15
+
+	# Heading text per phase (empty for any phase not listed).
 	var title = {"paused":"A moment of stillness", "inventory":"What you carry", "victory":"THE LINE IS SILENT", "defeat":"STEEL IS NOT ENOUGH","briefing":"A stranger in the desert","objectives":"Your path through the desert"}.get(game.phase,"")
 	label_at("HOLY ORDER  /  FIRST CONTACT",Vector2(x,h*0.19),mono,13,gold)
 	label_at(title,Vector2(x,h*0.30),serif,43)
 	draw_line(Vector2(x,h*0.35),Vector2(w*0.85,h*0.35),Color(gold,0.5),1)
+
+	# Equipment list in fixed-width columns (mono font), including a joke item.
 	if game.phase == "inventory":
 		var rows = ["ARMING SWORD                 Equipped" if game.player.weapon==0 else "ARMING SWORD                 Sheathed", "CARCANO M91                  %d loaded / %d reserve" % [game.player.ammo,game.player.reserve] if game.player.has_rifle else "CARCANO M91                  Not acquired", "STEEL HARNESS                Worn", "BREDA M35 GRENADES           %d" % game.player.grenades,"POCKET LINT                  %d" % game.lint]
 		for i in range(rows.size()):
 			label_at(rows[i],Vector2(x,h*0.43+i*38),mono,17,cream)
 		label_at("Lint stacks. It has no use. Yet.",Vector2(x,h*0.70),serif,21,gold)
+
+	# Controls tutorial shown once before play begins.
 	elif game.phase == "briefing":
 		var lines=["You begin behind a large rock. An isolated sentry stands ahead.","WASD to move. Shift to sprint. C to crouch. Z to go prone.","With sword or fists: hold Shift + right click to charge.","Left click to strike. Hold left click, then release for a heavy blow.","After the sentry, choose how to approach the five-man outpost.","F to loot. R to reload. Q/E to lean. Space to jump or mantle.","Follow the gold marker. J opens objectives; Tab opens inventory."]
 		for i in range(lines.size()): label_at(lines[i],Vector2(x,h*0.42+i*31),sans,18,cream)
+
+	# Quest checklist: done steps get a check, the current one an arrow.
 	elif game.phase == "objectives":
 		var stages=["sentry","outpost","patrol","complete"]
 		var current=stages.find(game.quest)
@@ -140,6 +223,8 @@ func _draw():
 	elif game.phase == "paused":
 		var lines = ["WASD Move   MOUSE Look   SHIFT Sprint   C Crouch   Z Prone", "LMB Attack / hold for power   RMB Aim / sprinting melee charge", "Q / E Lean   SPACE Jump / mantle   R Reload", "1 / 2 / 3 Sword / rifle / fists   F Loot   G Grenade", "TAB Inventory   J Objectives", "F11 Fullscreen   ESC Pause / resume"]
 		for i in range(lines.size()): label_at(lines[i],Vector2(x,h*0.42+i*32),mono,16,cream)
+
+	# Elapsed time as MM:SS, shots fired and lint collected.
 	elif game.phase == "victory":
 		label_at("The position is cleared. Your first test ends here.",Vector2(x,h*0.44),sans,22,cream)
 		label_at("Somewhere beyond the desert, another century is waiting.",Vector2(x,h*0.50),serif,21,gold)
@@ -148,6 +233,10 @@ func _draw():
 		label_at("Your armour was made for another war.",Vector2(x,h*0.45),serif,25,cream)
 		label_at("Use cover, loot ammunition, and choose your moment to charge.",Vector2(x,h*0.53),sans,18,muted)
 
+## Draws the compass: a 51 px radar disc with the objective dot, the player's
+## heading arrow and nearby visible enemies, plus a floating gold diamond over
+## the objective when it is on screen.
+## World-to-radar scale is 0.62 px per metre; the objective dot is clamped to the rim.
 func draw_navigation():
 	var center=Vector2(size.x/2,78)
 	var radius=51.0
@@ -162,20 +251,32 @@ func draw_navigation():
 	draw_circle(center+delta,4,gold)
 	var facing=Vector2(-sin(game.player.rotation.y),-cos(game.player.rotation.y))
 	draw_colored_polygon(PackedVector2Array([center+facing*9,center+facing.rotated(2.5)*5,center+facing.rotated(-2.5)*5]),cream)
+
+	# Only enemies within 24 m that the player has line of sight to are shown.
 	for enemy in game.enemies:
 		if not enemy.alive or enemy.position.distance_to(game.player.position)>24: continue
 		var p=Vector2(enemy.position.x-game.player.position.x,enemy.position.z-game.player.position.z)*0.62
 		draw_circle(center+p,2.5,Color("b8755c"))
 	label_at("J  OBJECTIVES",center+Vector2(-52,72),mono,10,muted)
 	var cam=game.player.camera
+
+	# No world marker when the objective is behind the camera.
 	if cam.is_position_behind(target): return
 	var p=cam.unproject_position(target)
+
+	# Keep the marker inside the screen margins and below the HUD box.
 	p.x=clampf(p.x,38,size.x-38)
 	p.y=clampf(p.y,230,size.y-190)
+
+	# Diamond pulses +-1.5 px at about 0.5 Hz for visibility.
 	var offset=5+sin(game.visual_elapsed*3)*1.5
 	draw_polyline(PackedVector2Array([p+Vector2(0,-offset),p+Vector2(offset,0),p+Vector2(0,offset),p+Vector2(-offset,0),p+Vector2(0,-offset)]),gold,2)
 	label_at("%dm" % int(game.player.position.distance_to(target)),p+Vector2(-13,25),mono,11,cream)
 
+## Draws the current line of dialogue with the speaker's name.
+## [param y] baseline of the first line in pixels.
+## Wraps words to 75% of the screen width and sizes the backing box to the
+## widest line. Nothing is drawn when no subtitle is active.
 func draw_subtitles(y: float):
 	if game.subtitle_time <= 0 or game.subtitle == "": return
 	var lines: Array[String] = []
@@ -194,6 +295,11 @@ func draw_subtitles(y: float):
 	for i in range(lines.size()):
 		label_at(lines[i],Vector2(size.x/2-width/2,y+21+i*26),sans,18,cream)
 
+## Creates one styled Button inside `panel`.
+## [param text] label, [param rect] position and size in pixels,
+## [param callback] Callable run on press, [param primary] true for the
+## gold call-to-action style, false for the dark secondary style.
+## Hover and focus share a lightened colour so keyboard users see focus.
 func button(text: String, rect: Rect2, callback: Callable, primary: bool = false):
 	var b = Button.new()
 	b.text = text
@@ -216,6 +322,9 @@ func button(text: String, rect: Rect2, callback: Callable, primary: bool = false
 	b.pressed.connect(callback)
 	panel.add_child(b)
 
+## Rebuilds the phase's buttons from scratch (title, paused, briefing, end
+## screens). The old panel is freed first so buttons never pile up. Called on
+## phase changes and window resizes.
 func build_menu():
 	if is_instance_valid(panel):
 		remove_child(panel)
@@ -226,6 +335,7 @@ func build_menu():
 	var w = size.x
 	var h = size.y
 	match game.phase:
+		# Positions are fractions of the screen so buttons stay aligned with the drawn text.
 		"title":
 			button("BEGIN  →",Rect2(w*0.052,h*0.745,218,52),game.begin,true)
 			button("QUIT",Rect2(w*0.052+232,h*0.745,110,52),game.quit_game)

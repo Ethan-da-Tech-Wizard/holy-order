@@ -1,9 +1,26 @@
-# ==============================================================================
-# Program: game.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for game.gd.
-# ==============================================================================
+## Archived review snapshot (before-village-pass-20261005-205403): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/game.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Game controller for the desert mission ("First Contact", scenes/main.tscn).
+##
+## Role: the root of the mission. It builds the world, the player, six enemy
+## soldiers, the grenade crate, the machine-gun nest, the demolition cache and
+## the HUD, owns the game phase and quest progress, and provides the shared
+## services every other script calls: noise propagation, projectiles,
+## explosions, interaction prompts, toasts and subtitles, and the two
+## scripted cutscenes (rifle pickup, tea with the British patrol).
+##
+## Phases (`phase`): title -> briefing -> playing <-> paused/inventory/
+## objectives; cinematic during cutscenes; victory and defeat end the run.
+## While phase != "playing" the player and all AI skip their physics logic,
+## so a pause stops the simulation and not only the input.
+## Quest chain (`quest`): sentry -> rifle -> outpost -> patrol -> complete.
+##
+## Command line (after `--`): --self-test (runs tests/encounter_test.gd and
+## skips the briefing), --preview-play (start immediately), --capture-title
+## (save a title screenshot and quit), --visual-check (tests/visual_check.gd).
+## Related files: world.gd, player.gd, enemy.gd, interface.gd, audio.gd,
+## mg_nest.gd, demolition.gd, graphics.gd.
 extends Node3D
 
 const World = preload("res://scripts/world.gd")
@@ -12,40 +29,109 @@ const Enemy = preload("res://scripts/enemy.gd")
 const Interface = preload("res://scripts/interface.gd")
 const Sounds = preload("res://scripts/audio.gd")
 const Art = preload("res://scripts/art.gd")
+
+## The World node (terrain, village, navigation).
 var world
+
+## The player node (player.gd).
 var player
+
+## The Interface node drawing the HUD and menus.
 var hud
+
+## The audio service (audio.gd).
 var sounds
+
+## The six Italian soldiers (team 0); index 0 is the sentry.
 var enemies: Array = []
+
+## Current game phase string (see class comment).
 var phase: String = "title"
+
+## Seconds of play time (counts only while playing); shown on the victory screen.
 var elapsed: float = 0
+
+## Collected pocket lint, a harmless joke collectible.
 var lint: int = 0
+
+## Loot records {enemy, looted, weapon_taken, lint} for dead soldiers.
 var corpses: Array = []
+
+## The sentry's dropped rifle model, until picked up.
 var rifle_drop: Node3D
+
+## True while the dropped rifle can be taken.
 var rifle_available: bool = false
+
+## The crate that holds three grenades.
 var grenade_crate: Node3D
+
+## True until the grenades are taken.
 var grenade_available: bool = true
+
+## Current transient message.
 var toast_text: String = ""
+
+## Seconds the toast remains visible.
 var toast_time: float = 0
+
+## Timer driving the HUD hit marker.
 var hit_flash: float = 0
+
+## Timer driving the red damage vignette.
 var damage_flash: float = 0
+
+## World direction the last damage came from.
 var last_damage_direction = Vector3.ZERO
+
+## Set when the sentry spots the player (written by enemy.gd; nothing reads it yet).
 var has_seen_rifle: bool = false
+
+## Grenades in flight: {node, velocity, fuse, age}.
 var grenades_live: Array = []
+
+## Time counter that runs in every phase (used for UI animation).
 var visual_elapsed: float = 0
+
+## Current subtitle text.
 var subtitle: String = ""
+
+## Name shown above the subtitle.
 var speaker: String = "THE KNIGHT"
+
+## Seconds the subtitle remains visible.
 var subtitle_time: float = 0
+
+## True once the rifle pickup cutscene has been shown (it plays once).
 var pickup_played: bool = false
+
+## Temporary knight model used by the pickup cutscene.
 var cutscene_actor: Node3D
+
+## Temporary camera used by whichever cutscene is playing.
 var cutscene_camera: Camera3D
+
+## True once the tea cutscene has started.
 var tea_played: bool = false
+
+## Current quest stage (see class comment).
 var quest: String = "sentry"
+
+## World position where the British truck waits (x=42, z=-71).
 var patrol_point = Vector3(42,0,-71)
+
+## The British patrol truck.
 var patrol_vehicle: Node3D
+
+## The British soldier who greets the player.
 var patrol_greeter: Node3D
+
+## Countdown (s) to a one-off line after the pickup scene; -1 when unused.
 var post_quip_time: float = -1
 
+## Godot lifecycle hook: registers inputs, then creates everything in
+## dependency order (world, sounds, player, enemies, crate, MG nest,
+## demolition, HUD), starts on the title camera and handles command-line flags.
 func _ready():
 	Engine.max_fps = 90
 	register_inputs()
@@ -80,9 +166,14 @@ func _ready():
 	hud = Interface.new()
 	hud.game = self
 	canvas.add_child(hud)
+
+	# Title screen: show the world camera with the display knight; the player's
+	# camera takes over in begin().
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player.camera.current = false
 	world.world_camera.current = true
+
+	# "Play again" reloads the scene and skips the title and briefing.
 	if get_tree().has_meta("restart_playing"):
 		get_tree().remove_meta("restart_playing")
 		begin()
@@ -109,6 +200,9 @@ func register_inputs():
 		event.button_index = MOUSE_BUTTON_LEFT if action=="attack" else MOUSE_BUTTON_RIGHT
 		InputMap.action_add_event(action,event)
 
+## Global hotkeys: F11 fullscreen, Esc pause/resume, Tab inventory, J
+## objectives, Enter to begin from the title screen.
+## [param event] the input event.
 func _unhandled_input(event):
 	if event.is_action_pressed("fullscreen"):
 		var full = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
@@ -125,10 +219,15 @@ func _unhandled_input(event):
 	if phase == "title" and event is InputEventKey and event.pressed and event.keycode == KEY_ENTER:
 		begin()
 
+## Pauses automatically when the window loses focus during play.
 func _notification(what):
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and phase == "playing":
 		pause_game("paused")
 
+## Per-frame timers: toast, flashes, subtitle, play time; fires the delayed
+## line after the rifle pickup; starts the tea cutscene when the player
+## reaches the British greeter (within 4.3 m).
+## [param delta] frame time in seconds.
 func _process(delta):
 	visual_elapsed += delta
 	subtitle_time = maxf(0,subtitle_time-delta)
@@ -147,6 +246,10 @@ func _process(delta):
 		if player.position.distance_to(greet)<4.3:
 			tea_scene()
 
+## Simulates live grenades: gravity 14 m/s^2, ray-checked movement so they
+## cannot tunnel through walls, 35% bounce, and explosion on impact (after
+## 0.35 s of arming) or when the 4 s fuse ends.
+## [param delta] physics step in seconds.
 func _physics_process(delta):
 	if phase != "playing": return
 	for grenade in grenades_live.duplicate():
@@ -169,6 +272,8 @@ func _physics_process(delta):
 			grenade.node.queue_free()
 			grenades_live.erase(grenade)
 
+## Leaves the title screen: shows the briefing (or goes straight to play in
+## self-test mode) and hands the camera to the player.
 func begin():
 	phase = "playing" if "--self-test" in OS.get_cmdline_user_args() else "briefing"
 	world.menu_knight.visible = false
@@ -176,36 +281,50 @@ func begin():
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if phase=="playing" else Input.MOUSE_MODE_VISIBLE
 	toast("An isolated sentry ahead. The main position lies beyond him.",5)
 
+## Stops the simulation by changing phase to `next_phase`
+## ("paused", "inventory", "objectives", "defeat" or "victory"), cancels any
+## charged melee swing, and frees the mouse.
 func pause_game(next_phase: String):
 	phase = next_phase
 	player.holding_attack = false
 	player.power_hold = 0
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
+## Returns to "playing" and recaptures the mouse.
 func resume_game():
 	phase = "playing"
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
+## Reloads the scene and starts playing immediately (marker meta
+## "restart_playing" is consumed by _ready).
 func restart_game():
 	get_tree().set_meta("restart_playing",true)
 	get_tree().reload_current_scene()
 
+## Reloads the scene and shows the title screen again.
 func restart_to_title():
 	get_tree().reload_current_scene()
 
+## Quits the application.
 func quit_game():
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().quit()
 
+## Called when the player dies: pauses on the defeat screen.
 func defeat():
 	pause_game("defeat")
 
+## Returns how many Italian soldiers are still alive.
 func remaining() -> int:
 	var count = 0
 	for enemy in enemies:
 		if enemy.alive: count += 1
 	return count
 
+## Called by Enemy.die(): records loot, and handles the sentry specially: his
+## rifle drops (and the pickup cutscene is triggered if the player is within
+## 4.5 m) unless it was ruined. When all six are dead the British patrol arrives.
+## [param enemy] the soldier that just died.
 func enemy_down(enemy):
 	corpses.append({"enemy":enemy,"looted":false,"lint":1+enemy.index%3,"ammo":18})
 	if enemy.sentry:
@@ -221,6 +340,8 @@ func enemy_down(enemy):
 	if remaining() == 0:
 		spawn_patrol()
 
+## Creates the British truck and greeter at patrol_point (once) and moves the
+## quest to "patrol".
 func spawn_patrol():
 	if is_instance_valid(patrol_vehicle): return
 	quest = "patrol"
@@ -234,6 +355,7 @@ func spawn_patrol():
 	patrol_greeter.rotation.y = -0.9
 	toast("POSITION CLEARED  •  Meet the British patrol on the road",6)
 
+## One-line objective shown on the HUD for the current quest stage.
 func objective_text() -> String:
 	match quest:
 		"sentry": return "Defeat the isolated sentry"
@@ -242,6 +364,7 @@ func objective_text() -> String:
 		"patrol": return "Meet the British patrol"
 	return "First Contact complete"
 
+## World position the compass and the gold marker point at for the current stage.
 func objective_target() -> Vector3:
 	match quest:
 		"sentry": return enemies[0].position+Vector3(0,2.4,0)
@@ -302,15 +425,22 @@ func interact():
 			player.grenades += 1
 			toast("Breda M35 grenade acquired. G to throw.",3)
 
+## Shows a transient banner message.
+## [param message] text. [param duration] seconds on screen (default 3).
 func toast(message: String, duration: float = 3):
 	toast_text = message
 	toast_time = duration
 
+## Shows a subtitle line.
+## [param line] text. [param duration] seconds (default 5). [param who] speaker name.
 func say(line: String, duration: float = 5, who: String = "THE KNIGHT"):
 	subtitle = line
 	subtitle_time = duration
 	speaker = who
 
+## Plays the short cutscene in which the knight kneels and picks up the dropped
+## rifle: a temporary actor, a camera and a tween timeline, with the real
+## player hidden. Ends in finish_pickup_scene().
 func rifle_pickup_scene():
 	if pickup_played or not rifle_available: return
 	pickup_played = true
@@ -337,6 +467,9 @@ func rifle_pickup_scene():
 	cutscene_camera.current = true
 	say("A most discourteous welcome.",2.2)
 	var rifle_pos = rifle_drop.global_position
+
+	# The tween timeline below: wait, crouch with the reaching hand, reparent
+	# the rifle onto the hand, then stand up with it.
 	var reach = Art.gauntlet(cutscene_actor,Vector3(0.4,1.0,-0.28),Vector3(-0.6,0,0))
 	var pickup = create_tween()
 	pickup.tween_interval(0.75)
@@ -355,6 +488,8 @@ func rifle_pickup_scene():
 	pickup.tween_interval(0.7)
 	pickup.tween_callback(finish_pickup_scene)
 
+## Ends the pickup cutscene: gives the player the rifle (with the sentry's
+## remaining rounds), updates the quest, restores player and camera.
 func finish_pickup_scene():
 	rifle_available = false
 	player.has_rifle = true
@@ -373,6 +508,7 @@ func finish_pickup_scene():
 	toast("CARCANO M91  •  6 ROUNDS  •  F to search the sentry's pockets",4)
 	post_quip_time = 8.5
 
+## Final cutscene: the British leader offers tea; ends the mission with victory.
 func tea_scene():
 	if tea_played: return
 	tea_played = true
@@ -403,6 +539,9 @@ func tea_scene():
 	held.visible = false
 	var hand = Art.gauntlet(held,Vector3(0.07,-0.07,0.015),Vector3(0.1,0,-0.2))
 	say("Welcome, old crusader. Climb in. Have a cup of tea.",4.0,"BRITISH PATROL LEADER")
+
+	# Timeline: establishing shot, camera move, cup handed over and raised,
+	# dialogue lines on timers, then victory after the last line.
 	var tw = create_tween()
 	tw.tween_interval(2.4)
 	tw.tween_property(cutscene_camera,"position",Vector3(3.6,2.28,-3.0),0.7)
@@ -434,12 +573,16 @@ func alert_near(pos: Vector3, radius: float):
 		if enemy.alive and enemy.position.distance_to(pos) < radius:
 			enemy.alerted = true
 
+## Draws a short-lived glowing line (55 ms) from `start` to `end`; unshaded so
+## it is visible in shadow.
 func tracer(start: Vector3, end: Vector3, color: Color):
 	var mat = Art.material(color).duplicate()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var trace = Art.segment(self,start,end,0.009,mat)
 	get_tree().create_timer(0.055).timeout.connect(trace.queue_free)
 
+## Spawns five small particles that burst out and shrink: a dust/spark effect.
+## [param pos] where. [param color] particle colour.
 func impact(pos: Vector3, color: Color):
 	var mat = Art.material(color)
 	for i in range(5):
@@ -449,6 +592,8 @@ func impact(pos: Vector3, color: Color):
 		tw.tween_property(p,"scale",Vector3.ZERO,0.4)
 		tw.finished.connect(p.queue_free)
 
+## Creates a grenade at `pos` (0.6 m ahead) that flies along `direction` at
+## 14 m/s with 3 m/s lift; _physics_process then simulates it.
 func throw_grenade(pos: Vector3, direction: Vector3):
 	var root = Node3D.new()
 	add_child(root)
@@ -480,6 +625,8 @@ func explode(pos: Vector3):
 		if get_world_3d().direct_space_state.intersect_ray(q).is_empty():
 			player.take_damage(60,pos,"blast")
 
+## Screenshot helper (--capture-title): waits three seconds, saves
+## reviews/start-screen.png and quits.
 func capture_title():
 	await get_tree().create_timer(3).timeout
 	await RenderingServer.frame_post_draw
@@ -487,6 +634,8 @@ func capture_title():
 	print("TITLE_SCREEN_CAPTURED")
 	get_tree().quit()
 
+## Starts the encounter self-test (--self-test) after two physics frames so
+## everything is initialised.
 func run_tests():
 	await get_tree().physics_frame
 	await get_tree().physics_frame
@@ -494,6 +643,7 @@ func run_tests():
 	add_child(tests)
 	tests.run(self)
 
+## Starts the scripted visual check (--visual-check), see tests/visual_check.gd.
 func run_visual_check():
 	var check_script=load("res://tests/visual_check.gd").new()
 	add_child(check_script)

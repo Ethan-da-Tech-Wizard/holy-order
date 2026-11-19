@@ -1,16 +1,34 @@
-# ==============================================================================
-# Program: world.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for world.gd.
-# ==============================================================================
+## Archived review snapshot (before-village-pass-20261005-205403): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/world.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## The desert battlefield for the first mission: lighting, terrain, rocks,
+## props and the services (blasts, digging, door lookup) the rest of the game
+## calls into. It also owns the village layout and AI navigation grid.
+##
+## Role: the scene root's world child (the Game node, game.gd, is assigned to
+## `game`). It adds itself to group "battle_world" so that Breakable bodies can
+## notify it (geometry_updated) and AI can find it. Everything is generated
+## from code with a fixed RNG seed (19400614, the in-game date) so each run
+## builds the identical map, which keeps tests and screenshots reproducible.
+## Calls: Art (art.gd) for geometry, village.gd for the buildings,
+## field_navigation.gd for pathing; shaders sand/stone/flag in assets/shaders.
 extends Node3D
 
 const Art = preload("res://scripts/art.gd")
+
+## Seeded generator for every random placement in the map.
 var rng = RandomNumberGenerator.new()
+
+## Fixed camera that shows the knight on the title screen before play starts.
 var world_camera: Camera3D
+
+## Display knight standing in front of the title-screen camera.
 var menu_knight: Node3D
+
+## Shared sand shader for terrain chunks.
 var ground_material: Material
+
+## Cache of the 8 procedurally deformed rock meshes (variant -> ArrayMesh).
 var rock_shapes: Dictionary = {}
 
 func _ready():
@@ -18,6 +36,8 @@ func _ready():
 	lighting()
 	landscape()
 	fortifications()
+
+	# Title-screen set piece: a knight beside the first rock, camera at 66 degrees FOV.
 	menu_knight = Art.knight(self)
 	menu_knight.position = Vector3(7, 0, 22)
 	menu_knight.rotation.y = -2.48
@@ -28,6 +48,8 @@ func _ready():
 	world_camera.fov = 66
 	world_camera.far = 550
 	world_camera.current = true
+
+	# Soft cool fill light so the knight's armour is readable against the shadowed side.
 	var fill = OmniLight3D.new()
 	fill.position = Vector3(9.5,3.0,24.5)
 	fill.light_color = Color("b5c8d0")
@@ -35,6 +57,11 @@ func _ready():
 	fill.omni_range = 7
 	add_child(fill)
 
+## Creates the Environment (procedural sky, ACES tonemapping, light fog,
+## contrast/saturation tuning) and the sun DirectionalLight3D.
+## Costly effects (volumetric fog, glow, SSAO) are defined but disabled; they
+## are only ever enabled by quality settings (see graphics.gd, which turns
+## them off again for performance).
 func lighting():
 	var env = Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -78,6 +105,9 @@ func lighting():
 	we.environment = env
 	add_child(we)
 	var sun = DirectionalLight3D.new()
+
+	# Low sun (28 degrees above the horizon) from the north-east gives long,
+	# dramatic shadows across the sand; 4 shadow splits out to 115 m.
 	sun.rotation_degrees = Vector3(-28, -38, 0)
 	sun.light_color = Color("ffe1b1")
 	sun.light_energy = 1.25
@@ -88,6 +118,8 @@ func lighting():
 	sun.shadow_normal_bias = 1.5
 	add_child(sun)
 
+## Builds the ground and scenery: sand chunks, far ground blocks, rock
+## outcrops, pebbles, desert shrubs and drifting dust particles.
 func landscape():
 	ground_material = ShaderMaterial.new()
 	ground_material.shader = load("res://assets/shaders/sand.gdshader")
@@ -154,6 +186,9 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 	var stone = ShaderMaterial.new()
 	stone.shader = preload("res://assets/shaders/stone.gdshader")
 	stone.set_shader_parameter("stone_color",color)
+
+	# Variant derived from position so identical positions reuse a mesh but
+	# neighbours differ; 8 variants keep memory low.
 	var variant = absi(int(pos.x*7+pos.z*13)) % 8
 	var s = Art.mesh(root,rock_mesh(variant),Vector3(0,size.y*0.30,0),stone)
 	s.scale = size*0.62
@@ -166,6 +201,10 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 		c.position.y = size.y*0.30
 		root.add_child(c)
 
+## Returns one of 8 cached rock meshes: a UV sphere distorted by fractal
+## noise (so no two variants look alike), flattened at the bottom, with
+## normals regenerated afterwards so lighting follows the rough surface.
+## [param variant] 0..7 noise seed selector.
 func rock_mesh(variant: int) -> ArrayMesh:
 	if rock_shapes.has(variant): return rock_shapes[variant]
 	var source = SphereMesh.new()
@@ -188,6 +227,9 @@ func rock_mesh(variant: int) -> ArrayMesh:
 		p.y = maxf(-0.72,p.y+sin(p.y*10+uneven*3)*0.025)
 		vertices[i]=p
 	arrays[Mesh.ARRAY_VERTEX] = vertices
+
+	# Old normals/tangents no longer match the deformed vertices; they are
+	# dropped and rebuilt by SurfaceTool.generate_normals() below.
 	arrays[Mesh.ARRAY_NORMAL] = null
 	arrays[Mesh.ARRAY_TANGENT] = null
 	var raw = ArrayMesh.new()
@@ -199,6 +241,10 @@ func rock_mesh(variant: int) -> ArrayMesh:
 	rock_shapes[variant]=result
 	return result
 
+## Builds a row of sandbags as one Breakable ("sandbag" kind) with a single
+## box collider and 3 stacked rows of squashed spheres for the visuals.
+## [param pos] centre on the ground. [param length] bags per row.
+## [param angle] yaw in radians. Returns the Breakable body.
 func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 	var root = Node3D.new()
 	add_child(root)
@@ -213,6 +259,8 @@ func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 			bag.scale = Vector3(0.86,0.43,0.74)
 			bag.rotation.y = rng.randf_range(-0.1,0.1)
 
+## Builds a wooden crate with dark plank straps (destructible).
+## [param pos] ground position; [param size] default 1.1 x 0.9 x 0.9 m.
 func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 	var wood = Art.material(Color("736c4c"))
 	var dark = Art.material(Color("4e4b36"))
@@ -222,6 +270,9 @@ func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 	for y in [-0.25,0.25]:
 		Art.box(root,Vector3(size.x+0.015,0.065,size.z+0.018),Vector3(0,y,0),dark)
 
+## Builds an open-fronted canvas tent: back wall, two side walls, a pitched
+## roof with guy lines and two poles. Canvas is double-sided (culling off)
+## because the walls are thin sheets.
 func tent(pos: Vector3):
 	var root = Node3D.new()
 	add_child(root)
@@ -239,6 +290,10 @@ func tent(pos: Vector3):
 	for z in [-3.0,3.0]:
 		Art.cylinder(root,0.045,3,Vector3(0,1.5,z),Art.material(Color("514737")))
 
+## Places the original single-room outpost: sandbag lines, crates, tents,
+## a ruined outbuilding, the Italian flag, a map table and the broken
+## threshold at the player's spawn. Nothing in the repo calls it any more:
+## village.gd supplies the current mission layout, so this is a leftover.
 func fortifications():
 	# Forward sentry, then the six-man outpost. Open ends permit a sword-only route.
 	sandbags(Vector3(0,0,7),3)

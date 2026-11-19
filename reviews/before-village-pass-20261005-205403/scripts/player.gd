@@ -1,62 +1,159 @@
-# ==============================================================================
-# Program: player.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for player.gd.
-# ==============================================================================
+## Archived review snapshot (before-village-pass-20261005-205403): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/player.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends CharacterBody3D
 
 const Art = preload("res://scripts/art.gd")
+
+## The Game node (game.gd): phase, enemies, sounds, toasts, interaction.
 var game
+
+## First-person camera; its cull mask hides the player's own body model.
 var camera: Camera3D
+
+## Pivot at eye height; pitch (look up/down) is applied here, yaw on the body.
 var head: Node3D
+
+## Child of the camera that holds all view models so they move with the view.
 var hands: Node3D
+
+## First-person rifle view model (Art.rifle).
 var rifle: Node3D
+
+## First-person sword view model.
 var blade: Node3D
+
+## First-person pair of gauntlets.
 var fists: Node3D
+
+## Third-person knight model (visible legs, shown only on layer 2).
 var body_model: Node3D
+
+## Rifle model slung on the back when another weapon is out.
 var slung: Node3D
+
+## Scabbard node on the hip.
 var scabbard: Node3D
+
+## Sword model in the scabbard.
 var sheathed: Node3D
+
+## Collision capsule; its height changes with crouch and prone.
 var shape: CollisionShape3D
 var health: float = 100
+
+## Always 100 now: sprinting and charging no longer cost stamina (kept for the HUD bar).
 var stamina: float = 100
+
+## Rounds loaded in the rifle (6 max).
 var ammo: int = 0
+
+## Spare rounds carried.
 var reserve: int = 0
+
+## True once a rifle has been looted.
 var has_rifle: bool = false
+
+## Current weapon slot (see class comment).
 var weapon: int = 0 # 0 sword, 1 rifle, 2 fists
+
+## Number of grenades carried.
 var grenades: int = 0
+
+## Current eye height in metres; eased between standing 1.68, crouched 1.12, prone 0.51.
 var eye_height: float = 1.68
+
+## True while sprinting forward (not crouched, prone or aiming).
 var is_sprinting: bool = false
+
+## True while the crouch key is held (and not prone).
 var crouched: bool = false
+
+## Toggled by the prone key; cancelled by jumping.
 var prone: bool = false
+
+## True while sprinting with a melee weapon and holding aim: a shoulder
+## charge that adds damage (see attack()).
 var is_charging: bool = false
+
+## Seconds the attack button has been held for a heavy blow, capped at 1.2.
 var power_hold: float = 0
+
+## True while the button is held for a charged melee swing.
 var holding_attack: bool = false
+
+## Damage multiplier for the current melee swing: 1 + 1.2 x hold + 0.7 if charging.
 var strike_power: float = 1
+
+## Seconds left on a reload (2.3 s total).
 var reload_time: float = 0
+
+## True while aiming the rifle down sights.
 var aiming: bool = false
+
+## Seconds until the next attack, dig or bolt cycle is allowed.
 var cooldown: float = 0
+
+## Remaining swing animation time; 0 when idle.
 var attack_time: float = 0
+
+## True from swing start until the hit is resolved mid-swing.
 var attack_pending: bool = false
+
+## Head-bob phase, advanced by distance moved.
 var bob: float = 0
+
+## Accumulated movement used to time footstep sounds.
 var step_clock: float = 0
+
+## Smoothed lean amount -1..1.
 var lean: float = 0
+
+## Rifle kick, 1 on firing and decaying to 0; drives view-model and camera kick.
 var recoil: float = 0
+
+## Mouse look radians per pixel.
 var sensitivity: float = 0.0021
+
+## Rifle shots fired (shown on the end screen).
 var shot_count: int = 0
+
+## Rifle hits on enemies.
 var hit_count: int = 0
+
+## Seconds left of a mantle animation; 0 when not climbing.
 var climbing: float = 0
+
+## Start of the current mantle path.
 var climb_from: Vector3
+
+## End of the current mantle path.
 var climb_to: Vector3
+
+## Muzzle-flash sphere on the first-person rifle.
 var muzzle: MeshInstance3D
+
+## 0 hip .. 1 aiming, eased over 0.2 s.
 var aim_blend: float = 0
+
+## Gauntlet on the rifle's trigger grip.
 var grip_hand: Node3D
+
+## Gauntlet that supports the rifle forend and reaches for the clip on reload.
 var support_hand: Node3D
+
+## Field of view (degrees) when not aiming.
 const HIP_FOV: float = 83.0
+
+## Field of view when aiming down sights; lower for magnification.
 const AIM_FOV: float = 58.0
+
+## Rifle position in the camera's local space when held at the hip.
 const HIP_RIFLE_POSITION = Vector3(0.22, -0.245, -0.40)
 
+## Godot lifecycle hook: builds the capsule, camera rig, all first-person
+## view models (rifle, sword, fists, shovel), the visible body model with
+## its legs, slung rifle and scabbard, hit areas, and equips the sword.
 func _ready():
 	collision_layer = 2
 	collision_mask = 1|4
@@ -73,6 +170,8 @@ func _ready():
 	head.position.y = eye_height
 	camera = Camera3D.new()
 	head.add_child(camera)
+
+	# Very close near plane (2.5 cm) so the rifle and hands do not clip when held close to walls.
 	camera.near = 0.025
 	camera.far = 450
 	camera.fov = 83
@@ -98,6 +197,8 @@ func _ready():
 	body_model = Art.knight(self)
 	# Hide the world model's head from the first-person camera using layer two.
 	set_model_layers(body_model,2)
+
+	# Camera sees only layer 1, so the body model (layer 2) never blocks the view.
 	camera.cull_mask = 1
 	var steel = Art.material(Color("788684"),0.72,0.36)
 	for x in [-0.15,0.15]:
@@ -114,17 +215,25 @@ func _ready():
 	sheathed = Art.sword(scabbard)
 	select_weapon(0)
 
+## Sets the render layer mask on every VisualInstance3D under `node`.
+## [param layers] bit mask (2 = layer 2 only).
 func set_model_layers(node: Node, layers: int):
 	if node is VisualInstance3D:
 		node.layers = layers
 	for child in node.get_children():
 		set_model_layers(child,layers)
 
+## Handles mouse look and one-shot key presses while playing.
+## Mouse-look speed scales with the zoom (tangent ratio of the FOVs), so
+## aiming feels equally fast on screen. While on the mounted gun, yaw is
+## limited to +-1.2 rad and pitch to -0.25..0.28 rad, and `interact` dismounts.
+## [param event] input event; ignored unless game.phase is "playing".
 func _unhandled_input(event):
 	if game.phase != "playing":
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Preserve screen-space control when aiming magnifies the scene.
+		# Keeps on-screen turn speed constant: the narrower the FOV, the slower the turn.
 		var aim_sensitivity = tan(deg_to_rad(camera.fov * 0.5)) / tan(deg_to_rad(HIP_FOV * 0.5))
 		rotate_y(-event.relative.x*sensitivity*aim_sensitivity)
 		head.rotation.x = clampf(head.rotation.x-event.relative.y*sensitivity*aim_sensitivity,-1.35,1.35)
@@ -163,11 +272,15 @@ func _unhandled_input(event):
 func _physics_process(delta):
 	if game.phase != "playing":
 		return
+
+	# Mantling follows a fixed 0.48 s smoothstep path; all input is ignored meanwhile.
 	if climbing > 0:
 		climbing = maxf(0,climbing-delta)
 		global_position = climb_from.lerp(climb_to,smoothstep(0,1,1-climbing/0.48))
 		return
 	cooldown = maxf(0,cooldown-delta)
+
+	# When the reload ends, top up the magazine to 6 from the reserve.
 	if reload_time > 0:
 		reload_time = maxf(0,reload_time-delta)
 		if reload_time == 0:
@@ -176,6 +289,9 @@ func _physics_process(delta):
 			reserve -= rounds
 	if holding_attack: power_hold = minf(1.2,power_hold+delta)
 	attack_time = maxf(0,attack_time-delta)
+
+	# The swing connects partway through the animation (0.35 s left for the
+	# sword, 0.22 s for fists), not at the moment of the click.
 	if attack_pending and attack_time < (0.35 if weapon == 0 else 0.22):
 		attack_pending = false
 		melee_hit()
@@ -184,11 +300,16 @@ func _physics_process(delta):
 	aiming = Input.is_action_pressed("aim") and weapon == 1 and reload_time <= 0
 	is_sprinting = Input.is_action_pressed("sprint") and input_dir.y < -0.1 and stamina > 3 and not crouched and not prone and not aiming
 	is_charging = is_sprinting and weapon != 1 and Input.is_action_pressed("aim") and stamina > 5
+
+	# Speeds in m/s: charge 11.4, sprint 7.8, prone 1.15, crouch 2.3, walk 4.9
+	# and 2.8 when aiming.
 	var speed = 11.4 if is_charging else (7.8 if is_sprinting else (1.15 if prone else (2.3 if crouched else 4.9)))
 	if aiming:
 		speed = 2.8
 	stamina = clampf(stamina+(-28 if is_charging else (-19 if is_sprinting else 15))*delta,0,100)
 	var direction = transform.basis*Vector3(input_dir.x,0,input_dir.y)
+
+	# Acceleration of 25 m/s^2 gives snappy but not instant movement.
 	velocity.x = move_toward(velocity.x,direction.x*speed,25*delta)
 	velocity.z = move_toward(velocity.z,direction.z*speed,25*delta)
 	if not is_on_floor():
@@ -201,6 +322,9 @@ func _physics_process(delta):
 	var moving = Vector2(velocity.x,velocity.z).length()
 	bob += delta*moving*1.8
 	head.position.y = eye_height+sin(bob)*lerpf(0.027,0.006,aim_blend)*minf(moving,1)
+
+	# Lean is cancelled if a wall is within 0.35 m on that side, so the camera
+	# cannot poke through geometry.
 	var desired_lean = Input.get_axis("lean_left","lean_right")
 	var side = global_basis.x*desired_lean*0.35
 	var from = global_position+Vector3(0,eye_height,0)
@@ -215,11 +339,15 @@ func _physics_process(delta):
 		if step_clock > (2.7 if is_sprinting else 2.1):
 			step_clock = 0
 			game.sounds.play("step",-14 if crouched else -9,randf_range(0.85,1.1))
+
+	# Keep the player inside the playable basin and tell them why.
 	if absf(position.x)>74 or position.z < -85 or position.z > 61:
 		game.toast("The outpost lies within the rocky basin.",2)
 		position.x = clampf(position.x,-74,74)
 		position.z = clampf(position.z,-85,61)
 
+## Per-render-frame cosmetic update: recoil decay and view-model animation.
+## [param delta] frame time in seconds.
 func _process(delta):
 	if game.phase != "playing": return
 	# Cosmetic movement follows rendered frames, not the fixed physics tick rate.
@@ -227,6 +355,11 @@ func _process(delta):
 	camera.rotation.x = recoil*0.020
 	update_view(delta)
 
+## Positions and animates the first-person view models: FOV changes for
+## sprint (88), charge (96) and aim, rifle sway, aim alignment of the sight
+## line to screen centre, reload and bolt-cycle poses, sword swing/charge
+## poses, fist punch and shovel swing.
+## [param delta] frame time in seconds.
 func update_view(delta):
 	aim_blend = move_toward(aim_blend,1.0 if aiming else 0.0,delta/0.20)
 	var aim_weight = smoothstep(0,1,aim_blend)
@@ -247,6 +380,9 @@ func update_view(delta):
 	support_hand.position = Vector3(-0.022,-0.090,-0.40)
 	support_hand.rotation = Vector3(-0.9,0,0.2)
 	clip.visible = false
+
+	# Reload animation phases over 2.3 s: lift the rifle, bring the clip in
+	# with the support hand, then lower; each smoothstep window is one phase.
 	if reload_time > 0:
 		var progress = clampf(1-reload_time/2.3,0,1)
 		var lifted = smoothstep(0,0.16,progress)*(1-smoothstep(0.82,1,progress))
@@ -288,6 +424,9 @@ func select_weapon(slot: int):
 	if slot == 1 and not has_rifle:
 		if game: game.toast("The isolated sentry carries a rifle.",2)
 		return
+
+	# Every state flag is reset so a half-finished swing, charge or reload
+	# cannot leak into the new weapon.
 	weapon = slot
 	attack_time = 0
 	attack_pending = false
@@ -303,7 +442,18 @@ func select_weapon(slot: int):
 	slung.visible = has_rifle and slot != 1
 	sheathed.visible = slot != 0
 
+## Starts an attack with the current weapon.
+## Rifle: needs a round, then fires a hitscan ray (200 m, layers world, AI
+## team 0 and equipment) with 105 damage to enemies (head shot if the hit is
+## above 1.49 m on the target), or 42 damage to the environment; 2 s bolt
+## cooldown; sets recoil; makes a 175 m noise.
+## Sword and fists: starts the swing animation; damage is applied later by
+## melee_hit() when the swing connects.
+## [param power] seconds of charge (0..1.2) used to scale melee damage.
 func attack(power: float = 0):
+	# Physics & Balance Invariants:
+	# - Verifies ammunition availability and cyclic fire rate cooldown timer.
+	# - Applies physical impulse kickback to viewmodel and emits spatial 3D gunfire acoustics.
 	if cooldown > 0 or climbing > 0 or reload_time > 0: return
 	strike_power = 1.0 + clampf(power,0,1.2)*1.2 + (0.7 if is_charging else 0)
 	if weapon == 1:
@@ -346,6 +496,10 @@ func attack(power: float = 0):
 		attack_pending = true
 		game.sounds.play("sword",-10,0.75 if weapon == 0 else 1.35)
 
+## Resolves a sword or fist blow: finds the closest living enemy in front
+## (range 3.05 m sword, 2.2 m fists, within a cone dot > 0.55) with a clear ray;
+## deals 105 (sword) or 42 (fists) times strike_power. If nobody is hit it
+## damages whatever is in reach (walls, doors, equipment) instead.
 func melee_hit():
 	var closest = null
 	var best = 3.05 if weapon == 0 else 2.20
@@ -368,6 +522,8 @@ func melee_hit():
 		game.sounds.play("clang",-15,0.7)
 		game.alert_near(position,12)
 
+## Starts a 2.3 s rifle reload if the rifle is out, not full (6) and spare
+## ammunition exists; otherwise explains why with a toast.
 func reload_weapon():
 	if weapon != 1 or reload_time > 0 or ammo == 6: return
 	if reserve == 0:
@@ -377,6 +533,10 @@ func reload_weapon():
 	cooldown = 2.3
 	game.sounds.play("reload",-10)
 
+## Applies damage to the player and ends the mission at 0 health.
+## [param amount] hit points. [param source] world position of the attacker
+## (stored for the damage-direction indicator). [param kind] "melee" attacks
+## are reduced to 40% by the armour; rifle rounds are not reduced.
 func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	if game.phase != "playing": return
 	# Plate protects against blows; twentieth-century rifle rounds still penetrate it.
@@ -386,6 +546,10 @@ func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	game.sounds.play("hit",-6)
 	if health <= 0: game.defeat()
 
+## Attempts to climb a ledge in front: a ray at knee height finds a wall
+## within 1.25 m, then a downward ray finds its top. Allowed for heights
+## between 0.2 m and 1.75 m with 1.9 m of clear headroom above. On success
+## starts a 0.48 s climb animation and returns true.
 func try_mantle() -> bool:
 	var direction = -global_basis.z
 	var low = global_position+Vector3(0,0.66,0)

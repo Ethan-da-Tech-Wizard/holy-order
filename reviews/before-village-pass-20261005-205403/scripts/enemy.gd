@@ -1,9 +1,6 @@
-# ==============================================================================
-# Program: enemy.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for enemy.gd.
-# ==============================================================================
+## Archived review snapshot (before-village-pass-20261005-205403): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/enemy.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends CharacterBody3D
 
 const Art = preload("res://scripts/art.gd")
