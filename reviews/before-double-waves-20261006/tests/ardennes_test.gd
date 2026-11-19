@@ -4,21 +4,46 @@
 # Last Modified: November 19, 2026
 # Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for ardennes_test.gd.
 # ==============================================================================
+## Full rule and behaviour test suite for the Ardennes (winter) mission.
+##
+## Four phases, each on a fresh mission instance (deterministic seed 19441223):
+##  1. Roster, inventory, friendly-fire discipline, weapon swap and loot, bodies, command
+##     succession, wings, digging, grenades, suppression and terrain slope.
+##  2. Convoy rules: seated player and passengers, truck armour, wheel damage, bypass and
+##     breakdown, and the scripted bazooka ambush with one or two arriving trucks.
+##  3. A second ambush set-up with two trucks and a dead launcher.
+##  4. A 240 s unattended battle with the player parked outside it, sampling the state every 30 s.
+## Results go to reviews/ardennes-tests.json; exit code 1 on any failed check.
+## Run: `godot --headless --path . --script res://tests/ardennes_test.gd`.
 extends SceneTree
+
+# Mission instance under test (replaced by make_game()).
 var g
+
+# {check, passed} records and the periodic battle snapshots.
 var checks:Array=[]
 var snapshots:Array=[]
+
+# Defer run() so the tree is ready.
 func _initialize():call_deferred("run")
+
+## Wait n physics ticks.
 func ticks(n):
 	for i in range(n):await physics_frame
+
+## Record and print one result.
 func check(ok:bool,label:String):
 	checks.append({"check":label,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+label)
+
+## Create a fresh Ardennes mission and let it initialise (uncapped FPS, 3 ticks).
 func make_game():
 	g=load("res://scenes/ardennes.tscn").instantiate()
 	root.add_child(g)
 	Engine.max_fps=0
 	await ticks(3)
+
+## Shut the mission down: wait for queued terrain cuts to finish (up to 1200 frames), then free it.
 func clean():
 	g.phase="title"
 	for i in range(1200):
@@ -26,23 +51,34 @@ func clean():
 		await process_frame
 	g.queue_free()
 	await ticks(4)
+
+## Run the whole suite; checks later in a phase rely on state created by earlier ones.
 func run():
+	# Test mode and the seed 19441223.
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441223)
 	await make_game()
+	# Roster: opening screen, nine trucks, 107 allies (plus the player) vs 80 Germans, seating of 12 per squad (11 in truck 4 where the player sits).
 	check(g.phase=="title","Winter mission opens at its start screen")
 	check(g.trucks.size()==9 and g.friendlies.size()==107 and g.enemies.size()==80,"Nine trucks carry 107 allied actors plus the player against 80 Germans")
 	check(g.trucks.all(func(t):return t.occupants.size()==(11 if t.index==4 else 12)),"Convoy seating contains twelve people per planned squad load")
+	# Twelve fixed machine guns (primary plus secondary nests) each with a gunner.
 	check(g.world.nests.size()+g.world.secondary_nests.size()==12 and g.enemies.filter(func(a):return a.mounted).size()==12,"Twelve road-facing machine guns have actual finite-inventory gunners")
+	# Everyone on the allied side carries a BAR or Garand; none is mounted on a gun.
 	check(g.friendlies.all(func(a):return not a.mounted and a.weapon_kind in ["bar","garand"]),"All convoy troops are seated infantry with no firing exception")
+	# Finite ammunition and at least two grenades each.
 	check(g.actors.all(func(a):return a.grenades>=2 and a.rounds>0 and a.reserve>0),"Every soldier starts with finite ammunition and at least two grenades")
+	# Player kit: BAR with 20 loaded and 120 reserve, sword and shovel.
 	check(g.player.gun_kind=="bar" and g.player.ammo==20 and g.player.reserve==120 and g.player.has_shovel,"Player begins with a twenty-round BAR, reserve ammunition, sword and shovel")
+	# World content: more than 300 terrain chunks and cover sites; tactics data loaded with two wings.
 	check(g.world.terrain_chunks.size()>300 and g.world.covers.size()>300,"The winter battlefield has hilly terrain chunks and hundreds of cover sites")
 	check(g.tactics.book.plans.has("flank_left") and g.tactics.groups.size()==2,"Reusable area plans and two mission wings are initialized")
+	# Start the mission, then freeze all simulation so each check controls its own state.
 	g.begin()
 	g.set_physics_process(false)
 	g.player.set_physics_process(false)
 	for a in g.actors:a.set_physics_process(false)
+	# Friendly-fire discipline: put a friendly between shooter and enemy at 45 m height (in the air, clear of terrain).
 	var shooter=g.friendlies[20]
 	var friendly=g.friendlies[21]
 	var enemy=g.enemies[21]
@@ -50,14 +86,18 @@ func run():
 	friendly.global_position=Vector3(0,45,-10)
 	enemy.global_position=Vector3(0,45,-20)
 	await ticks(2)
+	# Friend in the cone means no fire; moving the friend aside 12 m allows it.
 	check(not g.safe_fire_line(shooter,shooter.eye(),enemy.aim_point()),"Bots refuse a shot whose dispersion cone contains a friendly")
 	friendly.position.x=12
 	await ticks(2)
 	check(g.safe_fire_line(shooter,shooter.eye(),enemy.aim_point()),"A clear hostile firing lane is permitted")
+	# Real bullets still can hit friendlies (the preventive check only lowers the odds).
 	var hp=friendly.health
 	g.shoot(shooter,shooter.eye(),friendly.aim_point(),0,24,"garand")
 	check(friendly.health<hp and g.friendly_fire_hits>0,"Actual bullets can wound allies despite preventive fire discipline")
+	# AI will not throw grenades next to allies.
 	check(not g.safe_explosive_target(shooter,friendly.position,7),"Bots reject a grenade target beside allies")
+	# Player firing and weapon swap. 19 rounds left after one BAR shot.
 	g.player.truck=null
 	g.player.position=Vector3(60,45,0)
 	g.player.rotation=Vector3.ZERO
@@ -65,6 +105,7 @@ func run():
 	g.player.cooldown=0
 	g.player.attack()
 	check(g.player.ammo==19,"BAR fire consumes one physical magazine round")
+	# Pick up a broken Kar98: it occupies the gun slot but cannot fire, and the BAR is dropped with its 19 rounds.
 	var broken=g.drop_weapon("kar98",5,0,g.player.position,0)
 	broken.take(g.player)
 	await ticks(2)
@@ -74,14 +115,17 @@ func run():
 	g.player.attack()
 	check(g.player.ammo==ammo,"Broken guns cannot fire")
 	check(get_nodes_in_group("dropped_weapons").filter(func(d):return d.kind=="bar" and not d.picked_up and d.rounds==19).size()==1,"Swapping drops the previous gun with its exact remaining loaded rounds")
+	# A German G43 with 7 rounds; the BAR's .30-06 reserve is not converted to 7.92 mm ammunition.
 	var usable=g.drop_weapon("g43",7,83,g.player.position,0)
 	usable.take(g.player)
 	await ticks(2)
 	check(g.player.gun_kind=="g43" and g.player.ammo==7 and g.player.reserve==0,"German gun pickup does not convert the BAR's .30-06 reserve")
+	# Reload uses only compatible ammunition (10 stashed 7.92 rounds: 7 left after loading 3).
 	g.player.stash_ammo("792",10)
 	g.player.reload_weapon()
 	g.player._physics_process(g.player.reload_time+0.01)
 	check(g.player.ammo==10 and g.player.reserve==7,"Reload consumes only the new gun's compatible reserve")
+	# Bodies: a killed soldier leaves a six-part corpse and a dropped gun with the remaining rounds.
 	var victim=g.enemies[35]
 	victim.position=Vector3(110,g.world.height_at(110,220),220)
 	var body_reserve=victim.reserve
@@ -91,11 +135,13 @@ func run():
 	var bodies=get_nodes_in_group("winter_corpses")
 	check(bodies.size()==1 and bodies[0].parts.size()==6,"A death creates a persistent articulated body")
 	check(get_nodes_in_group("dropped_weapons").any(func(d):return d.kind==victim.weapon_kind and d.rounds==body_rounds),"Death drops the gun with its remaining magazine")
+	# Hits detach parts, explosions dismember.
 	var part=bodies[0].parts[1]
 	part.receive_hit(100,part.global_position+Vector3.RIGHT)
 	check(part.detached and bodies[0].detached_count==1,"Further bullet damage can detach a body part")
 	bodies[0].blast(victim.position,5,250)
 	check(bodies[0].detached_count>1,"An explosion can dismember persistent remains")
+	# Loot: transfers only the real remaining reserve and grenades, German grenades keep their type, and the corpse cannot be looted twice.
 	g.player.ammo_pack.containers.clear()
 	g.player.grenades=2
 	var before=g.player.reserve
@@ -105,14 +151,17 @@ func run():
 	var after=g.player.reserve
 	check(g.loot(victim).is_empty() and g.player.reserve==after,"The same corpse cannot duplicate loot")
 	# A full pack leaves excess rounds and grenades on the body for a later visit.
+	# A full pack leaves excess rounds and grenades on the body for a later visit.
 	var donor=g.enemies[37]
 	g.player.ammo_pack.containers.clear()
+	# 160 BAR rounds (eight 20-round magazines) fill the 24-unit space exactly.
 	check(g.player.ammo_pack.add_rounds("bar",999)==160 and is_equal_approx(g.player.ammo_pack.space_used(),24),"BAR magazines fill the finite pack at eight spare magazines")
 	var donor_ammo=donor.reserve
 	var donor_grenades=donor.grenades
 	g.player.grenades=4
 	g.loot(donor)
 	check(donor.reserve==donor_ammo and donor.grenades==donor_grenades and g.player.grenades==4,"Excess ammo and grenades remain on a body when the player's kit is full")
+	# Pack space and weight rules: a partial BAR magazine still uses full space; mixed calibres share the 24-unit and 7.5 kg limits.
 	g.player.ammo_pack.containers.clear()
 	g.player.ammo_pack.add_rounds("kar98",5)
 	g.player.ammo_pack.add_rounds("bar",1)
@@ -120,19 +169,23 @@ func run():
 	g.player.ammo_pack.add_rounds("mp40",999)
 	g.player.ammo_pack.add_rounds("mg42",999)
 	check(g.player.ammo_pack.space_used()<=24 and g.player.ammo_pack.weight_used()<=7.5,"Mixed calibers share both the pack's space and weight limits")
+	# Bodies and parts must survive 3 seconds without being freed.
 	await ticks(180)
 	check(is_instance_valid(bodies[0]) and is_instance_valid(part),"Bodies and detached parts remain in the scene")
+	# Command: killing the commander promotes a living subordinate.
 	var commander=g.tactics.commander
 	commander.take_damage(1000,Vector3.ZERO,"rifle")
 	g.update_squads()
 	g.tactics.update(g)
 	check(g.tactics.commander!=commander and g.tactics.commander.alive,"Command passes to a living subordinate when the commander is killed")
+	# A hold-area soldier pushed 29 m from home is pulled back within its guard radius.
 	var defender=g.enemies[0]
 	defender.order="hold"
 	defender.position=defender.home+Vector3(29,0,0)
 	defender.state="advance"
 	defender._physics_process(1.0/60)
 	check(Vector2(defender.position.x-defender.home.x,defender.position.z-defender.home.z).length()<=defender.guard_radius+0.01,"A hold-area soldier cannot leave its assigned perimeter")
+	# Dismount everyone; wings must be balanced to within one soldier and start at the ambush hilltops (areas 6 and 7).
 	for truck in g.trucks:
 		if not truck.destroyed:truck.dismount("test")
 	g.update_squads()
@@ -140,11 +193,13 @@ func run():
 	var right=g.friendlies.filter(func(a):return a.alive and a.wing==1).size()
 	check(absi(left-right)<=1 and left+right==g.allies_alive,"Every dismounted survivor is assigned to a balanced left or right wing")
 	check(g.tactics.groups[0].area==6 and g.tactics.groups[1].area==7,"Both wings begin by clearing the ambush hilltops")
+	# Killing the defenders of areas 6 and 7 opens the opening phase: wings switch to areas 4 and 5, with a notification.
 	for e in g.enemies:
 		if e.alive and e.squad-9 in [6,7]:e.take_damage(1000,Vector3.ZERO,"test")
 	g.update_squads()
 	check(g.tactics.opening_secured and g.tactics.groups[0].area==4 and g.tactics.groups[1].area==5,"Clearing both ambush hills sends each wing back down its own ridge")
 	check(g.toast_text.contains("hilltop") or g.toast_text.contains("SECURED"),"Hilltop completion produces a navigation notification")
+	# Digging: a 1.3 m radius, 0.6 m deep pit gives a bounded physical pit below the surface.
 	var dig_point=g.world.on_ground(g.world.anchors[0]+Vector3(7,0,1))
 	dig_point.x=roundf(dig_point.x)
 	dig_point.z=roundf(dig_point.z)
@@ -154,6 +209,7 @@ func run():
 	var pit_ray=PhysicsRayQueryParameters3D.create(dig_point+Vector3(0,5,0),dig_point-Vector3(0,6,0),1)
 	var pit=g.get_world_3d().direct_space_state.intersect_ray(pit_ray)
 	check(not pit.is_empty() and pit.position.y<dig_point.y-0.2 and pit.position.y>dig_point.y-2,"Digging makes a bounded physical pit without removing the terrain chunk")
+	# Player stance toggles: crouch is a toggle on key press, prone hides the boots in first person.
 	var crouch_event=InputEventAction.new()
 	crouch_event.action="crouch"
 	crouch_event.pressed=true
@@ -170,6 +226,7 @@ func run():
 	g.player.update_view(0.1)
 	check(not g.player.lower_body.visible,"Prone first-person view hides the upright boot geometry")
 	g.player.prone=false
+	# Grenade windup: key spam can only start one throw; release consumes exactly one grenade; recovery blocks a second throw.
 	g.player.grenades=4
 	var grenade_before=g.grenades_live.size()
 	for i in range(12):g.player.begin_grenade()
@@ -180,6 +237,7 @@ func run():
 	g.player.step_grenade(0.40)
 	g.player.begin_grenade()
 	check(g.player.grenade_time==0,"Grenade recovery prevents an immediate second throw")
+	# Suppression: a suppressed attacker with no visible enemy crawls prone toward the objective.
 	var attacker=g.friendlies.filter(func(a):return a.alive)[0]
 	attacker.position=Vector3(-165,30,405)
 	attacker.target=null
@@ -192,6 +250,7 @@ func run():
 	var mission=g.tactics.formation_goal(g,attacker)-attacker.position
 	var course=attacker.destination-attacker.position
 	check(Vector2(mission.x,mission.z).dot(Vector2(course.x,course.z))>0,"Suppression movement still makes progress toward the assigned hilltop")
+	# Defenders hold; an entrenched defender without ammunition stops digging (210 AI ticks of 0.1 s).
 	check(g.enemies.all(func(a):return a.order=="hold"),"All defenders retain encampment orders")
 	var empty_guard=g.enemies[0]
 	empty_guard.position=g.world.on_ground(Vector3(-150,0,-390))
@@ -204,10 +263,12 @@ func run():
 		empty_guard.think(g.elapsed+i*0.1)
 		empty_guard.step_actor(0.1)
 	check(empty_guard.dig_strokes==strokes_before,"An entrenched defender without ammunition holds cover instead of digging endlessly")
+	# Distant gunfire on the opposite wing does not change the assigned area.
 	var assigned_area=g.squads[attacker.squad].area
 	attacker.hear_noise(g.world.anchors[7]+Vector3(0,2,0),900,0,"gunshot")
 	g.tactics.update(g)
 	check(g.squads[attacker.squad].area==assigned_area,"Opposite-wing gunfire does not replace the assigned mission")
+	# AI grenades: visible windup, one release, and cancel if a friend steps into the landing area.
 	attacker.grenade_clock=0
 	attacker.grenades=2
 	var throw_at=Vector3(-150,30,390)
@@ -222,6 +283,7 @@ func run():
 	friendly.position=throw_at
 	attacker.step_grenade(0.72)
 	check(attacker.grenades==1 and g.grenades_live.size()==live_before+1,"AI cancels release when a friendly enters the grenade landing area")
+	# Terrain: five dig strokes make a deep pit; a grenade only a shallow scar.
 	var deep=Vector3(76,0,350)
 	deep=g.world.on_ground(deep)
 	for stroke in range(5):
@@ -232,6 +294,7 @@ func run():
 	g.world.blast(scar,380,5)
 	await ticks(12)
 	check(g.world.surface_height(scar.x,scar.z)>=scar.y-0.18,"A grenade-sized blast makes only a shallow soil scar")
+	# Wall breach: put a wooden wall 5 m above the sloping floor, check it blocks the player capsule, blow it and check a crouch-sized capsule passes.
 	var breach=g.world.on_ground(Vector3(76,0,310))+Vector3(0,5,0) # Isolate wall collision from the sloping floor.
 	var wall=g.world.solid(Vector3(6,2.8,0.3),breach+Vector3(0,1.4,0),g.world.snow,"wood")
 	g.player.shape.shape.height=1.80
@@ -245,6 +308,7 @@ func run():
 	g.player.shape.position.y=0.55
 	await ticks(2)
 	check(not g.player.test_move(g.player.global_transform,Vector3(0,0,-4)) and not wall.destroyed,"A close grenade blast opens a crouch-sized breach while part of the wall remains")
+	# Terrain steepness: sample the grid every 8 m; slope (rise over 2 m) must be below 0.90, the walking limit.
 	var max_grade=0.0
 	for x in range(-80,81,8):
 		for z in range(-390,391,8):
@@ -252,12 +316,14 @@ func run():
 			max_grade=maxf(max_grade,maxf(absf(g.world.base_surface_height(x+2,z)-h)/2,absf(g.world.base_surface_height(x,z+2)-h)/2))
 	check(max_grade<0.90,"Authored hills stay below the walking slope limit before excavation")
 	print("TERRAIN_MAX_GRADE ",max_grade)
+	# Phase 2: fresh mission for convoy tests.
 	await clean()
 	await make_game()
 	g.begin()
 	g.set_physics_process(false)
 	g.player.set_physics_process(false)
 	for a in g.actors:a.set_physics_process(false)
+	# Seated player and passengers cannot shoot or throw.
 	var t=g.trucks[4]
 	var held=g.player.ammo
 	g.player.cooldown=0
@@ -271,6 +337,7 @@ func run():
 	passenger.contact_age=0
 	passenger.try_fire()
 	check(passenger.shots==0,"AI passengers cannot fire while riding")
+	# Armour: side steel blocks a ray at 2.7 m, rear steel blocks below the slit (2.7 m), but a ray at 2.94 m passes through the narrow slit.
 	var ray=PhysicsRayQueryParameters3D.create(t.to_global(Vector3(0,2.7,1)),t.to_global(Vector3(3,2.7,1)),1)
 	var side_hit=g.get_world_3d().direct_space_state.intersect_ray(ray)
 	check(not side_hit.is_empty() and side_hit.collider.get_meta("truck_role","")=="armor","The troop compartment has physical steel side armor")
@@ -278,6 +345,7 @@ func run():
 	check(not g.get_world_3d().direct_space_state.intersect_ray(rear_ray).is_empty(),"Rear steel protects passengers below the viewing slit")
 	var slit_ray=PhysicsRayQueryParameters3D.create(t.to_global(Vector3(0,2.94,1)),t.to_global(Vector3(0,2.94,5)),1)
 	check(g.get_world_3d().direct_space_state.intersect_ray(slit_ray).is_empty(),"The armored rear retains a narrow view outside")
+	# Wheel-disabled lead truck: the next truck tries to go around it and finally gets past in 12 s.
 	var lead=g.trucks[0]
 	lead.wheel_health[0]=0
 	lead.wheel_health[1]=0
@@ -287,14 +355,17 @@ func run():
 	check(following.bypass_attempts>0 and following.desired_lane!=0,"A following truck attempts to go around a wheel-disabled vehicle")
 	for i in range(720):following.tick(1.0/60)
 	check(following.progress>lead.progress+5 and not following.unloaded,"The passing truck clears the obstruction and continues its journey")
+	# A truck with two ruined wheels makes no progress, becomes disabled and orders everyone out.
 	var cripple=g.trucks[3]
 	cripple.receive_part_damage(2500,cripple.wheels[0].global_position,true,cripple.wheels[0])
 	cripple.receive_part_damage(2500,cripple.wheels[1].global_position,true,cripple.wheels[1])
 	cripple.tick(6.1)
 	check(cripple.disabled and cripple.unloaded and cripple.occupants.all(func(a):return not a.alive or a.truck==null),"A truck with two ruined wheels detects no progress and orders dismount")
+	# No ambush is forced by an early breakdown; with no trucks arriving the ambush is skipped.
 	check(not g.lead_strike and g.ambush_outcome=="pending","An early disabled truck does not force the distant scripted ambush")
 	g.decide_ambush([])
 	check(g.ambush_outcome=="skipped" and g.rockets.is_empty(),"No arriving trucks means no authored ambush shots")
+	# A controlled one-truck arrival must not invent a rear truck or a second hit.
 	# A controlled one-truck arrival must not invent a rear truck or a second hit.
 	g.ambush_outcome="pending"
 	for vehicle in g.trucks:vehicle.unloaded=true
@@ -309,8 +380,10 @@ func run():
 	await ticks(3)
 	g.decide_ambush([t])
 	check(g.ambush_targets.size()==1 and g.lead_strike and g.rear_at<0,"One eligible arriving truck gets only the front strike")
+	# Run 1.5 s of projectiles: the lead truck is hit, survives and unloads.
 	for i in range(90):g.step_projectiles(1.0/60)
 	check(not t.destroyed and t.unloaded and g.lead_hit and not g.rear_hit,"The selected armored truck survives the ambush hit and unloads")
+	# Phase 3: fresh mission with two eligible trucks at the end of the road.
 	await clean()
 	await make_game()
 	g.begin()
@@ -326,11 +399,13 @@ func run():
 	rear.progress=565
 	front.update_transform()
 	rear.update_transform()
+	# Each truck gets a launcher with one Panzerfaust next to it.
 	for pair in [[g.staged_launchers[1],front],[g.staged_launchers[0],rear]]:
 		pair[0].position=pair[1].position+Vector3(6,1,0)
 		pair[0].home=pair[0].position
 		pair[0].fausts=1
 	await ticks(3)
+	# Two arrivals: separate front and rear strike targets (rear strike scheduled later).
 	g.decide_ambush([front,rear])
 	check(g.ambush_targets==[front,rear] and g.rear_at>0,"Two actual arrivals schedule distinct front and rear vehicle targets")
 	for i in range(90):g.step_projectiles(1.0/60)
@@ -338,18 +413,22 @@ func run():
 	g.step_convoy(0.01)
 	for i in range(90):g.step_projectiles(1.0/60)
 	check(front.unloaded and rear.unloaded and not front.destroyed and not rear.destroyed and g.lead_hit and g.rear_hit,"Both armored ambush targets stop and unload without forced destruction")
+	# A dead front launcher means no ambush.
 	g.ambush_outcome="pending"
 	g.staged_launchers[1].alive=false
 	g.decide_ambush([g.trucks[3]])
 	check(g.ambush_outcome=="skipped","A dead front launcher prevents the authored ambush")
+	# Phase 4: unattended 240 s battle.
 	await clean()
 	await make_game()
 	g.begin()
+	# Observe from outside the engagement. No player shooting, orders, buffs or invulnerability.
 	# Observe from outside the engagement. No player shooting, orders, buffs or invulnerability.
 	g.player.truck=null
 	g.player.set_physics_process(false)
 	g.player.position=Vector3(-185,40,440)
 	var started=Time.get_ticks_msec()
+	# Every 30 s record allies, Germans, shots, distance travelled, state counts and cut jobs.
 	for second in range(1,241):
 		await ticks(Engine.physics_ticks_per_second)
 		if second%30==0:
@@ -363,6 +442,7 @@ func run():
 			var snap={"second":second,"phase":g.phase,"allies":g.allies_alive,"germans":g.germans_alive,"shots":shots,"travelled":moves,"states":states,"cuts":g.world.cut_jobs,"queued_cuts":g.world.pending_cuts.size(),"deaths":g.death_causes.duplicate(),"allied_deaths":g.friendly_death_causes.duplicate(),"grenades":g.grenade_detonations}
 			snapshots.append(snap)
 			print("SIM ",JSON.stringify(snap))
+	# Aggregate checks over the whole battle: no falls, ambush resolved from real arrivals, trucks settle, MG fire damages the convoy, allies advance and kill, orders issued, fire discipline exercised, ammunition conserved, boundaries held and every casualty has a body.
 	var travel=0.0
 	for a in g.friendlies:travel+=a.travelled
 	print("CONVOY_RESULT ",JSON.stringify(g.trucks.map(func(v):return {"truck":v.index,"progress":v.progress,"hits":v.bullet_hits,"disabled":v.disabled,"destroyed":v.destroyed,"dismount":v.dismount_reason,"passes":v.bypass_attempts})))
@@ -380,6 +460,7 @@ func run():
 	check(g.actors.any(func(a):return a.reserve<a.spec.reserve or a.grenades<2),"The battle actually consumes carried supplies")
 	check(g.enemies.filter(func(a):return a.order=="hold" and not a.staged).all(func(a):return a.far_from_hold<=a.guard_radius+0.01),"Defensive units retain their boundaries throughout the large battle")
 	check(get_nodes_in_group("winter_corpses").size()==187-g.allies_alive-g.germans_alive,"Every casualty still has a body after four simulated minutes")
+	# Write the report and shut down.
 	var failed=checks.filter(func(c):return not c.passed)
 	FileAccess.open("res://reviews/ardennes-tests.json",FileAccess.WRITE).store_string(JSON.stringify({"passed":checks.size()-failed.size(),"failed":failed.size(),"checks":checks,"simulation":snapshots,"headless_wall_ms":Time.get_ticks_msec()-started,"note":"Fixed-seed, headless mechanics and autonomous battle test; not a rendering benchmark."},"  "))
 	print("ARDENNES_TEST_COMPLETE ",checks.size()," checks / ",failed.size()," failures")
