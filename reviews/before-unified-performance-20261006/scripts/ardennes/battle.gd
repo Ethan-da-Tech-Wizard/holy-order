@@ -1,9 +1,30 @@
-# ==============================================================================
-# Program: battle.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for battle.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/ardennes/battle.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Battle controller for the Ardennes mission ("Road of Iron", scenes/ardennes.tscn).
+##
+## Story and flow: the player rides in a nine-truck US convoy that is
+## ambushed on a snowy road. Two Panzerfaust strikes hit the lead and rear
+## trucks, everyone dismounts, and the player's two sections (left/right) clear
+## eight German gun positions on the ridges (80 Germans, 107 allies besides the
+## player). Win by killing every German; lose if the player dies.
+##
+## Role: the root node; it creates the world, player, trucks, soldiers, HUD and
+## sound, and provides every shared service actors call: target acquisition and
+## friendly-fire-safe firing lines, bullets, grenades, rockets and explosions,
+## noise, squad contact reports, spatial hashing, loot and weapon swapping, and
+## the scripted ambush. Phases (`phase`): title, playing, paused/inventory/
+## objectives, victory, defeat.
+## Performance design (this scene has ~190 soldiers):
+##   - AI "thinking" is not done every frame: think_budget() gives a credit that
+##     lets at most 12 actors think per rendered frame, round-robin;
+##   - neighbours are found with a 5 m grid (`spatial`) rebuilt 4 times a second;
+##   - squads are updated once a second; many effects are capped at 64.
+## Test hooks: `--battle-test` or tree meta "battle_test" enables test_mode
+## (no auto pause); tree meta "battle_seed" fixes the random seed;
+## `--battle-preview` skips the title; env HOLY_ORDER_PROFILE prints slow ticks.
+## Collaborators: world.gd, player.gd, actor.gd, truck.gd, tactics.gd,
+## weapons.gd, corpse.gd, dropped_weapon.gd, ammo_bundle.gd, interface.gd, audio.gd.
 extends Node3D
 
 const World=preload("res://scripts/ardennes/world.gd")
@@ -17,69 +38,194 @@ const AmmoBundle=preload("res://scripts/ardennes/ammo_bundle.gd")
 const Drop=preload("res://scripts/ardennes/dropped_weapon.gd")
 const Corpse=preload("res://scripts/ardennes/corpse.gd")
 const Tactics=preload("res://scripts/ardennes/tactics.gd")
+
+## Squad commander AI (tactics.gd) for the dismounted phase.
 var tactics=Tactics.new()
+
+## Count of shots held back because an ally was in the line of fire (statistic).
 var fire_checks_blocked:int=0
 const HUD=preload("res://scripts/ardennes/interface.gd")
+
+## The Ardennes world (terrain, road, hills, nests).
 var world
+
+## The player node.
 var player
+
+## The HUD/menu layer.
 var hud
+
+## The pooled audio service.
 var sounds
+
+## True while the player is on a mounted gun (not used in this mission; leave_mg is a no-op).
 var player_mounted:bool=false
+
+## Not used in this mission; present so shared UI code can test for it.
 var demolition=null
+
+## German soldiers (team 0).
 var enemies:Array=[]
+
+## American soldiers (team 1), not including the player.
 var friendlies:Array=[]
+
+## friendlies + enemies, used for thinking and noise.
 var actors:Array=[]
+
+## Squad dictionaries (team, order, temperament, anchor, objective, leader, members, contact, contact_age); ids 0-8 are the nine truck squads, 9+ the German positions.
 var squads:Array=[]
+
+## The nine CCKW trucks.
 var trucks:Array=[]
+
+## Dead actors in the order they died (looted by interact()).
 var corpses:Array=[]
+
+## Grenades in flight.
 var grenades_live:Array=[]
+
+## Panzerfaust rounds in flight.
 var rockets:Array=[]
+
+## Short-lived visual nodes {node, time}; freed when time runs out (cap 64).
 var effects:Array=[]
+
+## Per-truck engine-loop audio players.
 var engines:Array=[]
+
+## Current phase string (see class comment).
 var phase:String="title"
+
+## Seconds of play.
 var elapsed:float=0
+
+## Seconds including paused time, for UI animation.
 var visual_elapsed:float=0
+
+## True once every truck has been destroyed or unloaded.
 var column_stopped:bool=false
+
+## The scripted rocket at the lead truck has been fired.
 var lead_strike:bool=false
+
+## The scripted rocket at the rear truck has been fired.
 var rear_strike:bool=false
+
+## That rocket arrived (statistic for tests).
 var lead_hit:bool=false
+
+## The rear rocket arrived.
 var rear_hit:bool=false
+
+## Time (elapsed) when the rear strike is scheduled; -1 if none.
 var rear_at:float=-1
+
+## Time (elapsed) when the surviving trucks unload.
 var dismount_at:float=-1
+
+## True once the troops are on foot and tactics take over.
 var dismounted:bool=false
+
+## Round-robin index into `actors` for think_budget().
 var think_cursor:int=0
+
+## Countdown to the next spatial grid rebuild (0.25 s).
 var sense_timer:float=0
+
+## Countdown to the next squad update (1.0 s).
 var squad_timer:float=0
+
+## Spatial hash: Vector2i cell (5 m) -> actors in it.
 var spatial:Dictionary={}
+
+## Remaining allied soldiers (starts at 107 = 108 seats minus the player's).
 var allies_alive:int=107
+
+## Remaining Germans (8 positions x 10 men).
 var germans_alive:int=80
+
+## Rounds fired in total (also used to thin tracers to every 4th round).
 var ammo_spent:int=0
+
+## Statistic: shots or blasts that hurt the shooter's own side.
 var friendly_fire_hits:int=0
+
+## Statistic: near-miss events.
 var near_misses:int=0
+
+## Statistic: grenades that exploded.
 var grenade_detonations:int=0
+
+## Current banner message.
 var toast_text:String=""
+
+## Seconds left for the banner.
 var toast_time:float=0
+
+## Current dialogue line.
 var subtitle:String=""
+
+## Seconds left for it.
 var subtitle_time:float=0
+
+## Name shown with the subtitle.
 var speaker:String="SGT. HAYES"
+
+## HUD hit-marker timer.
 var hit_flash:float=0
+
+## Red-edge damage timer.
 var damage_flash:float=0
+
+## Direction of the last damage, for the HUD indicator.
 var last_damage_direction=Vector3.ZERO
+
+## Ensures the knight's wry line is said once, 9 s after dismount.
 var winter_intro:bool=false
+
+## The two German Panzerfaust soldiers positioned to ambush the convoy.
 var staged_launchers:Array=[]
+
+## "pending", "triggered" or "skipped" (no eligible truck arrived).
 var ambush_outcome:String="pending"
+
+## Trucks chosen for the scripted strikes (lead first).
 var ambush_targets:Array=[]
+
+## Same as column_stopped; kept for tests.
 var convoy_settled:bool=false
+
+## Statistic: shots at vehicles.
 var vehicle_shots:int=0
+
+## Cell -> actors claiming cover there; stops many soldiers taking the same spot.
 var cover_reservations:Dictionary={}
+
+## Rolling log of the last 600 frame times (ms) for performance tests.
 var last_frame_ms:Array=[]
+
+## True when running under tests: no auto pause on focus loss.
 var test_mode:bool=false
+
+## Fixed RNG seed when nonzero (reproducible battles).
 var combat_seed:int=0
+
+## Cause string -> count for all deaths.
 var death_causes:Dictionary={}
+
+## Same for team 1 only.
 var friendly_death_causes:Dictionary={}
+
+## Diagnostics for actors that died by falling out of the world.
 var fall_events:Array=[]
+
+## True when env HOLY_ORDER_PROFILE is set.
 var profile_enabled:bool=OS.has_environment("HOLY_ORDER_PROFILE")
 
+## Godot lifecycle hook: builds the whole battle in order (world, sound, player
+## on the road start, convoy, Germans, tactics, spatial grid, HUD) and
+## starts on the title camera. Honours test seed, retry and preview flags.
 func _ready():
 	Engine.max_fps=90
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
@@ -115,6 +261,8 @@ func _ready():
 		begin()
 	if "--battle-preview" in OS.get_cmdline_user_args():begin()
 
+## Registers the keyboard/mouse actions (like the desert version, but it
+## first erases existing events so key rebinding at runtime never duplicates).
 func register_inputs():
 	var bindings={"move_forward":KEY_W,"move_back":KEY_S,"move_left":KEY_A,"move_right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"crouch":KEY_C,"prone":KEY_Z,"objectives":KEY_J,"lean_left":KEY_Q,"lean_right":KEY_E,"reload":KEY_R,"interact":KEY_F,"grenade":KEY_G,"weapon_sword":KEY_1,"weapon_rifle":KEY_2,"weapon_fists":KEY_3,"weapon_shovel":KEY_4,"inventory":KEY_TAB,"pause":KEY_ESCAPE,"fullscreen":KEY_F11}
 	for action in bindings:
@@ -130,11 +278,17 @@ func register_inputs():
 		event.button_index=MOUSE_BUTTON_LEFT if action=="attack" else MOUSE_BUTTON_RIGHT
 		InputMap.action_add_event(action,event)
 
+## Adds a squad record and returns its id. [param team] 0 German, 1 US.
+## [param order] "assault"/"hold". [param temperament] "cautious"/"aggressive".
+## [param anchor] home position.
 func new_squad(team:int,order:String,temperament:String,anchor:Vector3)->int:
 	var i=squads.size()
 	squads.append({"team":team,"order":order,"temperament":temperament,"anchor":anchor,"objective":anchor,"leader":null,"members":[],"contact":Vector3.ZERO,"contact_age":999.0})
 	return i
 
+## Creates nine trucks (spaced 14 m along the road) with a 12-man squad each,
+## and puts the player in truck 4's seat 10. Seat 0 is the leader, seat 2 carries
+## a BAR, others an M1 Garand. Truck engine loops are created if audio is on.
 func make_convoy():
 	# One twelve-man rifle squad is the planned load in each CCKW, not its maximum capacity.
 	# Nine loads = 108 seats; the player replaces one passenger. Seven central loads = 84 seats.
@@ -184,6 +338,11 @@ func make_convoy():
 			engine.finished.connect(func():if phase=="playing" and not vehicle.destroyed and not vehicle.unloaded:engine.play())
 			engines.append(engine)
 
+## Creates eight German positions of ten men each around the world's anchors:
+## leader with MP40, a gunner on the main nest, a G43 marksman, riflemen with
+## Kar98 and optionally a second MG42. Men are placed in a fixed slot pattern
+## in front of the anchor; some carry a Panzerfaust, and two staged
+## launchers stand by the road to ambush the column.
 func make_germans():
 	for i in range(8):
 		var anchor=world.anchors[i]
@@ -202,6 +361,8 @@ func make_germans():
 				world.nests[i].operator=actor
 			var facing=(Vector3(world.road_x(anchor.z),anchor.y,anchor.z+15)-anchor).normalized()
 			var right=facing.cross(Vector3.UP)
+
+			# Slot table (x = sideways, y = forward in metres relative to the position): a fixed fighting line.
 			var slots=[Vector2(0,-6),Vector2(0,0),Vector2(-8,-2),Vector2(8,-2),Vector2(-5,-4),Vector2(5,-4),Vector2(-10,2),Vector2(10,2),Vector2(-13,-5),Vector2(13,-5)]
 			if j==4 and world.secondary_nests.has(i):
 				actor.weapon_kind="mg42"
@@ -229,6 +390,8 @@ func make_germans():
 				actor.reserved_faust=true
 				staged_launchers.append(actor)
 
+## Starts play from the title screen: switches to the player's camera,
+## captures the mouse and starts engines and the first briefing line.
 func begin():
 	phase="playing"
 	player.camera.current=true
@@ -238,6 +401,7 @@ func begin():
 	say("Stay seated. Weapons safe until we dismount. Watch the road behind us.",5,"SGT. HAYES")
 	toast("COVERED TRANSPORT  •  LOOK OUT THE REAR  •  HOLD FIRE UNTIL DISMOUNT",7)
 
+## Handles global hotkeys: fullscreen, pause, inventory, objectives and Enter on the title.
 func _unhandled_input(event):
 	if event.is_action_pressed("fullscreen"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if DisplayServer.window_get_mode()==DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -250,19 +414,25 @@ func _unhandled_input(event):
 			elif phase==pair[1]:resume_game()
 	if phase=="title" and event is InputEventKey and event.pressed and event.keycode==KEY_ENTER:begin()
 
+## Freezes the simulation (phase) and mutes engine loops.
+## [param menu] phase name to show.
 func pause_game(menu:String="paused"):
 	phase=menu
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	for engine in engines:engine.stream_paused=true
 
+## Resumes play.
 func resume_game():
 	phase="playing"
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 	for engine in engines:engine.stream_paused=false
 
+## Pauses automatically when the window loses focus (except in tests).
 func _notification(what):
 	if what==NOTIFICATION_APPLICATION_FOCUS_OUT and phase=="playing" and not test_mode:pause_game()
 
+## Per-frame work: AI thinking budget, frame-time log and HUD timers.
+## [param delta] frame time in seconds.
 func _process(delta):
 	visual_elapsed+=delta
 	if phase!="playing":return
@@ -273,11 +443,16 @@ func _process(delta):
 	hit_flash=maxf(0,hit_flash-delta)
 	damage_flash=maxf(0,damage_flash-delta)
 
+## Runs one battle step; optional profiling prints any tick over 8 ms.
+## [param delta] fixed physics step in seconds.
 func _physics_process(delta):
 	var started=Time.get_ticks_usec() if profile_enabled else 0
 	step_battle(delta)
 	if profile_enabled and Time.get_ticks_usec()-started>8000:print("PROFILE battle_tick ",Time.get_ticks_usec()-started)
 
+## One simulation tick: advances the convoy, schedules the knight's line,
+## rebuilds the spatial grid (every 0.25 s), updates squads (every 1 s), ages
+## squad contacts, moves projectiles and expires effects.
 func step_battle(delta):
 	if phase!="playing":return
 	elapsed+=delta
@@ -312,6 +487,7 @@ func step_battle(delta):
 			effect.node.queue_free()
 			effects.erase(effect)
 
+## Replaces dead squad leaders with the first living member and runs tactics.update after dismount.
 func update_squads():
 	for sq in squads:
 		if sq.leader==null or not sq.leader.alive:
@@ -323,6 +499,8 @@ func update_squads():
 					break
 	if dismounted:tactics.update(self)
 
+## An actor reports a sighting at `point` to its squad; a leader also shares it with allied squad leaders within 55 m.
+## [param actor] the reporter. [param point] where the enemy was seen.
 func report_contact(actor,point:Vector3):
 	var sq=squads[actor.squad]
 	sq.contact=point
@@ -334,6 +512,7 @@ func report_contact(actor,point:Vector3):
 				other.contact=point
 				other.contact_age=1
 
+## Rebuilds the 5 m spatial hash of living actors and the cover reservations (3 m cells).
 func rebuild_spatial():
 	spatial.clear()
 	cover_reservations.clear()
@@ -347,6 +526,8 @@ func rebuild_spatial():
 			if not cover_reservations.has(reservation):cover_reservations[reservation]=[]
 			cover_reservations[reservation].append(actor)
 
+## Returns a push-away vector (length at most 1) from nearby actors so soldiers
+## do not stand inside each other; entrenched pairs may stand closer.
 func separation_for(actor)->Vector3:
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
 	var result=Vector3.ZERO
@@ -361,13 +542,18 @@ func separation_for(actor)->Vector3:
 				if d>0.01 and d<space:result+=v/d*(space-d)/space
 	return result.limit_length(1.0)
 
+## True for the player with health, or an actor that is alive and not "staged".
 func actor_alive(actor)->bool:
 	if actor==null or not is_instance_valid(actor):return false
 	return actor.health>0 if actor==player else actor.alive and not actor.staged
 
+## The point on `actor` that others aim at (its chest).
 func actor_aim(actor)->Vector3:
 	return actor.aim_point()
 
+## Chooses a visible enemy for `actor`: candidates within weapon range (and
+## not behind the actor when its contact is old), sorted by distance; the
+## nearest five are tested with a sight ray and the first that is really visible is returned, or null.
 func acquire_target(actor):
 	var candidates=friendlies.duplicate() if actor.team==0 else enemies.duplicate()
 	if actor.team==0:candidates.append(player)
@@ -389,6 +575,10 @@ func acquire_target(actor):
 		if not hit.is_empty() and hit.collider==other:return other
 	return null
 
+## Friendly-fire check before shooting from `from` to `to`.
+## Rejects if an ally (or the player for team 1) is near the line, widened by
+## the weapon's spread and the ally's motion; then checks the first thing the ray hits and allows only enemies or enemy vehicles.
+## Returns true when it is safe to fire.
 func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	# Check the likely dispersion cone and nearby allies' motion, not only the center ray.
 	var length=from.distance_to(to)
@@ -414,6 +604,7 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	if hit.collider.get("truck_owner")!=null:return actor.team==0
 	return false
 
+## True if no ally (or the player for team 1) is within `radius` of `point`, now or 1.2 s ahead.
 func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
 	var friends=friendlies if actor.team==1 else enemies
 	for other in friends:
@@ -423,6 +614,7 @@ func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
 	if actor.team==1 and player.health>0 and player.position.distance_to(point)<radius:return false
 	return true
 
+## Tests a grenade arc (peak 5.5 m, six segments) for obstructions before throwing.
 func can_lob(from:Vector3,to:Vector3)->bool:
 	var last=from
 	for i in range(1,7):
@@ -433,6 +625,13 @@ func can_lob(from:Vector3,to:Vector3)->bool:
 		last=p
 	return true
 
+## Fires one bullet with Gaussian spread and resolves penetration: up to four
+## ray passes (layers world, player, both teams, props, equipment, pickups).
+## Weapons in hands are damaged (80%), hit areas take damage, soldiers take it
+## (headshots above 1.5 m deal 1.7x), props are damaged and thin wooden/cloth
+## cargo panels let the bullet pass with 72% damage; armour and anything else stops it.
+## Also draws a tracer, notifies near-miss and emits a 260 m gunshot noise.
+## [param source] shooter. [param from] muzzle. [param aim] target. [param spread] standard deviation (radians). [param damage] hit points. [param kind] weapon kind ("m2" does extra environment damage).
 func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String):
 	var direction=(aim-from).normalized()
 	var right=direction.cross(Vector3.UP).normalized()
@@ -482,12 +681,14 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	if source!=player:sounds.at("rifle",from,-10,0.72 if kind=="m2" else randf_range(0.91,1.09))
 	emit_noise(from,260,source.team,"gunshot")
 
+## Applies damage to a soldier or the player, reduced by truck cover for passengers.
 func hurt_actor(actor,damage:float,source:Vector3,kind:String):
 	if not actor_alive(actor):return
 	if actor.truck!=null and actor.truck.has_method("passenger_damage"):
 		damage=actor.truck.passenger_damage(damage,kind)
 	actor.take_damage(damage,source,kind)
 
+## Tells soldiers whose eye is within 1.5 m of the path (and beyond 2 m from the start) that a bullet went past (near_miss).
 func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
 	var line=to-from
 	var sq_len=line.length_squared()
@@ -500,13 +701,16 @@ func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
 			actor.near_miss(from)
 			near_misses+=1
 
+## Alerts all living actors of the other team with a noise of `radius`.
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
 	for actor in actors:
 		if actor.team!=team and actor.alive:actor.hear_noise(point,radius,team,kind)
 
+## Applies damage_at to the breakable that was hit.
 func damage_environment(hit:Dictionary,amount:float,radius:float):
 	if hit.collider.has_method("damage_at"):hit.collider.damage_at(amount,hit.position,radius)
 
+## Draws a brief glowing streak up to 22 m long; nothing is drawn when 64 effects exist.
 func tracer(from:Vector3,to:Vector3,color:Color):
 	if effects.size()>64:return
 	var root=Node3D.new()
@@ -518,11 +722,14 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	Art.segment(root,to-segment.normalized()*length,to,0.013,mat)
 	effects.append({"node":root,"time":0.055})
 
+## Draws a tiny sphere flash at the impact point.
 func impact(point:Vector3,color:Color):
 	if effects.size()>64:return
 	var node=Art.sphere(self,0.055,point,Art.material(color))
 	effects.append({"node":node,"time":0.15})
 
+## Fires the scripted Panzerfaust at the lead or rear truck. Only a live
+## launcher and a live truck qualify; nothing is spawned to stand in for a missing one.
 func scripted_strike(vehicle,shooter,is_lead:bool):
 	# Eligibility is evaluated against the live vehicle and launcher. No teleport,
 	# invulnerable performer, or replacement target is created for a missing truck.
@@ -532,6 +739,9 @@ func scripted_strike(vehicle,shooter,is_lead:bool):
 	else:rear_strike=true
 	say("Panzerfaust! Front of the arriving column!" if is_lead else "They've hit the last truck in the kill zone!",4,"SGT. HAYES")
 
+## Launches a Panzerfaust rocket from `source` toward `aim`.
+## [param vehicle] truck being targeted. [param scripted] true for the ambush (no random miss; follows the truck).
+## Unscripted rockets miss by a random amount that grows with range.
 func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
 	var from=source.eye()+Vector3(0,0.12,0)
 	var goal=aim
@@ -542,15 +752,19 @@ func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
 	rockets.append({"node":node,"from":from,"aim":goal,"age":0.0,"duration":maxf(0.35,from.distance_to(goal)/42.0),"vehicle":vehicle,"scripted":scripted,"source":source})
 	emit_noise(from,260,source.team,"explosion")
 
+## Player throws a grenade: 15 m/s forward and 5 m/s up.
 func throw_grenade(from:Vector3,direction:Vector3):
 	spawn_grenade(from,direction.normalized()*15.0+Vector3(0,5.0,0),1,player,player.last_grenade_type)
 
+## AI throws a grenade at `target` with a computed lob (1.6 s flight).
 func bot_grenade(actor,target:Vector3):
 	var from=actor.eye()
 	var flight=1.6
 	var velocity=(target-from)/flight+Vector3(0,9.0*flight*0.5,0)
 	spawn_grenade(from,velocity,actor.team,actor)
 
+## Creates a grenade node: M24 stick grenade (German) or Mk 2 pineapple (US).
+## Fuse is random 4.0-4.8 s.
 func spawn_grenade(from:Vector3,velocity:Vector3,team:int,source,grenade_kind:String=""):
 	if grenade_kind=="":grenade_kind="m24" if team==0 else "mk2"
 	var node=Node3D.new()
@@ -565,6 +779,7 @@ func spawn_grenade(from:Vector3,velocity:Vector3,team:int,source,grenade_kind:St
 		mesh.scale.y=1.3
 	grenades_live.append({"node":node,"velocity":velocity,"age":0.0,"fuse":randf_range(4.0,4.8),"source":source,"team":team,"kind":grenade_kind})
 
+## Moves grenades (gravity 9 m/s^2, bounce, 0.3 s safety so the thrower is not hit) and rockets along arcs; explodes them on fuse end, impact or arrival.
 func step_projectiles(delta:float):
 	for grenade in grenades_live.duplicate():
 		grenade.age+=delta
@@ -609,6 +824,9 @@ func step_projectiles(delta:float):
 			rocket.node.queue_free()
 			rockets.erase(rocket)
 
+## Detonates at `point`: damages every actor within `radius` with a falloff
+## (distance factor to the power 0.65) reduced by cover (18% behind hard cover, 55% behind other), throws corpses, damages dropped weapons, deforms the world, plays sound and noise, and draws a flash and dust.
+## [param kind] "grenade" or "rocket".
 func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade"):
 	for actor in actors+[player]:
 		if not actor_alive(actor):continue
@@ -645,6 +863,7 @@ func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade
 		create_tween().tween_property(dust,"position",end,0.9)
 	effects.append({"node":root,"time":1.1})
 
+## Creates smoke particles and an orange glow at a burning wreck.
 func add_wreck_fire(point:Vector3):
 	var smoke=GPUParticles3D.new()
 	add_child(smoke)
@@ -692,10 +911,12 @@ func add_wreck_fire(point:Vector3):
 	light.light_energy=2
 	light.omni_range=7
 
+## Stops the destroyed truck's engine; the others try to drive around it.
 func vehicle_wrecked(vehicle,_scripted:bool):
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	# A local wreck is a traffic obstruction. Other trucks keep trying to pass it.
 
+## First unloading starts the dismounted phase and the orders; tactics then assigns the new soldiers.
 func truck_dismounted(vehicle):
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	if not dismounted:
@@ -706,6 +927,7 @@ func truck_dismounted(vehicle):
 	tactics.assign_dismounted(self)
 	tactics.update(self)
 
+## Records the death cause, creates the corpse, drops weapons and ammunition, updates counts and triggers victory when no German remains.
 func actor_died(actor,kind:String):
 	death_causes[kind]=int(death_causes.get(kind,0))+1
 	if kind=="fall":
@@ -732,6 +954,7 @@ func actor_died(actor,kind:String):
 		Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 		sounds.play("victory",-10)
 
+## F key: dismount orders in a truck, otherwise pick up ammunition, then the best-aimed weapon, then loot the nearest body.
 func interact():
 	if player.truck!=null:
 		if player.truck.stopped:player.truck.dismount("orders")
@@ -764,6 +987,7 @@ func interact():
 		return
 	loot(nearest)
 
+## Moves a dead soldier's grenades (up to 4 carried) and reserve ammunition into the player's pack.
 func loot(actor)->Dictionary:
 	if actor.looted:return {}
 	var taken_grenades=mini(actor.grenades,maxi(0,4-player.grenades))
@@ -779,6 +1003,7 @@ func loot(actor)->Dictionary:
 	toast("Recovered %d rounds, %d grenades. Pack %.1f / 24; grenades %d / 4."%[result.rounds,result.grenades,player.ammo_pack.space_used(),player.grenades],4)
 	return result
 
+## World point for the compass: the road end while seated, otherwise the nearest hilltop still held.
 func objective_target()->Vector3:
 	if player.truck!=null:return world.road_point(Truck.END_PROGRESS)
 	var best=INF
@@ -790,6 +1015,7 @@ func objective_target()->Vector3:
 			goal=world.anchors[area]
 	return goal
 
+## HUD objective line, including how many of the eight hilltops are secured.
 func objective_text()->String:
 	if player.truck!=null:
 		if player.truck.disabled:return "Wheels hit. Await dismount orders."
@@ -799,33 +1025,42 @@ func objective_text()->String:
 		if not tactics.area_alive(self,i):cleared+=1
 	return "Clear both ridges • %d / 8 hilltops secured"%cleared
 
+## Shows a banner message for `duration` seconds.
 func toast(text:String,duration:float=3):
 	toast_text=text
 	toast_time=duration
 
+## Shows a subtitle line with its speaker.
 func say(text:String,duration:float=5,who:String="THE KNIGHT"):
 	subtitle=text
 	subtitle_time=duration
 	speaker=who
 
+## Ends the mission on death and silences engines.
 func defeat():
 	if phase!="playing":return
 	phase="defeat"
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	for engine in engines:engine.stop()
 
+## Restarts the mission, skipping the title screen.
 func retry():
 	get_tree().set_meta("ardennes_retry",true)
 	get_tree().reload_current_scene()
 
+## Stub (no mounted gun for the player here); keeps shared interface code working.
 func leave_mg():pass
 
+## Stops audio players so streams are released on scene change.
 func _exit_tree():
 	for engine in engines:
 		if is_instance_valid(engine):
 			engine.stop()
 			engine.stream=null
 
+## Puts a weapon on the ground as a DroppedWeapon.
+## [param kind] weapon type. [param loaded] rounds in it. [param condition] durability.
+## [param point] position. [param yaw] rotation. [param mounted] true for fixed guns.
 func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,mounted:bool=false):
 	var drop=Drop.new()
 	drop.game=self
@@ -838,6 +1073,7 @@ func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,
 	add_child(drop)
 	return drop
 
+## Swaps the player's firearm for the dropped one, dropping the old one; belt-fed MGs keep 50 rounds and put the surplus in a bundle.
 func swap_weapon(drop):
 	if player.has_rifle:drop_weapon(player.gun_kind,player.ammo,player.rifle_health,player.position,player.rotation.y)
 	var loaded=drop.rounds
@@ -852,6 +1088,7 @@ func swap_weapon(drop):
 	drop.rounds=0
 	toast("Carrying %s%s. Previous firearm dropped."%[Kit.DATA[drop.kind].name," — BROKEN" if drop.condition<=0 else ""],3)
 
+## True if another living actor on the same team is already using cover within about 2.3 m of `point`.
 func cover_occupied(actor,point:Vector3)->bool:
 	var cell=Vector3i(floori(point.x/3),actor.team,floori(point.z/3))
 	for x in [-1,0,1]:
@@ -860,6 +1097,7 @@ func cover_occupied(actor,point:Vector3)->bool:
 				if other!=actor and other.alive and other.has_cover and other.cover.distance_squared_to(point)<5.5:return true
 	return false
 
+## Puts the player's ammunition containers on the ground as a bundle.
 func drop_pack():
 	if player.ammo_pack.containers.is_empty():return
 	var bundle=AmmoBundle.new()
@@ -871,11 +1109,13 @@ func drop_pack():
 	toast("Spare ammunition placed on the ground. F picks up what fits.",3)
 	hud.last_phase=""
 
+## Trucks that can still be struck: intact, loaded, between 540 m along the road and the end, nearest the front first.
 func ambush_candidates()->Array:
 	var candidates=trucks.filter(func(t):return not t.destroyed and not t.unloaded and not t.disabled and t.has_passengers() and t.progress>=540 and t.progress<=Truck.END_PROGRESS+1)
 	candidates.sort_custom(func(a,b):return a.progress>b.progress)
 	return candidates
 
+## True if the shooter is alive, has a rocket, is within 78 m and has an unobstructed line to the truck.
 func launcher_can_hit(shooter,vehicle)->bool:
 	if shooter==null or not shooter.alive or shooter.fausts<=0:return false
 	var point=vehicle.to_global(Vector3(0,1.4,-1.8))
@@ -884,6 +1124,7 @@ func launcher_can_hit(shooter,vehicle)->bool:
 	var hit=get_world_3d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or hit.collider.get("truck_owner")==vehicle
 
+## Decides once whether the ambush happens: the lead arriving truck is hit if the staged launcher can reach it, and the rear one 3.5 s later if possible. Sets ambush_outcome and the dismount time.
 func decide_ambush(candidates:Array):
 	if ambush_outcome!="pending":return
 	ambush_outcome="skipped"
@@ -902,6 +1143,7 @@ func decide_ambush(candidates:Array):
 	# One arriving truck receives only one strike. Non-arrivals are never substituted.
 	dismount_at=elapsed+5.5
 
+## Advances trucks, triggers the ambush when the lead truck arrives, fires the rear strike, and orders the dismount.
 func step_convoy(delta:float):
 	for truck in trucks:truck.tick(delta)
 	if ambush_outcome=="pending":
@@ -919,6 +1161,7 @@ func step_convoy(delta:float):
 	convoy_settled=trucks.all(func(t):return t.destroyed or t.unloaded)
 	column_stopped=convoy_settled
 
+## Chooses the truck a German should shoot at: in range, visible, and preferred if recently hit, with a small deterministic spread so different gunners pick different trucks.
 func acquire_vehicle(actor):
 	if actor.team!=0:return null
 	var best=null

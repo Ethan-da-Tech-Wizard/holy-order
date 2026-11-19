@@ -1,9 +1,6 @@
-# ==============================================================================
-# Program: weapons.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for weapons.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/ardennes/weapons.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends RefCounted
 
 # Magazine/belt loads are explicit inventories, not unlimited firing timers.
@@ -22,10 +19,17 @@ const DATA = {
 	"m2":{"name":"Browning M2 HB", "caliber":"50bmg", "capacity":100, "reserve":400, "interval":0.12, "reload":6.5, "damage":85.0, "range":260.0, "spread":0.020, "automatic":true}
 }
 const Art = preload("res://scripts/art.gd")
+
+## Baked gun meshes by weapon id.
 static var gun_cache: Dictionary = {}
+
+## Baked soldier parts by "team-variant".
 static var soldier_cache: Dictionary = {}
+
+## The shared material that renders vertex colours.
 static var paint: StandardMaterial3D
 
+## Returns the shared StandardMaterial3D that takes its albedo from vertex colours (so one material serves every baked part).
 static func vertex_material() -> StandardMaterial3D:
 	if paint == null:
 		paint = StandardMaterial3D.new()
@@ -35,6 +39,10 @@ static func vertex_material() -> StandardMaterial3D:
 
 # Merge the primitive parts into one vertex-colored surface. Hundreds of soldiers
 # share meshes rather than creating thousands of individual drawing objects.
+
+## Merges all MeshInstance3D descendants of `root` into one ArrayMesh with vertex colours.
+## [param root] model to merge (its children are read, the root itself is not freed here).
+## Returns the single-surface mesh using vertex_material().
 static func bake(root: Node3D) -> ArrayMesh:
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -43,6 +51,7 @@ static func bake(root: Node3D) -> ArrayMesh:
 	st.index()
 	return st.commit()
 
+## Recursive helper for bake(): appends every mesh under `node`, transformed into root space, to `st`, using each mesh's material colour as its vertex colour (converted to linear space) and rotating normals with the inverse transpose.
 static func append_meshes(node: Node3D, xf: Transform3D, st: SurfaceTool):
 	for child in node.get_children():
 		if not child is Node3D: continue
@@ -160,6 +169,12 @@ static func make_gun(root: Node3D, kind: String):
 	Art.box(root,Vector3(0.0022,0.023,0.007),Vector3(0,0.0725,-0.77),black)
 	for x in [-0.012,0.012]: Art.box(root,Vector3(0.003,0.028,0.013),Vector3(x,0.071,-0.77),steel)
 
+## Builds a soldier model (cached by team and cloth variant) as separate baked
+## parts so it can be animated cheaply: body (torso, head, helmet, left arm),
+## two legs and a right arm.
+## [param team] 1 US (olive), 0 German (field grey). [param variant] 0..2 picks
+## the colour set (variant 1 is a lighter winter smock colour).
+## Returns {"root", "body", "legs" (two nodes pivoting at the hip), "right_arm" (pivot at the shoulder)}.
 static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
 	var key = "%d-%d" % [team,variant%3]
 	if not soldier_cache.has(key):
@@ -218,6 +233,9 @@ static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
 	root.add_child(arm)
 	return {"root":root,"body":body,"legs":leg_nodes,"right_arm":arm}
 
+## Generates a steel helmet shell as a lathe of 24 sides x 7 rings: the US M1 has
+## a short brim, the German M35 a longer neck flare and rim.
+## [param team] 1 for US, 0 for German.
 static func helmet_mesh(team:int)->ArrayMesh:
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -237,6 +255,7 @@ static func helmet_mesh(team:int)->ArrayMesh:
 	st.generate_normals()
 	return st.commit()
 
+## Lowers the segment count of spheres (12 x 6) and cylinders (max 12) under `root` before baking to reduce triangles in shared meshes.
 static func simplify_parts(root:Node):
 	for child in root.get_children():
 		if child is MeshInstance3D:

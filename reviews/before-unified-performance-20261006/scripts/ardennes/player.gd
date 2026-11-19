@@ -1,31 +1,54 @@
-# ==============================================================================
-# Program: player.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for player.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/ardennes/player.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends CharacterBody3D
 
 const Kit=preload("res://scripts/ardennes/weapons.gd")
+
+## Weapon id of the carried firearm (starts as the BAR).
 var gun_kind:String="bar"
+
+## Its row from weapons.gd DATA (a copy when swapped, so edits are local).
 var gun_spec:Dictionary=Kit.DATA.bar
 const AmmoPack=preload("res://scripts/ardennes/ammo_pack.gd")
+
+## Spare ammunition containers with space/weight limits.
 var ammo_pack=AmmoPack.new()
+
+## Always 1 (US side) for the player.
 var team:int=1
+
+## Truck the player is riding in, or null when on foot.
 var truck
+
+## Seat index (8 by default; the battle controller assigns the real one).
 var seat:int=8
 
 const Art = preload("res://scripts/art.gd")
 const EquipmentHitbox=preload("res://scripts/equipment_hitbox.gd")
+
+## The battle controller.
 var game
 var camera: Camera3D
 var head: Node3D
 var hands: Node3D
+
+## Visible steel legs shown when looking down.
 var lower_body:Node3D
+
+## First-person hand shown while throwing.
 var grenade_hand:Node3D
+
+## The grenade model held during a throw.
 var grenade_prop:Node3D
+
+## Seconds left in the throw animation (1.05 s).
 var grenade_time:float=0
+
+## Whether the grenade has left the hand.
 var grenade_released:bool=false
+
+## Short delay after a throw (0.3 s).
 var grenade_cooldown:float=0
 var rifle: Node3D
 var blade: Node3D
@@ -45,13 +68,23 @@ var max_health:float=preload("res://scripts/player_stats.gd").MAX_HEALTH
 var health:float=max_health
 var stamina: float = 100
 var ammo: int = 0
+
+## Rounds of the current caliber in the ammo pack. Reading sums the pack;
+## writing adds or removes rounds through ammo_pack.adjust (so reloads and loot
+## update the pack).
 var reserve:int:
 	get:return ammo_pack.rounds_for(gun_spec.caliber)
 	set(value):ammo_pack.adjust(gun_spec.caliber,value,gun_kind)
 var has_rifle: bool = false
 var weapon: int = 0 # 0 sword, 1 rifle, 2 fists
+
+## Typed grenade belt: "mk2" (US) or "m24" (German); oldest is thrown first, max 4.
 var grenade_types:Array[String]=[]
+
+## Type of the most recently thrown grenade (used by the battle controller).
 var last_grenade_type:String="mk2"
+
+## Number of grenades. Setting it lower throws away the oldest ones; setting it higher adds Mk 2.
 var grenades:int:
 	get:return grenade_types.size()
 	set(value):
@@ -75,6 +108,8 @@ var step_clock: float = 0
 var lean: float = 0
 var recoil: float = 0
 var sensitivity: float = 0.0021
+
+## Truck heading at the previous tick; the player's yaw follows the truck's turns.
 var last_truck_yaw:float=0
 var shot_count: int = 0
 var hit_count: int = 0
@@ -89,8 +124,13 @@ const HIP_FOV: float = 83.0
 const AIM_FOV: float = 58.0
 const HIP_RIFLE_POSITION = Vector3(0.22, -0.245, -0.40)
 
+## Godot lifecycle hook: builds the capsule, camera rig, first-person BAR, sword,
+## fists, shovel, visible body and slung gun, scabbard and hit areas (as in the
+## desert player), starting with the BAR loaded (20 rounds, 120 spare, shovel, 4 grenades).
 func _ready():
 	collision_layer = 2
+
+	# Mask includes both teams so the player collides with soldiers of either side.
 	collision_mask = 1|4|8
 	floor_snap_length = 0.55
 	floor_max_angle=deg_to_rad(48)
@@ -167,12 +207,17 @@ func _ready():
 	grenades=4
 	select_weapon(1)
 
+## Sets the render layer of every VisualInstance3D below `node`.
 func set_model_layers(node: Node, layers: int):
 	if node is VisualInstance3D:
 		node.layers = layers
 	for child in node.get_children():
 		set_model_layers(child,layers)
 
+## Mouse look and one-shot keys. While in a truck only crouch, prone, look and
+## F (dismount order) work. Also handles weapon slots, attack press/release,
+## reload, interact, grenade and jump.
+## [param event] input event; ignored unless game.phase is "playing".
 func _unhandled_input(event):
 	if game.phase != "playing":
 		return
@@ -231,11 +276,18 @@ func _unhandled_input(event):
 		if climbing<=0 and not try_mantle() and is_on_floor():
 			velocity.y = 6.2
 
+## Per-tick update. In a truck: follows the seat and the truck's yaw, lets the
+## player lean, and finishes a reload. On foot: movement like the desert player
+## (walk 4.9, sprint 7.8, charge 11.4, crouch 2.3, prone 1.15, aim 2.8 m/s) plus a
+## guard that lifts the player back above the (deformable) terrain and a fall limit (y < -42 is defeat).
+## [param delta] physics step in seconds.
 func _physics_process(delta):
 	if game.phase != "playing":
 		return
 	grenade_cooldown=maxf(0,grenade_cooldown-delta)
 	step_grenade(delta)
+
+	# Seated: no walking; the camera pose still responds to crouch/prone and lean so the player can peek out of the truck.
 	if truck!=null:
 		global_position=truck.seat_transform(seat).origin
 		rotation.y+=angle_difference(last_truck_yaw,truck.rotation.y)
@@ -295,6 +347,8 @@ func _physics_process(delta):
 	elif direction.length()>0.1:
 		step_over_rubble(direction.normalized())
 	move_and_slide()
+
+	# The terrain can be dug away under the player; keep the feet above the current surface.
 	var terrain_floor=game.world.surface_height(global_position.x,global_position.z)
 	if global_position.y<terrain_floor-0.12:
 		global_position.y=terrain_floor+0.025
@@ -330,6 +384,7 @@ func _physics_process(delta):
 		position.x=clampf(position.x,-bounds.x,bounds.x)
 		position.z=clampf(position.z,-bounds.y,bounds.y)
 
+## Per-render-frame cosmetic update (recoil decay, view-model animation).
 func _process(delta):
 	if game.phase != "playing" or game.player_mounted: return
 	# Cosmetic movement follows rendered frames, not the fixed physics tick rate.
@@ -337,6 +392,7 @@ func _process(delta):
 	camera.rotation.x = recoil*0.020
 	update_view(delta)
 
+## Animates the first-person view models (sway, aim, reload, bolt, sword, fists, shovel). Same logic as the desert player.
 func update_view(delta):
 	lower_body.visible=not prone and truck==null
 	hands.visible=truck==null and grenade_time<=0
@@ -402,6 +458,7 @@ func update_view(delta):
 	if weapon==3 and cooldown>0:
 		shovel.rotation.x-=sin(clampf(1-cooldown/0.65,0,1)*PI)*1.0
 
+## Switches weapon slot 0 sword, 1 gun, 2 fists, 3 shovel, resetting attack, aim and reload state and showing the matching view model.
 func select_weapon(slot: int):
 	if slot==4:return
 	if slot==0 and sword_health<=0:
@@ -430,6 +487,11 @@ func select_weapon(slot: int):
 	sheathed.visible = slot != 0 and sword_health>0
 	for box in equipment_boxes:box.set_active(box.get_parent().visible)
 
+## Starts an attack. Gun: needs ammunition and a working weapon, fires through
+## game.shoot with spread 0.0015 rad aiming or 0.020 hip, cooldown from the
+## weapon's interval, recoil kick up to 1.8. Sword/fists: begins the swing (damage
+## in melee_hit). Blocked while in a truck, throwing, climbing or reloading.
+## [param power] charge time of a melee swing (0..1.2 s).
 func attack(power: float = 0):
 	if truck!=null or grenade_time>0 or cooldown > 0 or climbing > 0 or reload_time > 0: return
 	strike_power = 1.0 + clampf(power,0,1.2)*1.2 + (0.7 if is_charging else 0)
@@ -460,6 +522,7 @@ func attack(power: float = 0):
 		attack_pending = true
 		game.sounds.play("sword",-10,0.75 if weapon == 0 else 1.35)
 
+## Resolves a melee blow against the nearest living soldier of either side in front (it can hit allies) and otherwise the environment.
 func melee_hit():
 	var closest = null
 	var best = 3.05 if weapon == 0 else 2.20
@@ -491,12 +554,14 @@ func melee_hit():
 			else:game.damage_environment(impact,(24 if weapon==0 else 13)*strike_power,0.38)
 			game.sounds.play("clang",-13)
 
+## RIDs the player's own shots must ignore (body and carried gear hit areas).
 func shot_exclusions() -> Array[RID]:
 	var result: Array[RID]=[get_rid()]
 	for box in equipment_boxes:
 		if is_instance_valid(box):result.append(box.get_rid())
 	return result
 
+## Damage to carried gear: the gun, sword or shovel can be broken (see the desert player).
 func receive_equipment_damage(item: String, amount: float):
 	if game.phase!="playing":return
 	match item:
@@ -519,6 +584,7 @@ func receive_equipment_damage(item: String, amount: float):
 	for box in equipment_boxes:box.set_active(box.get_parent().visible)
 	game.sounds.play("clang",-7)
 
+## One shovel stroke: digs terrain or damages props.
 func dig_stroke():
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return
 	cooldown=0.65
@@ -535,6 +601,7 @@ func dig_stroke():
 		game.sounds.play("clang",-13)
 	game.impact(hit.position,Color("9b8769"))
 
+## Auto-steps over low obstacles in the walking direction.
 func step_over_rubble(direction: Vector3):
 	var space=get_world_3d().direct_space_state
 	var low=global_position+Vector3(0,0.16,0)
@@ -548,6 +615,7 @@ func step_over_rubble(direction: Vector3):
 		var clear=PhysicsRayQueryParameters3D.create(top.position+Vector3(0,0.06,0),top.position+Vector3(0,1.85,0),1)
 		if space.intersect_ray(clear).is_empty():global_position.y+=lift+0.025
 
+## Starts a reload of the carried gun from the ammo pack.
 func reload_weapon():
 	if grenade_time>0 or weapon != 1 or reload_time > 0 or ammo == gun_spec.capacity: return
 	if reserve == 0:
@@ -559,6 +627,8 @@ func reload_weapon():
 	cooldown = reload_time
 	game.sounds.play("reload",-10)
 
+## Applies damage; melee damage is reduced to 40% by the armour. Defeat at 0 health.
+## [param amount] hit points. [param source] attacker position. [param kind] "rifle", "melee", "explosion"...
 func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	if game.phase != "playing": return
 	# Plate protects against blows; twentieth-century rifle rounds still penetrate it.
@@ -568,6 +638,7 @@ func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	game.sounds.play("hit",-6)
 	if health <= 0: game.defeat()
 
+## Climbs a ledge 0.2 to 1.75 m high with headroom, as in the desert player.
 func try_mantle() -> bool:
 	var direction = -global_basis.z
 	var low = global_position+Vector3(0,0.66,0)
@@ -589,6 +660,7 @@ func try_mantle() -> bool:
 	velocity = Vector3.ZERO
 	return true
 
+## Leaves the truck at its side (3.4 m out), on the ground, standing, with a toast.
 func dismount():
 	if truck==null:return
 	var p=truck.to_global(Vector3(3.4,0,1.5))
@@ -599,9 +671,14 @@ func dismount():
 	velocity=Vector3.ZERO
 	game.toast("ON FOOT  •  Stay with the squad or choose your own route.",5)
 
+## World position other actors aim at: 75% of the eye height.
 func aim_point()->Vector3:
 	return global_position+Vector3(0,eye_height*0.75,0)
 
+## Swaps the carried firearm: replaces the view and slung models and their hit
+## areas, sets the new ammunition and condition, and equips it. Belt-fed MG34/MG42
+## are capped at a 50-round belt.
+## [param kind] weapon id. [param loaded] rounds in it. [param condition] durability.
 func set_firearm(kind:String,loaded:int,condition:float):
 	gun_kind=kind
 	gun_spec=Kit.DATA[kind].duplicate()
@@ -634,16 +711,21 @@ func set_firearm(kind:String,loaded:int,condition:float):
 		equipment_boxes.append(hitbox)
 	select_weapon(1)
 
+## Puts looted rounds in the ammo pack and returns how many fit.
+## [param caliber] caliber string. [param count] rounds offered.
+## [param source_kind] container kind (e.g. "garand"); derived from the caliber if empty.
 func stash_ammo(caliber:String,count:int,source_kind:String="")->int:
 	var kind=source_kind
 	if kind=="":kind={"30-06":"garand","792":"kar98","9mm":"mp40","50bmg":"m2"}.get(caliber,"bar")
 	return ammo_pack.add_rounds(kind,count)
 
+## Adds up to `count` grenades of `kind`, up to a belt of 4; returns how many were added.
 func add_grenades(kind:String,count:int)->int:
 	var n=mini(maxi(0,count),4-grenades)
 	for i in range(n):grenade_types.append(kind)
 	return n
 
+## Starts the 1.05 s throw animation if not seated or already throwing and a grenade is available; builds the grenade model for the first grenade's type.
 func begin_grenade():
 	if truck!=null or grenade_time>0 or grenade_cooldown>0:return
 	if grenades<=0:
@@ -663,6 +745,7 @@ func begin_grenade():
 		Art.cylinder(grenade_prop,0.04,0.07,Vector3(0,0.145,0),green,-1,10)
 	else:Art.sphere(grenade_prop,0.054,Vector3(0,0.06,0),green)
 
+## Counts down the throw and releases the grenade 0.43 s before the end (calling game.throw_grenade), then starts the cooldown.
 func step_grenade(delta:float):
 	if grenade_time<=0:return
 	grenade_time=maxf(0,grenade_time-delta)

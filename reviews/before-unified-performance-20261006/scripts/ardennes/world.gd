@@ -1,9 +1,22 @@
-# ==============================================================================
-# Program: world.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for world.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/ardennes/world.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## The Ardennes battlefield: procedural snowy terrain with a winding road,
+## ridges with eight German gun positions, pine trees, rocks, craters, cover
+## points, a navigation grid and live terrain deformation.
+##
+## Role: created by battle.gd (which sets `game`). Everything is generated from
+## fixed seeds (19441223, the date of the Ardennes offensive) so the map is
+## identical every run. Other scripts call road_x / road_point / on_ground /
+## surface_height for positions, path_between for navigation, cover_candidates
+## for AI cover, blast / dig / carve_ground / deform_ground for destruction, and
+## geometry_updated when anything changes.
+## Coordinates: the road runs along Z; road distance `progress` counts down from
+## ROAD_START (z = 420) toward negative Z. The playable box is LIMIT metres
+## half-width by half-length. The eight AREAS are the German hilltops, listed
+## from the first ambush hills (left/right of the road) to the last road guns.
+## Terrain: 24 x 24 m chunks, each a 6 x 6 grid of 4 m cells built as two
+## triangles each; chunks are Prop bodies (kind "soil"), so shells can dig them.
 extends Node3D
 
 const Art=preload("res://scripts/art.gd")
@@ -13,36 +26,98 @@ const LIMIT=Vector2(174,426)
 const STEP=2.0
 const ROAD_START=420.0
 const AREAS=[Vector2(-48,180),Vector2(51,167),Vector2(-57,48),Vector2(58,35),Vector2(-53,-79),Vector2(55,-92),Vector2(-51,-207),Vector2(53,-218)]
+
+## Memoised terrain heights keyed by (x, z) once terrain is built.
 var height_cache:Dictionary={}
+
+## Turned on after the craters are placed, because earlier queries would cache pre-crater heights.
 var height_cache_enabled:bool=false
+
+## The battle controller.
 var game
+
+## Simplex noise for hill shapes.
 var noise=FastNoiseLite.new()
+
+## All ground bodies.
 var terrain_chunks: Array=[]
+
+## Chunk origin (Vector2i) -> chunk body, used by carve_ground.
 var terrain_lookup:Dictionary={}
+
+## Recent path results (cleared when geometry changes; capped at 256).
 var path_cache:Dictionary={}
+
+## area id -> {position, kind, operator} for the extra MG42 positions.
 var secondary_nests:Dictionary={}
+
+## Cache cleared when geometry changes; reserved for height queries on the nav grid.
 var navigation_heights:Dictionary={}
+
+## All cover points (rocks, sandbags, logs...).
 var covers: Array[Vector3]=[]
+
+## {p, r, node} circles blocking the navigation grid (rocks, wrecks, logs).
 var obstacles: Array=[]
+
+## {p, r, d}: shell craters (position, radius, depth) carved into the height function.
 var craters: Array=[]
+
+## The eight main machine-gun nests: {position, kind, operator}.
 var nests: Array=[]
+
+## Ground position of each area (used as squad anchors and objectives).
 var anchors: Array[Vector3]=[]
+
+## AStarGrid2D over the road and ridges.
 var navigation: AStarGrid2D
+
+## Counter bumped by geometry_updated(); AI compares it to detect stale cover and paths.
 var geometry_revision:int=0
+
+## Last 32 changes {revision, point} for cover_changed().
 var geometry_changes:Array=[]
+
+## Queue of terrain/prop cuts waiting for their turn (max 96).
 var pending_cuts:Array=[]
+
+## Bodies currently rebuilding after a cut.
 var active_cuts:Array=[]
+
+## Count of cuts executed (statistic).
 var cut_jobs:int=0
+
+## Chunk origin -> 25 x 25 height array of edited chunks (see deform_ground).
 var soil_edits:Dictionary={}
+
+## Camera used on the title screen.
 var world_camera:Camera3D
+
+## Snow/dirt shader material: mixes dark dirt on steep faces with icy snow, with a road strip and noise grain.
 var snow:ShaderMaterial
+
+## Seeded random generator for scenery.
 var rng=RandomNumberGenerator.new()
+
+## Seed of the scenery random generator.
 var rng_seed:int=19441223
+
+## Number of ground chunks built.
 var terrain_meshes:int=0
+
+## 20 m grid of cover points for fast lookups.
 var cover_grid:Dictionary={}
+
+## Pine mesh variants shared by all trees.
 static var pine_cache:Dictionary={}
+
+## The WorldEnvironment node.
 var ambient:WorldEnvironment
 
+## Godot lifecycle hook: builds the terrain and everything on it, in dependency order.
+## Order: noise and snow shader, craters (34 random + 5 around each area), terrain chunks over
+## -96..96 x -456..456, lighting, 140 pines and 38 rocks (kept out of the road corridor
+## and fire lanes and 15 m clear of the areas), nests, cover grid, navigation grid and the title camera.
 func _ready():
 	add_to_group("battle_world")
 	rng.seed=rng_seed
@@ -50,6 +125,10 @@ func _ready():
 	noise.frequency=0.007
 	noise.noise_type=FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	var shader=Shader.new()
+
+	# Inline shader (spatial, cull_back): blends dirt and ice by surface slope and
+	# distance from the road centre line, so the road is trampled and the ridges
+	# are snow-covered. Its road formula repeats road_x() on the GPU.
 	shader.code="""shader_type spatial;
 render_mode cull_back;
 varying vec3 wp;
@@ -107,9 +186,12 @@ ALBEDO=mix(dirt,ice,face*(1.0-lane*0.84)); ROUGHNESS=0.95;
 	world_camera.far=650
 	world_camera.fov=63
 
+## X coordinate of the road centre line at world z: two sine waves (periods about 370 m and 143 m) giving a gentle winding road with amplitude 13 m and 3 m.
 func road_x(z:float)->float:
 	return sin(z*0.017)*13.0+sin(z*0.044)*3.0
 
+## Un-edited terrain height. Between the road shoulders (9 m) and 44 m from the centre, height blends from a flat road bed (with a very gentle swell) into noisy hills
+## plus a 9.5 m Gaussian bump under each German area, which creates the ridges.
 func raw_height(x:float,z:float)->float:
 	# Broad ridges with a low-amplitude surface. Road shoulders and firing lanes
 	# are graded approaches, not the old high-frequency walls of noise.
@@ -121,6 +203,7 @@ func raw_height(x:float,z:float)->float:
 	var off=absf(x-road_x(z))
 	return lerpf(lane,hill,smoothstep(9.0,44.0,off))
 
+## True if `p` is within 7 m of the straight line from an area to the road: nothing is planted there so the guns have a view.
 func in_fire_lane(p:Vector3)->bool:
 	for area in AREAS:
 		var a=Vector2(area.x,area.y)
@@ -130,6 +213,7 @@ func in_fire_lane(p:Vector3)->bool:
 		if q.distance_squared_to(a+(b-a)*t)<49:return true
 	return false
 
+## Final terrain height: raw height, flattened near each area into a platform (blend 8 to 24 m), then shell craters (a bowl with a raised rim).
 func height_at(x:float,z:float)->float:
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
@@ -146,13 +230,16 @@ func height_at(x:float,z:float)->float:
 	if height_cache_enabled:height_cache[key]=h
 	return h
 
+## Returns `p` with y set to the surface height at its x, z.
 func on_ground(p:Vector3)->Vector3:
 	return Vector3(p.x,surface_height(p.x,p.z),p.z)
 
+## World position on the road centre line at distance `progress` along the road.
 func road_point(progress:float)->Vector3:
 	var z=ROAD_START-progress
 	return on_ground(Vector3(road_x(z),0,z))
 
+## Builds one 24 x 24 m ground chunk at (x, z): a Prop in kind "soil", the triangle mesh from height_at, and a trimesh collider.
 func ground_chunk(x:float,z:float):
 	var body=Prop.new()
 	body.material_kind="soil"
@@ -180,9 +267,12 @@ func ground_chunk(x:float,z:float):
 	terrain_lookup[Vector2i(int(x),int(z))]=body
 	terrain_meshes+=1
 
+## Adds a triangle to a SurfaceTool with the winding that faces up.
 func tri(st:SurfaceTool,a:Vector3,b:Vector3,c:Vector3):
 	for v in [a,c,b]:st.add_vertex(v)
 
+## Creates a destructible box prop with a bevelled visual and box collider.
+## [param size] metres, [param p] position, [param mat] material, [param kind] damage material kind, [param parent] node to attach to.
 func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=self):
 	var body=Prop.new()
 	body.material_kind=kind
@@ -198,6 +288,7 @@ func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=
 	body.add_child(cs)
 	return body
 
+## Creates a pine: a trunk collider and a shared baked canopy mesh that fades out beyond 270 m; trunks with health 260 + 12 per metre of height, so a tree falls after taking enough damage.
 func tree(p:Vector3,height:float,variant:int):
 	var tree_root=Prop.new()
 	tree_root.battle_world=self
@@ -229,6 +320,7 @@ func tree(p:Vector3,height:float,variant:int):
 	obstacles.append({"p":p,"r":r+0.5,"node":tree_root})
 	for v in [Vector3(1.4,0,0),Vector3(-1.4,0,0),Vector3(0,0,1.4),Vector3(0,0,-1.4)]:covers.append(on_ground(p+v))
 
+## Creates a boulder (a squashed sphere with a convex collider), registers it as a navigation obstacle and adds four cover points around it.
 func rock(p:Vector3,radius:float):
 	var body=Prop.new()
 	body.material_kind="rock"
@@ -249,6 +341,7 @@ func rock(p:Vector3,radius:float):
 	obstacles.append({"p":p,"r":radius+0.4,"node":body})
 	for j in range(4):covers.append(on_ground(p+Vector3(cos(j*PI/2),0,sin(j*PI/2))*(radius+1.1)))
 
+## Builds German position `index`: a line of three sandbag walls facing the road, an MG platform and trench, rear shelter, and cover points. Registers it in `nests`.
 func build_nest(index:int):
 	var p=on_ground(anchors[index])
 	anchors[index]=p
@@ -299,6 +392,7 @@ func build_nest(index:int):
 		solid(Vector3(1.4,0.85,0.55),flank+Vector3(0,0.40,0),bag,"sandbag").rotation.y=atan2(facing.x,facing.z)
 		covers.append(flank-facing*0.9)
 
+## Creates the environment (procedural sky, filmic tone mapping, low-lying fog with a height falloff, ambient light) and the low winter sun with shadows to 95 m.
 func build_lighting():
 	ambient=WorldEnvironment.new()
 	var env=Environment.new()
@@ -334,6 +428,7 @@ func build_lighting():
 	sun.directional_shadow_max_distance=95
 	add_child(sun)
 
+## Creates the AStarGrid2D over the region (-45, -213, 91, 427 cells = 182 x 854 m): marks cells near obstacles solid and makes crater cells cost 1.7x so soldiers avoid them.
 func build_navigation():
 	navigation=AStarGrid2D.new()
 	navigation.region=Rect2i(-87,-213,175,427)
@@ -352,9 +447,11 @@ func build_navigation():
 		var v=cell(c.p)
 		if navigation.is_in_boundsv(v):navigation.set_point_weight_scale(v,1.7)
 
+## World position to grid cell (rounded).
 func cell(p:Vector3)->Vector2i:
 	return Vector2i(roundi(p.x/STEP),roundi(p.z/STEP))
 
+## Nearest free grid cell to `p`, searching up to 4 cells away if its own cell is solid.
 func nearest_cell(p:Vector3)->Vector2i:
 	var c=cell(p).clamp(navigation.region.position,navigation.region.end-Vector2i.ONE)
 	if not navigation.is_point_solid(c):return c
@@ -365,6 +462,7 @@ func nearest_cell(p:Vector3)->Vector2i:
 				if navigation.is_in_boundsv(v) and not navigation.is_point_solid(v):return v
 	return c
 
+## A* path between two world points as a list of corner points: collinear points are dropped and the destination is appended. Returns an empty array if either end is blocked. Results are cached (256 entries); heights are left zero as characters follow the ground physically.
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	var from=nearest_cell(a)
 	var to=nearest_cell(b)
@@ -384,6 +482,7 @@ func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	path_cache[key]=result
 	return result
 
+## Marks that the world changed near `point`: bumps the revision, clears caches and re-evaluates the 5 x 5 navigation cells around it against live obstacles within 18 m.
 func geometry_updated(point:Vector3):
 	geometry_revision+=1
 	path_cache.clear()
@@ -407,12 +506,15 @@ func geometry_updated(point:Vector3):
 					break
 			navigation.set_point_solid(v,blocked)
 
+## True if cover chosen at revision `since` may now be invalid: more than 32 revisions old, or a change within 10 m after it.
 func cover_changed(point:Vector3,since:int)->bool:
 	if geometry_revision-since>32:return true
 	for change in geometry_changes:
 		if change.revision>since and change.point.distance_squared_to(point)<100:return true
 	return false
 
+## Queues a carve request instead of running it now, merging a request within 0.5 m on the same body (radius = max) and refusing more than 96 queued.
+## [param body] the Prop to cut. [param point] world position. [param radius] hole radius.
 func queue_cut(body,point:Vector3,radius:float):
 	# Limit geometry work, coalesce close hits and keep the queue bounded under MG fire.
 	for cut in pending_cuts:
@@ -421,6 +523,7 @@ func queue_cut(body,point:Vector3,radius:float):
 			return
 	if pending_cuts.size()<96:pending_cuts.append({"body":body,"local":body.to_local(point),"radius":radius})
 
+## Runs at most one queued cut at a time with a 0.08 s gap, only when no previous cut is still rebuilding: this prevents a burst of fire from stalling the game with many CSG operations.
 func _process(_delta):
 	for body in active_cuts.duplicate():
 		if not is_instance_valid(body) or not body.rebuilding:active_cuts.erase(body)
@@ -431,6 +534,8 @@ func _process(_delta):
 		active_cuts.append(job.body)
 		cut_jobs+=1
 
+## Applies an explosion: shallow crater in the soil if within 1.4 m of the ground, then damage_at to every non-soil breakable within `radius` (with falloff) and a 1.25 m cut size.
+## [param power] damage. [param radius] metres. [param soil_radius] crater radius. [param soil_depth] crater depth.
 func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,soil_depth:float=0.13):
 	# Fragmentation radius is separate from excavation. A grenade makes a shallow
 	# scar in soil, while close hits can still breach timber and thin walls.
@@ -444,6 +549,7 @@ func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,
 		if distance>radius:continue
 		body.damage_at(power*(1.0-distance/(radius+1.0)),point,1.25,true)
 
+## Lowers the terrain inside a sphere by asking every 24 m chunk the sphere touches to carve.
 func carve_ground(center:Vector3,radius:float):
 	var first=Vector2i(floori((center.x-radius)/24)*24,floori((center.z-radius)/24)*24)
 	var last=Vector2i(floori((center.x+radius)/24)*24,floori((center.z+radius)/24)*24)
@@ -452,12 +558,15 @@ func carve_ground(center:Vector3,radius:float):
 			var body=terrain_lookup.get(Vector2i(x,z))
 			if body!=null:body.carve(center,radius)
 
+## Shovel dig: carve_ground with a sphere centred so that it cuts `depth` m (default 0.42) into the surface.
 func dig(point:Vector3,width:float=1.0,depth:float=0.42):
 	var ground=surface_height(point.x,point.z)
 	carve_ground(Vector3(point.x,ground+width-depth,point.z),width)
 
+## There are no doors here; always null (keeps the interface shared with the desert world).
 func nearby_door(_point:Vector3,_distance:float=2.6):return null
 
+## Topples a tree: disables its collision, tips it over in 1.7 s, leaves a 6.5 m log with collision as new cover and an obstacle.
 func fell_tree(body):
 	if body.destroyed:return
 	var origin=body.global_position
@@ -471,6 +580,7 @@ func fell_tree(body):
 	covers.append(on_ground(origin+Vector3(3,0,1.1)))
 	geometry_updated(log_body.position)
 
+## Up to 16 cover points within `radius` of `p`, nearest first, found through the 20 m grid.
 func cover_candidates(p:Vector3,radius:float)->Array:
 	var key=Vector2i(floori(p.x/20),floori(p.z/20))
 	var candidates:Array=[]
@@ -481,6 +591,7 @@ func cover_candidates(p:Vector3,radius:float)->Array:
 	candidates.sort_custom(func(a,b):return a.distance_squared_to(p)<b.distance_squared_to(p))
 	return candidates.slice(0,16)
 
+## Generates a pine canopy mesh: 16 layers of 10 drooping branches (each four triangles) with vertex colours in dark green and occasional snow patches; variant selects the random seed.
 func pine_mesh(variant:int)->ArrayMesh:
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -513,6 +624,7 @@ func pine_mesh(variant:int)->ArrayMesh:
 	st.set_material(material)
 	return st.commit()
 
+## Terrain height at (x, z) interpolated over the same two triangles the mesh uses (the 4 m cell split on its diagonal), so actors never sink beneath a triangle.
 func base_surface_height(x:float,z:float)->float:
 	# Spawn and path heights match the actual two triangles of the 4 m terrain cell.
 	# Sampling the unsimplified noise could place an actor underneath a triangle.
@@ -527,6 +639,7 @@ func base_surface_height(x:float,z:float)->float:
 	if u>=v:return a+(b-a)*u+(c-b)*v
 	return a+(c-d)*u+(d-a)*v
 
+## Terrain height including shell and shovel edits: uses the stored per-vertex heights of an edited chunk (same triangle interpolation) or falls back to base_surface_height.
 func surface_height(x:float,z:float)->float:
 	var key=Vector2i(floori(x/24)*24,floori(z/24)*24)
 	if not soil_edits.has(key):return base_surface_height(x,z)
@@ -541,6 +654,8 @@ func surface_height(x:float,z:float)->float:
 	var d=h[gx*25+gz+1]
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
+## Lowers the terrain of one chunk to the bottom of a sphere: stores one height per vertex (25 x 25 per chunk) instead of replaying every earlier edit, rebuilds the mesh and trimesh collider, and calls geometry_updated.
+## [param body] the chunk. [param point] sphere centre. [param radius] sphere radius.
 func deform_ground(body,point:Vector3,radius:float):
 	# Store one height per vertex, rather than replaying every previous explosion
 	# and shovel stroke on every future edit or navigation query.
@@ -586,6 +701,7 @@ func deform_ground(body,point:Vector3,radius:float):
 	body.bounds_valid=false
 	geometry_updated(point)
 
+## Adds an extra MG42 sandbag position to the right of area `area`'s main nest and a cover point.
 func build_secondary_nest(area:int):
 	var center=anchors[area]
 	var facing=(Vector3(road_x(center.z),center.y,center.z+5)-center).normalized()
