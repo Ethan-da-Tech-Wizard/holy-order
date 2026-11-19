@@ -1,28 +1,47 @@
-# ==============================================================================
-# Program: interface.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes theater tactical HUD compositor. Renders cold-weather survival indicators, convoy escort health bars, tactical squad status cards, and ammunition inventory counters.
-# ==============================================================================
+## Full-screen UI for the Ardennes mission: title card, HUD, compass and radar,
+## pause/inventory/orders screens and end screens.
+##
+## Role: child of a CanvasLayer created by battle.gd, which sets `game`. Like
+## the desert HUD (scripts/interface.gd) it draws everything with immediate
+## calls in _draw() and redraws every frame, and builds Button nodes only when
+## the game phase changes. Reads game.phase, game.player (health, stamina, gun,
+## ammo, grenades, ammo_pack), game.allies_alive / germans_alive, toast and
+## subtitle timers, and game.tactics (for the compass goals).
 extends Control
+
+## The battle controller (battle.gd).
 var game
+
+## Container for the current phase's buttons, replaced in menu().
 var panel:Control
+
+## Phase the buttons were built for; cleared on resize to force a rebuild, and by drop_pack() so the screen refreshes.
 var last_phase:String=""
+
+## Heading font.
 var serif=preload("res://assets/fonts/DejaVuSerif.ttf")
+
+## Body font.
 var sans=preload("res://assets/fonts/DejaVuSans.ttf")
+
+## Label font.
 var mono=preload("res://assets/fonts/DejaVuSansMono.ttf")
+
+## Dark blue-black used for panel backgrounds.
 const INK=Color("10191f")
+
+## Main text colour.
 const WHITE=Color("e5e5d9")
+
+## Accent colour.
 const GOLD=Color("c8ae76")
+
+## Cool secondary text colour (winter theme).
 const BLUE=Color("a7c5d1")
 
+## Godot lifecycle hook: full-screen, mouse passes through, default font and
+## theme; a window resize forces the buttons to be rebuilt for the new layout.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var theme=Theme.new()
@@ -31,29 +50,24 @@ func _ready():
 	self.theme=theme
 	resized.connect(func():last_phase="")
 
+## Rebuilds the buttons when the phase changed and requests a redraw every frame.
 func _process(_delta):
-	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
-	# Invariants:
-	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
-	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
-	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if last_phase!=game.phase:
 		last_phase=game.phase
 		menu()
 	queue_redraw()
 
+## Draws one text line at `pos` (baseline) with the given font, size in points and colour.
 func text(value:String,pos:Vector2,font:Font=sans,points:int=17,color:Color=WHITE):
-	# --- CONTRACT: Function `text` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for text
 	draw_string(font,pos,value,HORIZONTAL_ALIGNMENT_LEFT,-1,points,color)
 
+## Paints the title card, playing HUD, or the dim overlay with a page of text
+## for paused, inventory, orders, victory and defeat.
 func _draw():
-	# --- CONTRACT: Function `_draw` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for _draw
 	var w=size.x
 	var h=size.y
+
+	# Left half is a dark column with the title; right strip fades out to the 3D scene behind.
 	if game.phase=="title":
 		draw_rect(Rect2(0,0,w*0.50,h),Color(0.035,0.060,0.076,0.95))
 		draw_rect(Rect2(w*0.50,0,w*0.04,h),Color(0.035,0.060,0.076,0.25))
@@ -73,6 +87,9 @@ func _draw():
 		text("107 allied soldiers + you / 80 Germans",Vector2(w*0.625,h*0.878),sans,14)
 		text("Live damage. Conditional ambush. No immunity.",Vector2(w*0.625,h*0.913),sans,12,BLUE)
 		return
+
+	# Top-left objective box, top-right casualty counters, centre compass,
+	# bottom-left vitality and bottom-right weapon panel.
 	if game.phase=="playing":
 		draw_rect(Rect2(0,0,w,10),Color(INK,0.9))
 		draw_rect(Rect2(0,h-10,w,10),Color(INK,0.9))
@@ -82,6 +99,8 @@ func _draw():
 		navigation()
 		text("ALLIES %03d / ENEMY %02d"%[game.allies_alive,game.germans_alive],Vector2(w-306,52),mono,15,BLUE)
 		text("FINITE AMMO • FRIENDLY FIRE ON",Vector2(w-306,76),mono,11,GOLD)
+
+		# Crosshair is hidden while riding in the truck (weapons are safe) and when aiming the gun, where the sights are the reticle.
 		var center=size/2
 		if game.player.truck==null and (game.player.weapon!=1 or not game.player.aiming):
 			for d in [Vector2.LEFT,Vector2.RIGHT,Vector2.UP,Vector2.DOWN]:draw_line(center+d*5,center+d*10,Color(WHITE,0.8),1)
@@ -95,8 +114,14 @@ func _draw():
 		draw_rect(Rect2(112,h-79,115*clampf(game.player.health/game.player.max_health,0,1),6),BLUE)
 		draw_rect(Rect2(42,h-49,183*game.player.stamina/100,3),GOLD)
 		draw_rect(Rect2(w-300,h-128,275,94),Color(INK,0.85))
+
+		# Gun name comes from the player's current firearm; the default text is
+		# a fallback for when the player has not selected a gun spec yet.
 		var gun_name=game.player.gun_spec.name if game.player.get("gun_spec")!=null else "M1918A2 BAR"
 		text(["ARMING SWORD",gun_name,"STEEL GAUNTLETS","ENTRENCHING TOOL"][mini(game.player.weapon,3)],Vector2(w-281,h-103),mono,12,GOLD)
+
+		# Right-hand counter: loaded / reserve rounds; then overridden by
+		# state words (broken, reloading, throwing, weapons safe in the truck).
 		var count="%02d / %03d"%[game.player.ammo,game.player.reserve] if game.player.weapon==1 else ("DIG / BREACH" if game.player.weapon==3 else "HOLD LMB / POWER")
 		if game.player.weapon==1 and game.player.rifle_health<=0:count="BROKEN"
 		if game.player.reload_time>0:count="RELOADING"
@@ -115,6 +140,8 @@ func _draw():
 			text(game.speaker,Vector2(w/2-sw/2+19,h*0.78+23),mono,12,GOLD)
 			text(game.subtitle,Vector2(w/2-sw/2+19,h*0.78+49),sans,16)
 		return
+
+	# Overlay for every non-playing phase, with a heading and one page of lines below.
 	draw_rect(Rect2(Vector2.ZERO,size),Color(0.025,0.040,0.050,0.88))
 	var x=w*0.17
 	var title={"paused":"HOLD POSITION","inventory":"FIELD KIT","objectives":"ORDERS","defeat":"THE ROAD CLAIMED YOU","victory":"POCKET CLEARED"}.get(game.phase,"HOLY ORDER")
@@ -127,6 +154,8 @@ func _draw():
 		"defeat":lines=["No immunity during the drive. Another convoy run will play differently.","%d allied soldiers and %d Germans were still alive."%[game.allies_alive,game.germans_alive],"The truck offers concealment, not armor. After dismounting, use the terrain."]
 		"victory":lines=["The road is open. Your order remains several centuries late.","Allied survivors: %d of 107, plus you."%game.allies_alive,"Rounds fired: %d. Grenades detonated: %d."%[game.ammo_spent,game.grenade_detonations],"This is the end of the winter test mission."]
 		_:lines=["WASD move • Mouse aim • LMB attack • RMB sights","Shift sprint • C toggle crouch • Z toggle prone • Q/E lean • Space jump / mantle","R reload • G grenade • F dismount / pick up / loot • 1–4 equipment","J orders • Tab kit • F11 fullscreen"]
+
+	# The kit page shows two lines about the carried firearm, then the ammunition pack's space and weight (24 space / 7.5 kg) and its containers.
 	if game.phase=="inventory":
 		lines=lines.slice(0,2)
 		lines.append("Spare ammo pack: %.1f / 24 space • %.2f / 7.5 kg"%[game.player.ammo_pack.space_used(),game.player.ammo_pack.weight_used()])
@@ -134,10 +163,12 @@ func _draw():
 		lines.append("Partial magazines still occupy their full space. Excess loot stays on the body.")
 	for i in range(lines.size()):text(lines[i],Vector2(x,h*0.33+i*30),sans,15)
 
+## Draws the top compass strip and the radar dot cloud.
+## The compass shows the eight cardinal bearings within about +-63 degrees of the
+## view direction plus a gold marker for each current goal: the road while
+## in the truck, otherwise the left/right group targets. The radar below shows
+## friendly soldiers within 70 m (0.48 px per metre), rotated to the player's heading.
 func navigation():
-	# --- CONTRACT: Function `navigation` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for navigation
 	var center=Vector2(size.x/2,64)
 	var yaw=game.player.rotation.y
 	draw_rect(Rect2(center-Vector2(137,35),Vector2(274,76)),Color(INK,0.84))
@@ -164,10 +195,10 @@ func navigation():
 		draw_circle(radar+Vector2(rotated.x,rotated.z)*0.48,1.6,BLUE)
 	draw_colored_polygon(PackedVector2Array([radar+Vector2(0,-5),radar+Vector2(-3,3),radar+Vector2(3,3)]),WHITE)
 
+## Rebuilds the phase's buttons: Deploy (title), Run Again (end screens) or
+## Return (pause), plus Drop Spare Ammo Pack in the inventory, Mission Menu and Quit.
+## Nothing is created during play so the HUD never blocks the mouse.
 func menu():
-	# --- CONTRACT: Function `menu` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for menu
 	if is_instance_valid(panel):panel.queue_free()
 	panel=Control.new()
 	add_child(panel)
@@ -184,10 +215,9 @@ func menu():
 	button("MISSION MENU",Vector2(x+280,y+51),Vector2(210,38),func():preload("res://scripts/graphics.gd").menu(game))
 	button("QUIT",Vector2(x+280,y),Vector2(95,44),func():get_tree().quit())
 
+## Creates one flat-styled Button in `panel`.
+## [param caption] label. [param pos] top-left in pixels. [param dimensions] size. [param callback] pressed handler.
 func button(caption:String,pos:Vector2,dimensions:Vector2,callback:Callable):
-	# --- CONTRACT: Function `button` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for button
 	var b=Button.new()
 	b.text=caption
 	b.position=pos
