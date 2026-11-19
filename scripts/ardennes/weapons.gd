@@ -1,9 +1,18 @@
-# ==============================================================================
-# Program: weapons.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Comprehensive WWII ballistic weapon repository and firearm mechanics ledger. Defines projectile muzzle velocities, effective ranges, recoil recovery envelopes, dispersion cones, and cyclic rates of fire for Allied and Axis arsenals.
-# ==============================================================================
+## Weapon catalogue and procedural weapon/soldier models for the Ardennes and
+## Omaha missions.
+##
+## Role: a static library with three jobs.
+##   1. DATA: the performance table of every firearm (used by actor.gd and
+##      player.gd for fire rate, damage, spread, reload and ammunition).
+##   2. PROFILES + make_gun(): per-weapon dimensions and a procedural model built
+##      from primitives; weapon() returns a ready node with Muzzle, SightLine and
+##      RearSightLine markers and empty Bolt / ReloadClip nodes.
+##   3. soldier(), firearm_hand(), helmet_mesh(): the shared soldier model; all
+##      parts are baked into a few vertex-coloured meshes (bake()) and cached, so
+##      hundreds of soldiers share the same few meshes instead of thousands of nodes.
+## Related: ammo_pack.gd uses the same weapon keys for feeds; corpse.gd and
+## dropped_weapon.gd reuse bake() and weapon().
+## Rates and feed choices are documented in WEAPON-RATES.txt in the repo root.
 extends RefCounted
 
 # Cyclic RPM applies inside an automatic burst; aim and reload time are separate.
@@ -11,6 +20,15 @@ extends RefCounted
 # See WEAPON-RATES.txt for primary references and manual-cycle choices.
 # Magazine/belt loads are explicit inventories, not unlimited firing timers.
 # The carried loads are scenario choices; the weapon and feed types are period equipment.
+
+## Weapon table keyed by weapon id. Columns: name (HUD), caliber (ammo family,
+## see ammo_pack.gd), capacity (rounds per magazine/belt), reserve (starting
+## spare rounds, a scenario choice), interval (s between shots; for
+## automatic weapons 60/cyclic_rpm), cyclic_rpm (rate inside a burst),
+## aim_interval (s between aimed semi-auto shots when set), reload (s),
+## damage (hit points per hit), range (metres the AI will engage at),
+## spread (standard deviation of aim error in radians) and automatic (true if
+## it can keep firing while the trigger is held).
 const DATA = {
 	"carbine":{"name":"M1 Carbine", "caliber":"30carbine", "capacity":15, "reserve":120, "interval":0.20, "aim_interval":0.90, "reload":2.6, "damage":33.0, "range":180.0, "spread":0.023, "automatic":false},
 	"m1919":{"name":"Browning M1919A4", "caliber":"30-06", "capacity":250, "reserve":2000, "interval":0.12, "cyclic_rpm":500, "reload":6.0, "damage":46.0, "range":850.0, "spread":0.020, "automatic":true},
@@ -25,13 +43,18 @@ const DATA = {
 	"m2":{"name":"Browning M2 HB", "caliber":"50bmg", "capacity":100, "reserve":400, "interval":0.12, "cyclic_rpm":500, "reload":6.5, "damage":85.0, "range":260.0, "spread":0.020, "automatic":true}
 }
 const Art = preload("res://scripts/art.gd")
+
+## Baked gun meshes by weapon id.
 static var gun_cache: Dictionary = {}
+
+## Baked soldier parts by "team-variant".
 static var soldier_cache: Dictionary = {}
+
+## The shared material that renders vertex colours.
 static var paint: StandardMaterial3D
 
+## Returns the shared StandardMaterial3D that takes its albedo from vertex colours (so one material serves every baked part).
 static func vertex_material() -> StandardMaterial3D:
-	# --- CONTRACT: Function `vertex_material` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	if paint == null:
 		paint = StandardMaterial3D.new()
 		paint.vertex_color_use_as_albedo = true
@@ -40,9 +63,11 @@ static func vertex_material() -> StandardMaterial3D:
 
 # Merge the primitive parts into one vertex-colored surface. Hundreds of soldiers
 # share meshes rather than creating thousands of individual drawing objects.
+
+## Merges all MeshInstance3D descendants of `root` into one ArrayMesh with vertex colours.
+## [param root] model to merge (its children are read, the root itself is not freed here).
+## Returns the single-surface mesh using vertex_material().
 static func bake(root: Node3D) -> ArrayMesh:
-	# --- CONTRACT: Function `bake` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	append_meshes(root,Transform3D.IDENTITY,st)
@@ -50,9 +75,8 @@ static func bake(root: Node3D) -> ArrayMesh:
 	st.index()
 	return st.commit()
 
+## Recursive helper for bake(): appends every mesh under `node`, transformed into root space, to `st`, using each mesh's material colour as its vertex colour (converted to linear space) and rotating normals with the inverse transpose.
 static func append_meshes(node: Node3D, xf: Transform3D, st: SurfaceTool):
-	# --- CONTRACT: Function `append_meshes` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	for child in node.get_children():
 		if not child is Node3D: continue
 		var t = xf*child.transform
@@ -75,6 +99,9 @@ static func append_meshes(node: Node3D, xf: Transform3D, st: SurfaceTool):
 		append_meshes(child,t,st)
 
 # Dimensions and feed families also position the sights, hands and reload props.
+
+## Per-weapon geometry in metres along the weapon's Z axis (negative is forward): front (front sight z), rear (butt/rear z), sight (sight height above the bore), support (z of the left hand), feed (magazine type: mag, enbloc, stripper, belt, fuel, rocket) and wood (stock colour hex).
+## Used to place sights, hands and reload props consistently.
 const PROFILES={
 	"carbine":{"front":-0.585,"rear":0.31,"sight":0.066,"support":-0.28,"feed":"mag","wood":"806044"},
 	"garand":{"front":-0.79,"rear":0.31,"sight":0.083,"support":-0.39,"feed":"enbloc","wood":"654631"},
@@ -89,18 +116,24 @@ const PROFILES={
 	"flamethrower":{"front":-0.73,"rear":0.18,"sight":0.075,"support":-0.36,"feed":"fuel","wood":"545b3c"},
 	"bazooka":{"front":-0.96,"rear":0.41,"sight":0.09,"support":-0.43,"feed":"rocket","wood":"686b42"}
 }
-static var firearm_material:ShaderMaterial
-static func profile(kind:String)->Dictionary:return PROFILES.get(kind,PROFILES.garand)
-	# --- CONTRACT: Function `profile` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 
+## Shared shader for all gun surfaces.
+static var firearm_material:ShaderMaterial
+
+## Looks up the PROFILES entry for a weapon, defaulting to the Garand.
+static func profile(kind:String)->Dictionary:return PROFILES.get(kind,PROFILES.garand)
+
+## Builds a weapon node under `parent`.
+## [param kind] weapon id. [param detailed] true to also build the reload prop
+## (clip, belt or magazine) shown during reload animations; AI soldiers skip it to save memory.
+## Returns the root with markers "Muzzle", "SightLine", "RearSightLine" and empty "Bolt" and "ReloadClip" nodes.
 static func weapon(parent:Node3D,kind:String,detailed:bool=false)->Node3D:
-	# --- CONTRACT: Function `weapon` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root=Node3D.new()
 	parent.add_child(root)
 	root.name=kind
 	var p=profile(kind)
+
+	# Bake each gun type once; every later weapon() call reuses the mesh.
 	if not gun_cache.has(kind):
 		var source=Node3D.new()
 		make_gun(source,kind)
@@ -144,16 +177,19 @@ static func weapon(parent:Node3D,kind:String,detailed:bool=false)->Node3D:
 		clip.hide()
 	return root
 
+## Adds a cylinder lying along Z (a barrel, tube or cartridge) to `root`.
 static func barrel(root:Node3D,radius:float,length:float,p:Vector3,mat:Material,sides:int=12):
-	# --- CONTRACT: Function `barrel` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var tube=Art.cylinder(root,radius,length,p,mat,-1,sides)
 	tube.rotation.x=PI/2
 	return tube
 
+## Builds one gun model from boxes, cylinders and segments into `root`.
+## Bazooka: an open olive tube with ring ends. Rifles (carbine, Garand, Kar98,
+## G43, BAR): receiver, barrel, handguard, tilted stock and per-type details.
+## MP40: tube, wooden pistol grip and long magazine. Heavy guns (MG34, MG42,
+## M1919, M2): jacket, cooling holes, belt box and ammunition belt. Flamethrower: tube, tank hose and wand.
+## All guns finish with front and rear sights placed on the weapon's profile sight plane.
 static func make_gun(root:Node3D,kind:String):
-	# --- CONTRACT: Function `make_gun` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var p=profile(kind)
 	var steel=Art.material(Color("3e4644"),0.8,0.4)
 	var worn=Art.material(Color("646b66"),0.65,0.5)
@@ -264,9 +300,9 @@ static func make_gun(root:Node3D,kind:String):
 		for x in [-0.009,0.009]:Art.box(root,Vector3(0.01,0.015,0.01),Vector3(x,p.sight-0.004,0.075),steel)
 	Art.box(root,Vector3(0.018,p.sight-0.045,0.033),Vector3(0,0.046+(p.sight-0.045)*0.5,0.075),steel)
 
+## Builds a gloved, armoured hand and forearm gripping a weapon, baked into one mesh.
+## [param kind] weapon id (decides where the support hand sits). [param left] true for the support (left) hand under the handguard, false for the trigger hand.
 static func firearm_hand(parent:Node3D,kind:String,left:bool)->Node3D:
-	# --- CONTRACT: Function `firearm_hand` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root=Node3D.new()
 	parent.add_child(root)
 	var profile_data=profile(kind)
@@ -291,9 +327,13 @@ static func firearm_hand(parent:Node3D,kind:String,left:bool)->Node3D:
 	root.add_child(mesh)
 	return root
 
+## Builds a soldier model (cached by team and cloth variant) as separate baked
+## parts so it can be animated cheaply: body (torso, head, helmet, left arm),
+## two legs and a right arm.
+## [param team] 1 US (olive), 0 German (field grey). [param variant] 0..2 picks
+## the colour set (variant 1 is a lighter winter smock colour).
+## Returns {"root", "body", "legs" (two nodes pivoting at the hip), "right_arm" (pivot at the shoulder)}.
 static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
-	# --- CONTRACT: Function `soldier` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var key = "%d-%d" % [team,variant%3]
 	if not soldier_cache.has(key):
 		var torso = Node3D.new()
@@ -351,9 +391,10 @@ static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
 	root.add_child(arm)
 	return {"root":root,"body":body,"legs":leg_nodes,"right_arm":arm}
 
+## Generates a steel helmet shell as a lathe of 24 sides x 7 rings: the US M1 has
+## a short brim, the German M35 a longer neck flare and rim.
+## [param team] 1 for US, 0 for German.
 static func helmet_mesh(team:int)->ArrayMesh:
-	# --- CONTRACT: Function `helmet_mesh` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(0)
@@ -372,9 +413,8 @@ static func helmet_mesh(team:int)->ArrayMesh:
 	st.generate_normals()
 	return st.commit()
 
+## Lowers the segment count of spheres (12 x 6) and cylinders (max 12) under `root` before baking to reduce triangles in shared meshes.
 static func simplify_parts(root:Node):
-	# --- CONTRACT: Function `simplify_parts` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	for child in root.get_children():
 		if child is MeshInstance3D:
 			if child.mesh is SphereMesh:

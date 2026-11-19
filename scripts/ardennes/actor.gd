@@ -1,107 +1,287 @@
-# ==============================================================================
-# Program: actor.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes winter infantry AI controller. Implements cold-weather stamina degradation, snow drift movement drag, squad tactical spacing, line-of-sight awareness, suppressive fire mechanics, and dynamic cover evaluation.
-# ==============================================================================
+## Soldier for the Ardennes and Omaha missions: one script for US (team 1) and
+## German (team 0) infantry, plus the crews of mounted machine guns.
+##
+## Role: created by the battle controller (battle.gd / omaha/battle.gd), which
+## sets `game`, `index`, `team`, `squad`, `weapon_kind`, `order`, `home`,
+## `truck`/`seat` or `mounted`. The controller calls think() round-robin (not
+## every tick, to save time); _physics_process runs the cheap per-tick part
+## (movement, posture, firing, grenades). Everything else (targets, cover,
+## noise, bullets) goes through `game`.
+## State machine (`state`): watch, advance, relocate, crawl (prone move),
+## cover, fire, dig, suppressed, throw (grenade), mounted, melee, withdraw, dead.
+## Orders: "hold" (defend within guard_radius of home) or "assault" (follow
+## tactics.gd's formation goal). Temperament and posture (stand/crouch/prone)
+## change movement speed and aim spread.
+## Passengers in a truck follow the truck seat and keep their weapons down.
+## Hit areas: the body capsule (layers 4/8 by team) and a gun hit area on layer
+## 16 carrying meta "wielder" so shots can damage the weapon.
 extends CharacterBody3D
 
 const Kit=preload("res://scripts/ardennes/weapons.gd")
 const Art=preload("res://scripts/art.gd")
+
+## The battle controller.
 var game
+
+## Unique number; staggers behaviours and picks variants.
 var index:int=0
+
+## 0 German, 1 US.
 var team:int=0
+
+## Index into game.squads.
 var squad:int=0
+
+## True for the squad leader.
 var leader:bool=false
+
+## Key of weapons.gd DATA for the weapon in hand.
 var weapon_kind:String="kar98"
+
+## The DATA row of weapon_kind.
 var spec:Dictionary
+
+## Rounds loaded.
 var rounds:int=0
+
+## Rounds carried (loot for the player).
 var reserve:int=0
+
+## Grenades carried.
 var grenades:int=2
+
+## Panzerfausts carried (Germans, some).
 var fausts:int=0
+
+## Hit points (100).
 var health:float=100
+
+## False after death.
 var alive:bool=true
+
+## Weapon durability; at 0 it is dropped broken.
 var weapon_health:float=110
+
+## Rounds in the personal rifle of a machine-gun crewman.
 var backup_rounds:int=0
+
+## Spare rounds for that rifle.
 var backup_reserve:int=0
+
+## True once the weapon was shot away and dropped.
 var dropped_broken:bool=false
+
+## Dictionary from Kit.soldier(): root, body, legs, right_arm.
 var model:Dictionary
+
+## False to skip body animation (used by the large Omaha battle to save time).
 var animate_model:bool=true
+
+## The weapon node.
 var gun:Node3D
+
+## The weapon's hit Area3D (layer 16).
 var equipment:Area3D
+
+## Body capsule; shape and position change with posture.
 var shape:CollisionShape3D
+
+## The enemy actor being shot at, or null.
 var target
+
+## Truck being shot at (Germans only), or null.
 var vehicle_target
+
+## -1 left ridge, +1 right ridge, 0 not yet assigned (set by tactics).
 var wing:int=0
+
+## True for staged launchers whose rocket is kept for the scripted ambush.
 var reserved_faust:bool=false
+
+## "stand", "crouch" or "prone".
 var stance:String="stand"
+
+## 0..8 stress from nearby fire; makes aim worse above 3.
 var threat_pressure:float=0
+
+## -1..1 lean while firing from cover.
 var lean_amount:float=0
+
+## Seconds left in a throw animation (1.1 s).
 var grenade_throw_time:float=0
+
+## Where the grenade will land.
 var grenade_throw_target=Vector3.ZERO
+
+## Whether the grenade has left the hand yet.
 var grenade_released:bool=false
+
+## Small sphere in the hand while winding up.
 var grenade_visual:MeshInstance3D
+
+## Number of strokes dug; five makes a foxhole (entrenched).
 var dig_strokes:int=0
+
+## Last posture applied (0 stand, 1 crouch, 2 prone) so the capsule changes only when needed.
 var posture_revision:int=-1
+
+## Idle actors run physics only every 0.16 s.
 var idle_collision_clock:float=0
+
+## Blind suppressing shots fired at an old contact (max 4).
 var suppression_shots:int=0
+
+## Time of the last cover search; limits how often they run.
 var last_cover_search:float=-10
+
+## Normal of a wall the actor is sliding along.
 var obstruction_normal=Vector3.ZERO
+
+## Times the actor was lifted back above the terrain (statistic).
 var terrain_recoveries:int=0
+
+## Reserved; unused.
 var movement_block_time:float=0
+
+## Believed enemy position (seen or heard, with error).
 var last_known=Vector3.ZERO
+
+## Seconds since the last contact.
 var contact_age:float=999
+
+## Where it is walking to.
 var destination=Vector3.ZERO
+
+## Defensive centre for "hold".
 var home=Vector3.ZERO
+
+## How far it may stray from home (27 m).
 var guard_radius:float=27
+
+## "hold" or "assault".
 var order:String="hold"
+
+## Walking speed (m/s) when assaulting (4.6).
 var assault_speed:float=4.6
+
+## "cautious" or "aggressive".
 var temperament:String="cautious"
+
+## Current behaviour (see class comment).
 var state:String="watch"
+
+## Seconds of being pinned by fire.
 var suppression:float=0
+
+## Seconds until the next shot may be fired.
 var shot_clock:float=0
+
+## Seconds left in a reload.
 var reload_clock:float=0
+
+## Seconds until another grenade may be thrown.
 var grenade_clock:float=6
+
+## Reserved; unused.
 var sense_clock:float=0
+
+## Route points from world.path_between.
 var path=PackedVector3Array()
+
+## Index of the point being approached.
 var path_cursor:int=0
+
+## world.geometry_revision at the last think().
 var nav_revision:int=-1
+
+## Countdown before the route may be recomputed (1.0-1.8 s).
 var path_refresh:float=0
+
+## Phase of the walking animation.
 var move_clock:float=0
+
+## Timer between shovel strokes (1.8 s).
 var dig_clock:float=0
+
+## True after a foxhole was dug.
 var entrenched:bool=false
+
+## Cover point chosen.
 var cover=Vector3.ZERO
+
+## Whether `cover` is valid.
 var has_cover:bool=false
+
+## Spot beside cover from which the target can be seen.
 var peek=Vector3.ZERO
+
+## Reserved; unused.
 var move_goal=Vector3.ZERO
+
+## Truck the actor rides, or the ring-mounted truck for a .50 gunner.
 var truck
+
+## Seat index in the truck.
 var seat:int=0
+
+## True when manning a fixed gun.
 var mounted:bool=false
+
+## True for actors held in reserve (not yet in play).
 var staged:bool=false
+
+## True once the player has searched the corpse.
 var looted:bool=false
+
+## Shots fired (statistic).
 var shots:int=0
+
+## Grenades thrown (statistic).
 var grenades_thrown:int=0
+
+## Maximum distance from home reached (test statistic).
 var far_from_hold:float=0
+
+## Distance walked (statistic).
 var travelled:float=0
+
+## Eye height by posture (1.60 / 1.08 / 0.39 m).
 var eye_height:float=1.55
+
+## True once the actor has noticed an enemy.
 var detected:bool=false
+
+## Shots left in the current automatic burst.
 var burst_left:int=0
+
+## Pause after a burst.
 var burst_pause:float=0
+
+## Time before which the actor will not fire at a newly seen target (0.2-0.65 s).
 var reaction:float=0
+
+## Number of think() calls (statistic).
 var decision_count:int=0
+
+## Times the fire line was blocked by an ally; three makes the actor move.
 var fire_blocked:int=0
+
+## Seconds without moving while trying to move.
 var stuck:float=0
+
+## Cooldown for a knife attack (1.1 s).
 var knife_clock:float=0
+
+## Reserved; unused.
 var idle_mount_time:float=0
+
+## Where a .50 gun stood, so its dropped model stays on the mount.
 var last_mount_position=Vector3.ZERO
 
+## Godot lifecycle hook: loads the weapon spec, creates the capsule, soldier
+## model, gun with hit area, Panzerfaust props, and the hidden grenade; staggers
+## the first shot and grenade timers.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	spec=Kit.DATA[weapon_kind]
 	rounds=spec.capacity
 	reserve=spec.reserve
@@ -149,33 +329,26 @@ func _ready():
 	shot_clock=randf_range(0.4,2.3)
 	grenade_clock=randf_range(6,18)
 
+## World position of the eyes including posture, lean and prone offset; where sight rays start.
 func eye()->Vector3:
-	# --- CONTRACT: Function `eye` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for eye
 	return global_position+Vector3(0,eye_height,0)+global_basis.x*lean_amount*0.22-global_basis.z*(0.65 if stance=="prone" else 0.0)
 
+## World position other actors aim at: 1.12 m standing, 0.86 crouched, 0.34 prone.
 func aim_point()->Vector3:
-	# --- CONTRACT: Function `aim_point` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for aim_point
 	return global_position+Vector3(0,0.34 if stance=="prone" else (0.86 if stance=="crouch" else 1.12),0)-global_basis.z*(0.65 if stance=="prone" else 0.0)
 
+## Wrapper that measures slow ticks when profiling is enabled.
 func _physics_process(delta):
-	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
-	# Invariants:
-	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
-	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
-	# - Performs raycast obstacle evaluations before committing spatial position changes.
-	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	var started=Time.get_ticks_usec() if game.profile_enabled else 0
 	step_actor(delta)
 	if game.profile_enabled and Time.get_ticks_usec()-started>8000:print("PROFILE actor_tick ",Time.get_ticks_usec()-started," ",state)
 
+## One physics tick: timers, reload, truck riding, grenades, posture, digging,
+## movement along the path (speed 2.5 m/s hold or 4.6 assault; x0.64 crouched, 1.1 prone, 4.8 melee), separation from neighbours, wall sliding,
+## terrain safety, stuck recovery (try_step after 0.6 s, sidestep after 2.5 s),
+## hold-radius clamp, facing, walk animation and firing.
+## [param delta] physics step in seconds.
 func step_actor(delta):
-	# --- CONTRACT: Function `step_actor` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for step_actor
 	if not alive or game.phase!="playing":return
 	suppression=maxf(0,suppression-delta)
 	threat_pressure=maxf(0,threat_pressure-delta*0.8)
@@ -191,6 +364,8 @@ func step_actor(delta):
 			var load_count=mini(spec.capacity-rounds,reserve)
 			rounds+=load_count
 			reserve-=load_count
+
+	# Riding in a truck: the actor is simply pinned to its seat transform; the passenger pose is hand-set because there is no animation player.
 	if truck!=null:
 		global_transform=truck.seat_transform(seat)
 		if not is_equal_approx(shape.shape.height,1.10):
@@ -253,6 +428,9 @@ func step_actor(delta):
 	# A posture change can put the long prone capsule through a sloping triangle.
 	# The terrain is a heightfield with no tunnels: keep its foot reference above
 	# the current excavated surface, including when a collider is replaced.
+	# A posture change can put the long prone capsule through a sloping triangle.
+	# The terrain is a heightfield with no tunnels: keep its foot reference above
+	# the current excavated surface, including when a collider is replaced.
 	var ground=game.world.surface_height(global_position.x,global_position.z)
 	if global_position.y<ground-0.12:
 		global_position.y=ground+0.025
@@ -292,26 +470,20 @@ func step_actor(delta):
 	try_fire()
 	if global_position.y< -42:take_damage(1000,global_position,"fall")
 
+## True when standing on a floor. A separate method so subclasses (Omaha actors) can override it.
 func motion_grounded()->bool:
-	# --- CONTRACT: Function `motion_grounded` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for motion_grounded
 	return is_on_floor()
 
+## Normal of the first wall hit this tick, or zero.
 func motion_wall_normal()->Vector3:
-	# --- CONTRACT: Function `motion_wall_normal` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for motion_wall_normal
 	return get_slide_collision(0).get_normal() if get_slide_collision_count()>0 else Vector3.ZERO
 
+## Runs move_and_slide; overridable (Omaha uses a different movement body).
 func move_actor_body(_delta:float):
-	# --- CONTRACT: Function `move_actor_body` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for move_actor_body
 	move_and_slide()
 
+## Applies stance changes: capsule size and tilt (prone follows the terrain slope up to 0.75 rad), eye height and body pose. Far actors that are not animated only change when the pose changes.
 func update_posture(delta:float):
-	# Step: Update internal simulation state and refresh cached coordinates
 	var prone_now=stance=="prone"
 	var slope=0.0
 	if prone_now:
@@ -343,10 +515,8 @@ func update_posture(delta:float):
 	model.body.position.y=0
 	model.right_arm.position.y=1.41
 
+## Steps up a small ledge in `direction` (0.04 to 0.55 m high, walkable top, headroom 1.8 m); used when stuck against low obstacles.
 func try_step(direction:Vector3)->bool:
-	# --- CONTRACT: Function `try_step` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for try_step
 	if direction.length_squared()<0.1:return false
 	var ahead=global_position+direction*0.8
 	var q=PhysicsRayQueryParameters3D.create(ahead+Vector3(0,0.8,0),ahead-Vector3(0,0.1,0),1)
@@ -359,12 +529,15 @@ func try_step(direction:Vector3)->bool:
 	global_position.y+=lift+0.025
 	return true
 
+## The decision step (called by the battle controller about 12 actors per frame):
+## picks a target (actor or, for Germans, a truck), reports contact, reloads,
+## and by role chooses: mounted gunners fire and relocate; "hold" actors stay
+## inside the guard radius, take cover, dig in, peek and fire; assault actors advance
+## toward their formation goal in bounds (alternating by index), fire from
+## cover, and use grenades (10-31 m), Panzerfausts (18-65 m) or the knife (35 damage within 2 m).
+## [param now] game time in seconds.
 func think(now:float):
-	# --- COGNITIVE AI ARBITRATION: Squad Behavior Tree State Machine ---
-	# Invariants:
-	# - Samples sensory perception buffers (visual line-of-sight and acoustic hearing).
 	# - Transitions between Patrol, Alert, Combat, Flank, and Fallback states based on threat distance.
-	# Logic: Execute step-by-step processing for think
 	if not alive:return
 	decision_count+=1
 	if truck!=null:return
@@ -431,6 +604,8 @@ func think(now:float):
 				begin_grenade(last_known)
 				return
 			grenade_clock=2.0
+
+	# Hold actors defend home; assault actors follow tactics.formation_goal.
 	var goal=home if order=="hold" else game.tactics.formation_goal(game,self)
 	if order=="hold":
 		if Vector2(position.x-home.x,position.z-home.z).length()>guard_radius-3:
@@ -495,16 +670,12 @@ func think(now:float):
 		if now-last_cover_search>2.2:choose_cover(last_known if contact_age<15 else goal,25,goal)
 		advance_to_goal(goal,17)
 
+## Horizontal distance (ignores height) between two points.
 func flat_distance(a:Vector3,b:Vector3)->float:
-	# --- CONTRACT: Function `flat_distance` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for flat_distance
 	return Vector2(a.x-b.x,a.z-b.z).length()
 
+## Moves up to `step` metres toward `goal`, taking cover on the way if it lies closer to the goal; recomputes the path only when its refresh timer allows.
 func advance_to_goal(goal:Vector3,step:float):
-	# --- CONTRACT: Function `advance_to_goal` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for advance_to_goal
 	if path_refresh>0 and path_cursor<path.size():return
 	var offset=goal-global_position
 	offset.y=0
@@ -512,20 +683,16 @@ func advance_to_goal(goal:Vector3,step:float):
 	if has_cover and flat_distance(cover,goal)<flat_distance(global_position,goal)-2 and flat_distance(global_position,cover)<step+5:next=cover
 	set_destination(game.world.on_ground(next))
 
+## For "hold" actors, pulls a goal back inside guard_radius-2 of home; always snaps to the ground.
 func limit_goal(goal:Vector3)->Vector3:
-	# --- CONTRACT: Function `limit_goal` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for limit_goal
 	if order!="hold":return goal
 	var offset=goal-home
 	offset.y=0
 	if offset.length()>guard_radius-2:goal=home+offset.normalized()*(guard_radius-2)
 	return game.world.on_ground(goal)
 
+## Sets the walk target and computes a route (refreshed in 1.0-1.8 s).
 func set_destination(goal:Vector3):
-	# --- CONTRACT: Function `set_destination` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for set_destination
 	goal=limit_goal(goal)
 	if flat_distance(destination,goal)<1.5 and path_refresh>0:return
 	destination=goal
@@ -534,12 +701,11 @@ func set_destination(goal:Vector3):
 	path_refresh=randf_range(1.0,1.8)
 	if state=="watch":state="advance"
 
+## Finds the nearest usable cover point hiding the actor from `threat`: free of
+## other actors, inside the guard radius, blocked from the threat by a ray at 0.7 m; assault actors favour points near
+## `mission`. Also finds a peek spot within 1.5 m with a clear line to the threat. Sets has_cover, cover and peek.
+## [param threat] where the enemy is. [param radius] search radius. [param mission] assault goal (INF for none).
 func choose_cover(threat:Vector3,radius:float,mission:Vector3=Vector3.INF):
-	# --- TACTICAL AI EVALUATION: Spatial Cover & Line-of-Fire Mitigation ---
-	# Algorithmic Invariants:
-	# - Raycasts candidate obstacle boundaries against current threat position.
-	# - Calculates tactical rating weighting proximity, line-of-sight occlusion, and retreat paths.
-	# Logic: Execute step-by-step processing for choose_cover
 	last_cover_search=game.elapsed
 	var best=INF
 	var chosen=Vector3.ZERO
@@ -570,12 +736,10 @@ func choose_cover(threat:Vector3,radius:float,mission:Vector3=Vector3.INF):
 		cover=chosen
 		peek=limit_goal(chosen_peek)
 
+## Fires if all conditions allow: not in a truck or throwing, reaction time over, no cooldown/reload/burst pause, has ammo and a working weapon, in a firing state.
+## Aims at the target (or truck, or a recent contact for suppression), checks range and the friendly-fire-safe line, and calls game.shoot with spread
+## weapon spread x1.8 under pressure and x0.7 prone. Automatic weapons fire bursts (3-6, or 5-10 at vehicles) with 0.55-1.1 s pauses.
 func try_fire():
-	# --- BALLISTIC FIRE CADENCE: Machine Gun & Firearm Burst Dispatch ---
-	# Balance Invariants:
-	# - Enforces cyclic rate-of-fire cooldowns and weapon heat dissipation curves.
-	# - Samples dispersion half-angle to simulate barrel harmonics and weapon spread.
-	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if truck!=null or grenade_throw_time>0 or game.elapsed<reaction:return
 	if shot_clock>0.000001 or reload_clock>0 or burst_pause>0 or rounds<=0 or weapon_health<=0:return
 	if not mounted and state not in ["fire","watch","cover","suppressed"]:return
@@ -603,10 +767,9 @@ func try_fire():
 		burst_left-=1
 		if burst_left==0:burst_pause=randf_range(0.55,1.1)
 
+## Reacts to a noise: ignores friendly, out-of-range or distant (for dismounted US) noise and noise while a fresh contact exists; otherwise updates last_known with an error that grows with distance (7%, 1 to 12 m) and reports it.
+## [param point] noise origin. [param radius] audible radius. [param source_team] team of the noise maker. [param _kind] ignored.
 func hear_noise(point:Vector3,radius:float,source_team:int,_kind:String):
-	# --- CONTRACT: Function `hear_noise` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for hear_noise
 	if not alive or staged or source_team==team:return
 	var distance=global_position.distance_to(point)
 	if distance>radius:return
@@ -618,10 +781,8 @@ func hear_noise(point:Vector3,radius:float,source_team:int,_kind:String):
 	contact_age=minf(contact_age,5.0)
 	game.report_contact(self,last_known)
 
+## A bullet went past: suppression 1.5-3.5 s, threat pressure up, notes the direction as a contact, and interrupts digging.
 func near_miss(point:Vector3):
-	# --- CONTRACT: Function `near_miss` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for near_miss
 	if not alive:return
 	suppression=maxf(suppression,randf_range(1.5,3.5))
 	threat_pressure=minf(8,threat_pressure+1.15)
@@ -630,13 +791,9 @@ func near_miss(point:Vector3):
 		contact_age=3
 	if state=="dig":state="suppressed"
 
+## Applies damage; at 0 health the actor dies: collision removed, falls over in 0.42 s, leaves a corpse through game.actor_died. Kinds like "fall" are recorded as the cause.
+## [param amount] hit points. [param source] attacker position (becomes a contact). [param kind] "rifle", "explosion", "melee", "fall"...
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
-	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
-	# Invariants:
-	# - Deducts incoming ballistic/explosive damage from entity health pool.
-	# - Triggers directional damage indicators and flinch screen-shake impulse.
-	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	health=maxf(0,health-amount)
 	suppression=maxf(suppression,2.5)
@@ -666,8 +823,8 @@ func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
 	game.actor_died(self,kind)
 	model.root.hide()
 
+## Damages the held weapon; when it reaches zero it is dropped (as broken) and hidden.
 func damage_weapon(amount:float):
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	weapon_health=maxf(0,weapon_health-amount)
 	if weapon_health==0 and not dropped_broken:
 		dropped_broken=true
@@ -675,12 +832,8 @@ func damage_weapon(amount:float):
 		rounds=0
 		gun.hide()
 
+## Leaves a truck: places the actor beside it (2.9 m to the side), restores the standing pose and sets home there. A .50 gunner stays on his ring mount unless the truck is wrecked.
 func dismount():
-	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
-	# Invariants:
-	# - Restores actor's independent physics collision layers and spatial hierarchy.
-	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
-	# Logic: Execute step-by-step processing for dismount
 	if truck==null:return
 	var vehicle=truck
 	var side=-1 if seat%2==0 else 1
@@ -706,10 +859,8 @@ func dismount():
 		mounted=true
 	else:mounted=false
 
+## Replaces a machine gun with the crewman's personal rifle and its own limited ammunition.
 func switch_to_rifle():
-	# --- CONTRACT: Function `switch_to_rifle` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for switch_to_rifle
 	weapon_kind="garand" if team==1 else "kar98"
 	spec=Kit.DATA[weapon_kind]
 	# A separately tracked emergency personal rifle, not an infinite refill of the MG.
@@ -725,10 +876,8 @@ func switch_to_rifle():
 	gun.position=Vector3(0.045,1.26,-0.25)
 	gun.scale=Vector3.ONE*0.85
 
+## Abandons a fixed gun: drops a .50 on its mount and switches to the rifle.
 func leave_mount():
-	# --- CONTRACT: Function `leave_mount` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for leave_mount
 	if not mounted:return
 	mounted=false
 	if weapon_kind=="m2" and truck!=null:
@@ -741,10 +890,8 @@ func leave_mount():
 	switch_to_rifle()
 	state="advance"
 
+## Starts a 1.1 s grenade throw at `point` if allowed (has grenades, cooldown over, not in a truck).
 func begin_grenade(point:Vector3):
-	# --- CONTRACT: Function `begin_grenade` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for begin_grenade
 	if grenades<=0 or grenade_throw_time>0 or grenade_clock>0 or truck!=null:return
 	grenade_throw_time=1.1
 	grenade_throw_target=point
@@ -755,10 +902,8 @@ func begin_grenade(point:Vector3):
 	state="throw"
 	stance="crouch"
 
+## Animates and executes a throw: arm swing, then release at 0.42 s before the end, re-checking that no ally is near the landing point.
 func step_grenade(delta:float):
-	# --- CONTRACT: Function `step_grenade` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for step_grenade
 	if grenade_throw_time<=0:
 		model.right_arm.rotation.x=lerp_angle(model.right_arm.rotation.x,0,delta*10)
 		return
