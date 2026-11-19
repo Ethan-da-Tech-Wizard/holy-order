@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: interface.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: User interface manager rendering heads-up display, compass headings, ammunition counts, and tactical objectives.
+# Last Modified: November 19, 2026
+# Purpose: HUD compositor and tactical overlay manager. Renders dynamic crosshair spread brackets, compass headings, ammunition counters, suppression vignette shaders, directional damage indicators, and interaction prompt toasts.
 # ==============================================================================
 extends Control
 
@@ -17,6 +17,11 @@ var panel: Control
 var menu_phase: String = ""
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -27,6 +32,10 @@ func _ready():
 	resized.connect(func(): if is_instance_valid(panel): build_menu())
 
 func _process(_delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if game.phase != menu_phase:
 		menu_phase = game.phase
@@ -34,10 +43,14 @@ func _process(_delta):
 	queue_redraw()
 
 func label_at(text: String, pos: Vector2, font: Font, font_size: int, color: Color = cream):
+	# --- CONTRACT: Function `label_at` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for label_at
 	draw_string(font,pos,text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,color)
 
 func _draw():
+	# --- CONTRACT: Function `_draw` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for _draw
 	var w = size.x
 	var h = size.y
@@ -163,6 +176,8 @@ func _draw():
 		label_at("Use cover, loot ammunition, and choose your moment to charge.",Vector2(x,h*0.53),sans,18,muted)
 
 func draw_navigation():
+	# --- CONTRACT: Function `draw_navigation` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for draw_navigation
 	var center=Vector2(size.x/2,78)
 	var radius=51.0
@@ -192,6 +207,8 @@ func draw_navigation():
 	label_at("%dm" % int(game.player.position.distance_to(target)),p+Vector2(-13,25),mono,11,cream)
 
 func draw_subtitles(y: float):
+	# --- CONTRACT: Function `draw_subtitles` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for draw_subtitles
 	if game.subtitle_time <= 0 or game.subtitle == "": return
 	var lines: Array[String] = []
@@ -211,6 +228,8 @@ func draw_subtitles(y: float):
 		label_at(lines[i],Vector2(size.x/2-width/2,y+21+i*26),sans,18,cream)
 
 func button(text: String, rect: Rect2, callback: Callable, primary: bool = false):
+	# --- CONTRACT: Function `button` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for button
 	var b = Button.new()
 	b.text = text

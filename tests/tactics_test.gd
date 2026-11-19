@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: tactics_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Tactical AI validation suite testing squad suppression states, flanking paths, and leapfrog advances.
+# Last Modified: November 19, 2026
+# Purpose: Squad tactical AI decision tree verification suite. Tests flanking route selection, suppressive fire sector coverage, bounding overwatch cadence, and tactical withdrawal triggers.
 # ==============================================================================
 extends SceneTree
 var g
@@ -10,6 +10,8 @@ var checks: Array=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(ok: bool, text: String):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":text,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+text)
@@ -17,9 +19,13 @@ func ticks(n: int):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func blocked(a: Vector3,b: Vector3) -> bool:
+	# --- CONTRACT: Function `blocked` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blocked
 	return not g.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(a,b,1)).is_empty()
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	g=load("res://scenes/main.tscn").instantiate()
 	root.add_child(g)

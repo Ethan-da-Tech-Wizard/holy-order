@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: world.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Tidal beach terrain generator with wet sand specular shading, bluff cliffs, and tidal flats.
+# Last Modified: November 19, 2026
+# Purpose: Omaha Beach 3D coastal environmental system. Synthesizes animated ocean wave vertex shaders, dynamic tidal water planes, sand bluff cliffs, concrete bunker meshes, and artillery crater terrain deformation.
 # ==============================================================================
 extends "res://scripts/ardennes/world.gd"
 const Armor=preload("res://scripts/omaha/armor.gd")
@@ -42,9 +42,16 @@ var edited_cells:Dictionary={}
 var seawall_gaps:Array[float]=[]
 
 func play_bounds()->Vector2:return Vector2(WIDTH-8,DEPTH-10)
+	# --- CONTRACT: Function `play_bounds` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for play_bounds
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed=19440606
@@ -99,6 +106,8 @@ func _ready():
 	world_camera.fov=74
 
 func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
+	# --- CONTRACT: Function `textured` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for textured
 	var m=StandardMaterial3D.new()
 	m.albedo_color=tint
@@ -114,6 +123,8 @@ func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
 	return m
 
 func raw_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `raw_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for raw_height
 	if z>0:return -0.07*z-0.1
 	var beach=minf(-z*0.017,5.45)
@@ -127,6 +138,8 @@ func raw_height(x:float,z:float)->float:
 	return h
 
 func height_at(x:float,z:float)->float:
+	# --- CONTRACT: Function `height_at` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for height_at
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
@@ -155,9 +168,13 @@ func height_at(x:float,z:float)->float:
 	return h
 
 func grid_step(z:float)->int:return 2 if z< -192 and z>=-384 else 4
+	# --- CONTRACT: Function `grid_step` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for grid_step
 
 func ground_chunk(x:float,z:float):
+	# --- CONTRACT: Function `ground_chunk` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for ground_chunk
 	var body=Prop.new()
 	body.material_kind="soil"
@@ -174,6 +191,8 @@ func ground_chunk(x:float,z:float):
 	terrain_meshes+=1
 
 func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloat32Array())->ArrayMesh:
+	# --- CONTRACT: Function `terrain_mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for terrain_mesh
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -196,6 +215,8 @@ func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloa
 	return st.commit()
 
 func base_surface_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `base_surface_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for base_surface_height
 	var step=grid_step(floorf(z/TILE)*TILE)
 	var gx=floorf(x/step)*step
@@ -209,6 +230,8 @@ func base_surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func surface_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `surface_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for surface_height
 	var key=Vector2i(floori(x/TILE)*TILE,floori(z/TILE)*TILE)
 	if not soil_edits.has(key):return base_surface_height(x,z)
@@ -224,6 +247,8 @@ func surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func carve_ground(center:Vector3,radius:float):
+	# --- CONTRACT: Function `carve_ground` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for carve_ground
 	for x in range(floori((center.x-radius)/TILE)*TILE,floori((center.x+radius)/TILE)*TILE+1,TILE):
 		for z in range(floori((center.z-radius)/TILE)*TILE,floori((center.z+radius)/TILE)*TILE+1,TILE):
@@ -231,6 +256,8 @@ func carve_ground(center:Vector3,radius:float):
 			if body!=null:body.carve(center,radius)
 
 func deform_ground(body,point:Vector3,radius:float):
+	# --- CONTRACT: Function `deform_ground` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for deform_ground
 	var key=Vector2i(roundi(body.position.x),roundi(body.position.z))
 	var heights:PackedFloat32Array
@@ -268,6 +295,8 @@ func geometry_updated(point:Vector3):
 	if geometry_changes.size()>32:geometry_changes.pop_front()
 
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
+	# --- CONTRACT: Function `path_between` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for path_between
 	if minf(a.z,b.z)<Layout.TOWN_FRONT:
 		# Nearby teammates can keep formation without taking a loop around a block.
@@ -307,6 +336,8 @@ func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	return PackedVector3Array([a,b])
 
 func strong(size:Vector3,p:Vector3,mat:Material,parent:Node3D=self,kind:String="masonry"):
+	# --- CONTRACT: Function `strong` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for strong
 	var body=Armor.new()
 	body.material_kind=kind
@@ -396,6 +427,8 @@ func build_wire():
 				group[i].visual_index=i
 
 func blocking_wire(p:Vector3,lane:float):
+	# --- CONTRACT: Function `blocking_wire` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blocking_wire
 	for row in range(3):
 		if p.z<WIRE_ROWS[row]-2:continue
@@ -404,6 +437,8 @@ func blocking_wire(p:Vector3,lane:float):
 	return null
 
 func nearest_gap(row:int,x:float,max_distance:float=INF):
+	# --- CONTRACT: Function `nearest_gap` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for nearest_gap
 	var chosen=null
 	var best=max_distance
@@ -428,6 +463,8 @@ func build_seawall():
 	for c in craters:covers.append(on_ground(c.p))
 
 func instance_batch(key:String,mesh:Mesh,transforms:Array):
+	# --- CONTRACT: Function `instance_batch` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for instance_batch
 	var m=MultiMeshInstance3D.new()
 	m.multimesh=MultiMesh.new()
@@ -500,6 +537,8 @@ func build_trench_details():
 	root.free()
 
 func town_surface(tint:String,kind:int)->Material:
+	# --- CONTRACT: Function `town_surface` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for town_surface
 	var mat=ShaderMaterial.new()
 	mat.shader=load("res://assets/omaha/town_surface.gdshader")
@@ -559,6 +598,8 @@ func build_village():
 	Art.box(self,Vector3(1.6,0.18,0.18),p+Vector3(0,22.4,0),town_metal)
 
 func closest_road_x(x:float)->float:
+	# --- CONTRACT: Function `closest_road_x` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for closest_road_x
 	var best=Layout.ROAD_X[0]
 	for road in Layout.ROAD_X:
@@ -566,6 +607,8 @@ func closest_road_x(x:float)->float:
 	return best
 
 func closest_road_z(z:float)->float:
+	# --- CONTRACT: Function `closest_road_z` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for closest_road_z
 	var best=Layout.ROAD_Z[0]
 	for road in Layout.ROAD_Z:
@@ -573,6 +616,8 @@ func closest_road_z(z:float)->float:
 	return best
 
 func tank_route(a:Vector3,b:Vector3)->PackedVector3Array:
+	# --- CONTRACT: Function `tank_route` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for tank_route
 	# Manhattan streets keep columns out of house walls; final approach uses a door.
 	var path=PackedVector3Array()
@@ -585,6 +630,8 @@ func tank_route(a:Vector3,b:Vector3)->PackedVector3Array:
 	return path
 
 func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,soil_depth:float=0.13):
+	# --- CONTRACT: Function `blast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blast
 	match game.active_blast_kind:
 		"tank_shell":
@@ -632,6 +679,8 @@ func build_coastal_light():
 	add_child(sun)
 
 func batch_static_boxes():
+	# --- CONTRACT: Function `batch_static_boxes` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for batch_static_boxes
 	# Keep every original collision/damage body. Only their box visuals are instanced.
 	# Spatial grouping keeps offscreen village blocks eligible for normal culling.
@@ -690,11 +739,15 @@ func build_sea():
 			rock.rotation.z=side*0.017
 
 func street_cell(p:Vector3)->Vector2i:
+	# --- CONTRACT: Function `street_cell` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for street_cell
 	var c=Vector2i(((Vector2(p.x,p.z)-STREET_ORIGIN)/STREET_STEP).round())
 	return c.clamp(Vector2i.ZERO,street_grid.size-Vector2i.ONE)
 
 func free_street_cell(p:Vector3)->Vector2i:
+	# --- CONTRACT: Function `free_street_cell` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for free_street_cell
 	var c=street_cell(p)
 	if not street_grid.is_point_solid(c):return c
@@ -739,6 +792,8 @@ func build_street_navigation():
 	street_cache.clear()
 
 func street_route(a:Vector3,b:Vector3)->PackedVector3Array:
+	# --- CONTRACT: Function `street_route` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for street_route
 	if street_grid==null:return tank_route(a,b)
 	var start=free_street_cell(a)

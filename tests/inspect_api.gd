@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: inspect_api.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Engine introspection test verifying Godot Node3D properties, signal connections, and script exports.
+# Last Modified: November 19, 2026
+# Purpose: Engine reflection and API contract verification utility. Validates scene tree node hierarchies, exported property types, and signal signature contracts across simulation scenes.
 # ==============================================================================
 extends SceneTree
 func _initialize():

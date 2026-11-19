@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: rocket_team.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Two-man anti-fortification rocket launcher squad AI handling setup, aiming, and bunker demolition.
+# Last Modified: November 19, 2026
+# Purpose: Two-man bazooka anti-armor team coordinator. Manages gunner and loader tactical pairing, ammunition supply tracking, rocket propellant smoke trails, and fortified bunker target acquisition.
 # ==============================================================================
 extends Node3D
 # A single owner and a single exclusive helper lease per finite launcher.
@@ -27,20 +27,31 @@ var recoveries:int=0
 var loader_changes:int=0
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	launcher=Kit.weapon(self,"bazooka")
 	attach_launcher()
 	set_physics_process(false)
 
 func active(actor)->bool:
+	# --- CONTRACT: Function `active` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for active
 	return is_instance_valid(actor) and actor.alive and not actor.staged and actor.truck==null and actor.boat==null
 
 func eligible(actor)->bool:
+	# --- CONTRACT: Function `eligible` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for eligible
 	return active(actor) and actor.team==1 and (actor.bangalores==0 or actor.position.z< -186) and actor.bazooka_team<0 and actor.loader_for<0 and actor.role not in ["driver","gunner"]
 
 func attach_launcher():
+	# --- CONTRACT: Function `attach_launcher` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for attach_launcher
 	if carrier==null:return
 	launcher.reparent(carrier,false)
@@ -50,11 +61,15 @@ func attach_launcher():
 	dropped_at=Vector3.INF
 
 func release_loader():
+	# --- CONTRACT: Function `release_loader` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for release_loader
 	if is_instance_valid(loader) and loader.loader_for==index:loader.loader_for=-1
 	loader=null
 
 func lose_carrier():
+	# --- CONTRACT: Function `lose_carrier` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for lose_carrier
 	if carrier==null:return
 	dropped_at=game.world.on_ground(carrier.position)+Vector3(0,0.15,0)
@@ -69,6 +84,8 @@ func lose_carrier():
 	release_loader()
 
 func nearest_eligible(point:Vector3,radius:float):
+	# --- CONTRACT: Function `nearest_eligible` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for nearest_eligible
 	var nearest=null
 	var best=radius*radius
@@ -151,6 +168,8 @@ func tick(delta:float):
 	reload_progress=0
 
 func select_tank():
+	# --- CONTRACT: Function `select_tank` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for select_tank
 	var chosen=null
 	var best=185.0*185.0
@@ -168,6 +187,8 @@ func select_tank():
 	return chosen
 
 func sees_tank(from:Vector3,tank,exclude:Array[RID])->bool:
+	# --- CONTRACT: Function `sees_tank` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for sees_tank
 	var q=PhysicsRayQueryParameters3D.create(from,tank.aim_point(),1|2|4|8)
 	q.exclude=exclude
@@ -175,6 +196,8 @@ func sees_tank(from:Vector3,tank,exclude:Array[RID])->bool:
 	return not hit.is_empty() and hit.collider.get("tank_owner")==tank
 
 func find_firing_position(tank)->Vector3:
+	# --- CONTRACT: Function `find_firing_position` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for find_firing_position
 	var toward=tank.position-carrier.position
 	toward.y=0
@@ -189,6 +212,8 @@ func find_firing_position(tank)->Vector3:
 	return Vector3.INF
 
 func safe_backblast(from:Vector3,direction:Vector3)->bool:
+	# --- CONTRACT: Function `safe_backblast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for safe_backblast
 	for actor in game.friendlies+[game.player]:
 		if actor==carrier or not game.actor_alive(actor) or actor.position.distance_squared_to(from)>42:continue
@@ -199,6 +224,8 @@ func safe_backblast(from:Vector3,direction:Vector3)->bool:
 	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 func command(actor)->bool:
+	# --- CONTRACT: Function `command` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for command
 	if actor==recoverer:
 		actor.state="advance"
@@ -228,5 +255,7 @@ func command(actor)->bool:
 	return false
 
 func _exit_tree():
+	# --- CONTRACT: Function `_exit_tree` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for _exit_tree
 	if is_instance_valid(launcher):launcher.queue_free()

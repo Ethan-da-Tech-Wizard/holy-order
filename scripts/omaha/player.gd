@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: player.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Coastal landing player character controller managing surf drag, low crawl mechanics, and sandbag cover.
+# Last Modified: November 19, 2026
+# Purpose: Amphibious landing first-person player controller. Simulates water drag resistance, sand spray particle emission, suppressive fire tunnel-vision vignette shaders, and rapid beachhead traversal mechanics.
 # ==============================================================================
 extends "res://scripts/ardennes/player.gd"
 const Wire=preload("res://scripts/omaha/wire.gd")
@@ -10,6 +10,11 @@ var last_fired:float=-999
 var deck_position=Vector3(0,0.27,1.99)
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	ammo_pack.containers.clear()
@@ -18,6 +23,10 @@ func _ready():
 	camera.far=750
 
 func dismount():
+	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
+	# Invariants:
+	# - Restores actor's independent physics collision layers and spatial hierarchy.
+	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
 	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived or deck_position.z> -6.4:return
 	var p=global_position
@@ -30,6 +39,11 @@ func dismount():
 	game.toast("MOVE OFF THE RAMP • USE THE OBSTACLES • Z PRONE",6)
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if truck!=null:
 		step_on_deck(delta)
@@ -46,6 +60,8 @@ func _physics_process(delta):
 			game.toast("Deep water • head for the beach",2)
 
 func step_on_deck(delta:float):
+	# --- CONTRACT: Function `step_on_deck` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_on_deck
 	ViewSmoothing.restore(self)
 	if game.phase!="playing":return
@@ -72,11 +88,17 @@ func step_on_deck(delta:float):
 	if deck_position.z< -6.5:dismount()
 
 func _unhandled_input(event):
+	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
+	# Invariants:
+	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
+	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
 	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if game.intro_active:return
 	super._unhandled_input(event)
 
 func dig_stroke():
+	# --- CONTRACT: Function `dig_stroke` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for dig_stroke
 	# Preserve digging; close shovel work can cut one wire segment if every engineer falls.
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return

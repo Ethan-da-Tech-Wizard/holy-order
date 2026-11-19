@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: carcano_model.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Mathematical 3D modeling and rendering of the Carcano M91 rifle geometry, sights, and moving bolt.
+# Last Modified: November 19, 2026
+# Purpose: Procedural 3D weapon geometry constructor. Dynamically builds detailed Italian Carcano Model 1891 rifle assemblies including walnut wooden stock, blued steel barrel, receiver bolt mechanism, and iron sight posts at runtime.
 # ==============================================================================
 extends RefCounted
 
@@ -14,6 +14,8 @@ const REAR_SIGHT_Z: float = -0.225
 static var surfaces: Dictionary = {}
 
 static func surface(name: String, color: Color, metal: float, rough: float, wood: bool = false) -> Material:
+	# --- CONTRACT: Function `surface` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	if surfaces.has(name): return surfaces[name]
 	var mat = ShaderMaterial.new()
 	mat.shader = preload("res://assets/shaders/weapon_surface.gdshader")
@@ -25,6 +27,8 @@ static func surface(name: String, color: Color, metal: float, rough: float, wood
 	return mat
 
 static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var obj = MeshInstance3D.new()
 	obj.mesh = shape
 	obj.material_override = mat
@@ -33,6 +37,8 @@ static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> Me
 	return obj
 
 static func cylinder(parent: Node3D, radius: float, length: float, pos: Vector3, mat: Material, sides: int = 24) -> MeshInstance3D:
+	# --- CONTRACT: Function `cylinder` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var shape = CylinderMesh.new()
 	shape.top_radius = radius
 	shape.bottom_radius = radius
@@ -43,6 +49,8 @@ static func cylinder(parent: Node3D, radius: float, length: float, pos: Vector3,
 	return obj
 
 static func segment(parent: Node3D, start: Vector3, end: Vector3, radius: float, mat: Material):
+	# --- CONTRACT: Function `segment` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var obj = cylinder(parent, radius, start.distance_to(end), (start + end) * 0.5, mat)
 	obj.quaternion = Quaternion(Vector3.UP, (end - start).normalized())
 	return obj
@@ -50,6 +58,8 @@ static func segment(parent: Node3D, start: Vector3, end: Vector3, radius: float,
 # Elliptical sections [z, centre_y, half_width, half_height] yield a contoured
 # stock with continuous normals, instead of boxes sharing harsh ninety-degree edges.
 static func loft(parent: Node3D, sections: Array, mat: Material, sides: int = 24) -> MeshInstance3D:
+	# --- CONTRACT: Function `loft` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for section in sections:
@@ -72,6 +82,8 @@ static func loft(parent: Node3D, sections: Array, mat: Material, sides: int = 24
 	return obj
 
 static func plate(parent: Node3D, outline: PackedVector2Array, depth: float, pos: Vector3, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `plate` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var faces = Geometry2D.triangulate_polygon(outline)
@@ -89,6 +101,8 @@ static func plate(parent: Node3D, outline: PackedVector2Array, depth: float, pos
 	return mesh(parent, st.commit(), pos, mat)
 
 static func build(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `build` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	root.name = "CarcanoM91"
 	parent.add_child(root)

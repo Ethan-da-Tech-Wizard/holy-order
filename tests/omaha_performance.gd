@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: omaha_performance.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: High-load benchmark profiling draw call count, memory usage, and entity pooling during coastal landings.
+# Last Modified: November 19, 2026
+# Purpose: Omaha coastal theater performance profiling test harness. Measures render frame rates, ocean wave shader vertex calculation throughput, and rigid body physics ticks during amphibious assaults.
 # ==============================================================================
 extends SceneTree
 var g
@@ -11,6 +11,10 @@ var render_frames=[]
 var measuring=false
 var render_last:int=0
 func _process(_delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if not measuring:return false
 	var now=Time.get_ticks_usec()
@@ -20,6 +24,8 @@ func _process(_delta):
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)

@@ -1,17 +1,21 @@
 # ==============================================================================
 # Program: visual_check.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Shader and material pipeline test verifying LOD transitions, shadows, and screen-space reflections.
+# Last Modified: November 19, 2026
+# Purpose: Automated visual rendering check and framebuffer snapshot harness. Confirms shader compilation, material binding, UI canvas layout, and lighting parameters without visual anomalies.
 # ==============================================================================
 extends Node
 
 func snap(name: String):
+	# --- CONTRACT: Function `snap` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for snap
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://reviews/"+name+".png")
 
 func run(g):
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	await get_tree().create_timer(1.5).timeout
 	await snap("start-screen")

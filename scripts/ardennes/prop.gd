@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: prop.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Winter battlefield prop component representing frozen crates, sandbags, destroyed fences, and foliage.
+# Last Modified: November 19, 2026
+# Purpose: Interactive environmental prop component for the Ardennes theater. Manages snow-covered pine trees, wooden crates, and tank traps with physical collision hulls and destructibility flags.
 # ==============================================================================
 extends "res://scripts/breakable.gd"
 
@@ -17,6 +17,10 @@ static var mark_mesh:SphereMesh
 static var mark_material:StandardMaterial3D
 
 func damage_at(amount:float,point:Vector3,radius:float=0.24,explosive:bool=false)->bool:
+	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
+	# Invariants:
+	# - Evaluates impact coordinates against geometry bounding AABB boxes.
+	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	if material_kind=="soil" and not explosive and radius<0.3:return false
@@ -46,6 +50,8 @@ func damage_at(amount:float,point:Vector3,radius:float=0.24,explosive:bool=false
 	return super.damage_at(amount,point,radius,explosive)
 
 func bullet_mark(point:Vector3):
+	# --- CONTRACT: Function `bullet_mark` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for bullet_mark
 	if marks_used>=8:return
 	if marks==null:
@@ -73,12 +79,16 @@ func bullet_mark(point:Vector3):
 	marks.multimesh.visible_instance_count=marks_used
 
 func carve(point:Vector3,radius:float):
+	# --- CONTRACT: Function `carve` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for carve
 	if destroyed:return
 	if battle_world!=null:battle_world.queue_cut(self,point,radius)
 	else:super.carve(point,radius)
 
 func commit_cut(point:Vector3,radius:float):
+	# --- CONTRACT: Function `commit_cut` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for commit_cut
 	if material_kind=="soil" and battle_world!=null:battle_world.deform_ground(self,point,radius)
 	else:super.carve(point,radius)

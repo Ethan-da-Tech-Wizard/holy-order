@@ -1,14 +1,19 @@
 # ==============================================================================
 # Program: ammo_bundle.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Collectible ammunition cache entity providing resupply for rifles, submachine guns, and sidearms.
+# Last Modified: November 19, 2026
+# Purpose: Tactical ammunition resupply crate component. Manages physical collision volumes, player proximity interaction detection, ammunition replenishment logic, and pickup audio cue dispatching.
 # ==============================================================================
 extends StaticBody3D
 const Art=preload("res://scripts/art.gd")
 var game
 var contents:Array=[]
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("ammo_bundles")
 	collision_layer=32
@@ -20,6 +25,8 @@ func _ready():
 	cs.shape=box
 	add_child(cs)
 func take(player):
+	# --- CONTRACT: Function `take` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for take
 	var total=0
 	for item in contents.duplicate():

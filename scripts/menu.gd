@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: menu.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Campaign and mission selection menu handling scene transitions, input bindings, and settings persistence.
+# Last Modified: November 19, 2026
+# Purpose: Main menu user interface and campaign routing controller. Coordinates mission selection state machines, audio volume buses, input focus management, and asynchronous scene transitions between Normandy, Ardennes, and Italian village campaigns.
 # ==============================================================================
 extends Control
 const Graphics=preload("res://scripts/graphics.gd")
@@ -11,6 +11,11 @@ var loading:bool=false
 var status:Label
 var choices:Dictionary={}
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	Engine.physics_ticks_per_second=30
@@ -61,6 +66,8 @@ func _ready():
 		if arg.begins_with("--preferred-mission="):preferred=arg.get_slice("=",1)
 	choices.get(preferred,choices.omaha).grab_focus()
 func add_text(parent:Node,value:String,points:int,color:Color)->Label:
+	# --- CONTRACT: Function `add_text` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for add_text
 	var label=Label.new()
 	label.text=value
@@ -69,6 +76,8 @@ func add_text(parent:Node,value:String,points:int,color:Color)->Label:
 	parent.add_child(label)
 	return label
 func launch(mission:String):
+	# --- CONTRACT: Function `launch` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for launch
 	if loading or not MISSIONS.has(mission):return
 	loading=true

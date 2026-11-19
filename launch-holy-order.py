@@ -2,10 +2,8 @@
 # ==============================================================================
 # Program: launch-holy-order.py
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Launcher daemon and window manager bridge for Holy Order Godot game.
-#          Manages file prerequisites verification, process locking via fcntl,
-#          Hyprland window focus dispatch, and child engine lifecycle.
+# Last Modified: November 19, 2026
+# Purpose: Launcher daemon and desktop window manager bridge for Holy Order simulation engine. Manages process locking arbitration via POSIX fcntl non-blocking file locks, verifies engine binary prerequisites, dispatches Hyprland IPC window focus events, and coordinates child process engine lifecycles without desktop stalls.
 # ==============================================================================
 """Start Holy Order at its title screen, using the bundled local Godot engine."""
 import argparse

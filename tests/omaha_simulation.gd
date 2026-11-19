@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: omaha_simulation.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Headless statistical test measuring sector capture probabilities across 1000 simulated beach landings.
+# Last Modified: November 19, 2026
+# Purpose: End-to-end headless simulation harness for the Omaha Beach landing. Executes complete automated mission playthroughs to verify objective completion states and edge-case invariants.
 # ==============================================================================
 extends SceneTree
 var g
@@ -12,6 +12,8 @@ var durations=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func snapshot():
+	# --- CONTRACT: Function `snapshot` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for snapshot
 	var states={}
 	var positions=[]
@@ -38,6 +40,8 @@ func snapshot():
 	var file=FileAccess.open("res://reviews/omaha/simulation-progress.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(snapshots,"  "))
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)

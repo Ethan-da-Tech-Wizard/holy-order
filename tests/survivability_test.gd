@@ -1,18 +1,22 @@
 # ==============================================================================
 # Program: survivability_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Health and damage calculation test checking armor plate deflection formulas and wound thresholds.
+# Last Modified: November 19, 2026
+# Purpose: Infantry survivability and combat lethality matrix test harness. Evaluates player and squad member time-to-kill (TTK), cover mitigation efficiency, and medical recovery timing.
 # ==============================================================================
 extends SceneTree
 var checks=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	for path in ["res://scripts/player.gd","res://scripts/ardennes/player.gd","res://scripts/omaha/player.gd"]:

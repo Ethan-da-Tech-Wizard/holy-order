@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: world.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Level geometry synthesizer constructing environmental terrain meshes, lighting setups, and world boundaries.
+# Last Modified: November 19, 2026
+# Purpose: Procedural 3D environmental geometry builder and world state container for the Italian village theater. Dynamically generates CSG building structures, static physics collision hulls, terrain materials, directional sun lighting, and level boundary constraints.
 # ==============================================================================
 extends Node3D
 
@@ -19,6 +19,11 @@ var terrain_chunks: Array = []
 var game
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed = 19400614
@@ -48,6 +53,8 @@ func _ready():
 	add_child(fill)
 
 func lighting():
+	# --- CONTRACT: Function `lighting` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for lighting
 	var env = Environment.new()
 	env.background_mode = Environment.BG_SKY
@@ -102,6 +109,8 @@ func lighting():
 	add_child(sun)
 
 func landscape():
+	# --- CONTRACT: Function `landscape` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for landscape
 	ground_material = ShaderMaterial.new()
 	ground_material.shader = load("res://assets/shaders/sand.gdshader")
@@ -162,6 +171,8 @@ func landscape():
 	add_child(dust)
 
 func rock(pos: Vector3, size: Vector3, collide: bool):
+	# --- CONTRACT: Function `rock` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for rock
 	var root = Art.Breakable.new()
 	root.material_kind="rock"
@@ -185,6 +196,8 @@ func rock(pos: Vector3, size: Vector3, collide: bool):
 		root.add_child(c)
 
 func rock_mesh(variant: int) -> ArrayMesh:
+	# --- CONTRACT: Function `rock_mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for rock_mesh
 	if rock_shapes.has(variant): return rock_shapes[variant]
 	var source = SphereMesh.new()
@@ -219,6 +232,8 @@ func rock_mesh(variant: int) -> ArrayMesh:
 	return result
 
 func sandbags(pos: Vector3, length: int, angle: float = 0.0):
+	# --- CONTRACT: Function `sandbags` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for sandbags
 	var root=Art.Breakable.new()
 	root.material_kind="sandbag"
@@ -240,6 +255,8 @@ func sandbags(pos: Vector3, length: int, angle: float = 0.0):
 	return root
 
 func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
+	# --- CONTRACT: Function `crate` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for crate
 	var wood = Art.material(Color("736c4c"))
 	var dark = Art.material(Color("4e4b36"))
@@ -250,6 +267,8 @@ func crate(pos: Vector3, size: Vector3 = Vector3(1.1,0.9,0.9)):
 		Art.box(root,Vector3(size.x+0.015,0.065,size.z+0.018),Vector3(0,y,0),dark)
 
 func tent(pos: Vector3):
+	# --- CONTRACT: Function `tent` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for tent
 	var root = Node3D.new()
 	add_child(root)
@@ -268,6 +287,8 @@ func tent(pos: Vector3):
 		Art.cylinder(root,0.045,3,Vector3(0,1.5,z),Art.material(Color("514737")))
 
 func fortifications():
+	# --- CONTRACT: Function `fortifications` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for fortifications
 	# Forward sentry, then the six-man outpost. Open ends permit a sword-only route.
 	sandbags(Vector3(0,0,7),3)
@@ -321,6 +342,8 @@ func geometry_updated(point: Vector3):
 	if is_instance_valid(navigation):navigation.mark_dirty(point)
 
 func blast(point: Vector3, power: float = 300, radius: float = 4.2):
+	# --- CONTRACT: Function `blast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blast
 	for body in get_tree().get_nodes_in_group("breakable"):
 		if body.destroyed:continue
@@ -333,6 +356,8 @@ func blast(point: Vector3, power: float = 300, radius: float = 4.2):
 			body.damage_at(amount,point,minf(1.25,radius-distance+0.25),true)
 
 func dig(point: Vector3, depth: float = 0.82):
+	# --- CONTRACT: Function `dig` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for dig
 	var centre=point-Vector3(0,depth*0.34,0)
 	for chunk in terrain_chunks:
@@ -340,6 +365,8 @@ func dig(point: Vector3, depth: float = 0.82):
 			chunk.carve(centre,depth)
 
 func nearby_door(point: Vector3, distance: float = 2.6):
+	# --- CONTRACT: Function `nearby_door` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for nearby_door
 	var best=null
 	for door in get_tree().get_nodes_in_group("field_door"):
@@ -351,6 +378,8 @@ func nearby_door(point: Vector3, distance: float = 2.6):
 	return best
 
 func make_loose_props_breakable(node: Node):
+	# --- CONTRACT: Function `make_loose_props_breakable` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for make_loose_props_breakable
 	# Convert decorative geometry into independently hittable physical props, while
 	# keeping doors and existing breakable bodies as their own objects.

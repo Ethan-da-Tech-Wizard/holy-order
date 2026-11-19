@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: encounter_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Combat balance simulation measuring survival rates across varying squad configurations and cover densities.
+# Last Modified: November 19, 2026
+# Purpose: Skirmish balance and enemy combat engagement test harness. Verifies line-of-sight engagement ranges, friendly squad crossfire coordination, and enemy surrender/defeat states.
 # ==============================================================================
 extends Node
 
@@ -10,6 +10,8 @@ var checks: Array = []
 var failures: Array[String] = []
 
 func check(condition: bool, description: String):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":description,"passed":condition})
 	print(("PASS " if condition else "FAIL ")+description)
@@ -20,6 +22,8 @@ func ticks(count: int):
 	for i in range(maxi(1,roundi(count*Engine.physics_ticks_per_second/60.0))): await get_tree().physics_frame
 
 func run(g):
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	check(g.phase=="title","Launch stops at the start screen")
 	check(g.enemies.size()==6 and g.remaining()==6,"Six defenders; sentry separated from the line")

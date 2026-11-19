@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: village.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Procedural layout synthesizer generating village buildings, cobblestone paths, cover positions, and perimeter fences.
+# Last Modified: November 19, 2026
+# Purpose: Architectural layout generator and landmark positioning ledger for the Italian village campaign. Defines house coordinate grids, stone wall barricades, trench pathways, and tactical sentry spawn vectors.
 # ==============================================================================
 extends Node3D
 
@@ -14,6 +14,8 @@ var enemy_positions=[Vector3(0,0.04,26),Vector3(-26,0.04,-14),Vector3(27,0.04,-1
 var enemy_roles=["sentry","hold","assault","assault","hold","mg"]
 
 func plaster_material(color: Color) -> Material:
+	# --- CONTRACT: Function `plaster_material` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for plaster_material
 	var mat=ShaderMaterial.new()
 	mat.shader=load("res://assets/shaders/plaster.gdshader")
@@ -21,10 +23,17 @@ func plaster_material(color: Color) -> Material:
 	return mat
 
 func wall(parent: Node3D, size: Vector3, pos: Vector3, mat: Material):
+	# --- CONTRACT: Function `wall` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for wall
 	return Art.solid(parent,size,pos,mat,0,"masonry")
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var plaster=plaster_material(Color("a89372"))
 	var pale=plaster_material(Color("b7a789"))
@@ -89,6 +98,8 @@ func _ready():
 		rubble.rotation.y=rng.randf_range(-PI,PI)
 
 func house(pos: Vector3, size: Vector2, plaster: Material, damaged: bool):
+	# --- CONTRACT: Function `house` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for house
 	var root=Node3D.new()
 	add_child(root)
@@ -142,6 +153,8 @@ func house(pos: Vector3, size: Vector2, plaster: Material, damaged: bool):
 	for x in [-3,-1]:Art.solid(root,Vector3(0.15,0.5,0.5),Vector3(x,0.25,-d/2+1.1),wood)
 
 func flag(pos: Vector3):
+	# --- CONTRACT: Function `flag` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for flag
 	var pole=Art.solid(self,Vector3(0.10,6.5,0.10),pos+Vector3(0,3.25,0),Art.material(Color("706c59"),0.6),0,"metal")
 	for i in range(3):

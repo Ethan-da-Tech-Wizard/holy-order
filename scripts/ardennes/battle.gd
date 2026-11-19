@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: battle.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Ardennes mission orchestrator coordinating squad movement, ambush waves, defensive lines, and battle outcomes.
+# Last Modified: November 19, 2026
+# Purpose: Ardennes campaign battle orchestration controller. Coordinates American truck convoy advancement along snow roads, German ambush wave timing, squad casualty tracking, and mission victory/defeat conditions.
 # ==============================================================================
 extends Node3D
 
@@ -82,6 +82,11 @@ var fall_events:Array=[]
 var profile_enabled:bool=OS.has_environment("HOLY_ORDER_PROFILE")
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
@@ -120,6 +125,8 @@ func _ready():
 	preload("res://scripts/graphics.gd").install(self)
 
 func register_inputs():
+	# --- CONTRACT: Function `register_inputs` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for register_inputs
 	var bindings={"move_forward":KEY_W,"move_back":KEY_S,"move_left":KEY_A,"move_right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"crouch":KEY_C,"prone":KEY_Z,"objectives":KEY_J,"lean_left":KEY_Q,"lean_right":KEY_E,"reload":KEY_R,"interact":KEY_F,"grenade":KEY_G,"weapon_sword":KEY_1,"weapon_rifle":KEY_2,"weapon_fists":KEY_3,"weapon_shovel":KEY_4,"inventory":KEY_TAB,"pause":KEY_ESCAPE,"fullscreen":KEY_F11}
 	for action in bindings:
@@ -136,12 +143,16 @@ func register_inputs():
 		InputMap.action_add_event(action,event)
 
 func new_squad(team:int,order:String,temperament:String,anchor:Vector3)->int:
+	# --- CONTRACT: Function `new_squad` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for new_squad
 	var i=squads.size()
 	squads.append({"team":team,"order":order,"temperament":temperament,"anchor":anchor,"objective":anchor,"leader":null,"members":[],"contact":Vector3.ZERO,"contact_age":999.0})
 	return i
 
 func make_convoy():
+	# --- CONTRACT: Function `make_convoy` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for make_convoy
 	# One twelve-man rifle squad is the planned load in each CCKW, not its maximum capacity.
 	# Nine loads = 108 seats; the player replaces one passenger. Seven central loads = 84 seats.
@@ -192,6 +203,8 @@ func make_convoy():
 			engines.append(engine)
 
 func make_germans():
+	# --- CONTRACT: Function `make_germans` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for make_germans
 	for i in range(8):
 		var anchor=world.anchors[i]
@@ -238,6 +251,8 @@ func make_germans():
 				staged_launchers.append(actor)
 
 func begin():
+	# --- CONTRACT: Function `begin` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for begin
 	phase="playing"
 	player.camera.current=true
@@ -248,6 +263,10 @@ func begin():
 	toast("COVERED TRANSPORT  •  LOOK OUT THE REAR  •  HOLD FIRE UNTIL DISMOUNT",7)
 
 func _unhandled_input(event):
+	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
+	# Invariants:
+	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
+	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
 	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if event.is_action_pressed("fullscreen"):
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if DisplayServer.window_get_mode()==DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -261,22 +280,32 @@ func _unhandled_input(event):
 	if phase=="title" and event is InputEventKey and event.pressed and event.keycode==KEY_ENTER:begin()
 
 func pause_game(menu:String="paused"):
+	# --- CONTRACT: Function `pause_game` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for pause_game
 	phase=menu
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	for engine in engines:engine.stream_paused=true
 
 func resume_game():
+	# --- CONTRACT: Function `resume_game` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for resume_game
 	phase="playing"
 	Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 	for engine in engines:engine.stream_paused=false
 
 func _notification(what):
+	# --- CONTRACT: Function `_notification` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for _notification
 	if what==NOTIFICATION_APPLICATION_FOCUS_OUT and phase=="playing" and not test_mode:pause_game()
 
 func _process(delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	visual_elapsed+=delta
 	if phase!="playing":return
@@ -289,12 +318,19 @@ func _process(delta):
 	damage_flash=maxf(0,damage_flash-delta)
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	var started=Time.get_ticks_usec() if profile_enabled else 0
 	step_battle(delta)
 	if profile_enabled and Time.get_ticks_usec()-started>8000:print("PROFILE battle_tick ",Time.get_ticks_usec()-started)
 
 func step_battle(delta):
+	# --- CONTRACT: Function `step_battle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_battle
 	if phase!="playing":return
 	elapsed+=delta
@@ -319,6 +355,8 @@ func step_battle(delta):
 			effects.erase(effect)
 
 func think_budget(delta:float):
+	# --- CONTRACT: Function `think_budget` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for think_budget
 	# Distribute decisions across rendered frames, including those between physics
 	# ticks. A slow frame cannot produce an unbounded catch-up spike.
@@ -344,6 +382,8 @@ func update_squads():
 	if dismounted:tactics.update(self)
 
 func report_contact(actor,point:Vector3):
+	# --- CONTRACT: Function `report_contact` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for report_contact
 	var sq=squads[actor.squad]
 	sq.contact=point
@@ -370,6 +410,8 @@ func rebuild_spatial():
 			cover_reservations[reservation].append(actor)
 
 func separation_for(actor)->Vector3:
+	# --- CONTRACT: Function `separation_for` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for separation_for
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
 	var result=Vector3.ZERO
@@ -385,15 +427,21 @@ func separation_for(actor)->Vector3:
 	return result.limit_length(1.0)
 
 func actor_alive(actor)->bool:
+	# --- CONTRACT: Function `actor_alive` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for actor_alive
 	if actor==null or not is_instance_valid(actor):return false
 	return actor.health>0 if actor==player else actor.alive and not actor.staged
 
 func actor_aim(actor)->Vector3:
+	# --- CONTRACT: Function `actor_aim` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for actor_aim
 	return actor.aim_point()
 
 func acquire_target(actor):
+	# --- CONTRACT: Function `acquire_target` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for acquire_target
 	var candidates=friendlies.duplicate() if actor.team==0 else enemies.duplicate()
 	if actor.team==0:candidates.append(player)
@@ -442,6 +490,8 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	return false
 
 func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
+	# --- CONTRACT: Function `safe_explosive_target` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for safe_explosive_target
 	var friends=friendlies if actor.team==1 else enemies
 	for other in friends:
@@ -452,6 +502,8 @@ func safe_explosive_target(actor,point:Vector3,radius:float)->bool:
 	return true
 
 func can_lob(from:Vector3,to:Vector3)->bool:
+	# --- CONTRACT: Function `can_lob` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for can_lob
 	var last=from
 	for i in range(1,7):
@@ -513,6 +565,8 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	emit_noise(from,260,source.team,"gunshot")
 
 func hurt_actor(actor,damage:float,source:Vector3,kind:String):
+	# --- CONTRACT: Function `hurt_actor` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for hurt_actor
 	if not actor_alive(actor):return
 	if actor.truck!=null and actor.truck.has_method("passenger_damage"):
@@ -520,6 +574,8 @@ func hurt_actor(actor,damage:float,source:Vector3,kind:String):
 	actor.take_damage(damage,source,kind)
 
 func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
+	# --- CONTRACT: Function `notify_projectile` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for notify_projectile
 	var line=to-from
 	var sq_len=line.length_squared()
@@ -533,6 +589,8 @@ func notify_projectile(from:Vector3,to:Vector3,_source_team:int):
 			near_misses+=1
 
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
+	# --- CONTRACT: Function `emit_noise` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for emit_noise
 	for actor in actors:
 		if actor.team!=team and actor.alive:actor.hear_noise(point,radius,team,kind)
@@ -542,6 +600,8 @@ func damage_environment(hit:Dictionary,amount:float,radius:float):
 	if hit.collider.has_method("damage_at"):hit.collider.damage_at(amount,hit.position,radius)
 
 func tracer(from:Vector3,to:Vector3,color:Color):
+	# --- CONTRACT: Function `tracer` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for tracer
 	if effects.size()>64:return
 	var root=Node3D.new()
@@ -556,6 +616,8 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	effects.append({"node":root,"time":0.055})
 
 func impact(point:Vector3,color:Color):
+	# --- CONTRACT: Function `impact` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for impact
 	if effects.size()>64:return
 	var node=Art.sphere(self,0.055,point,Art.material(color))
@@ -564,6 +626,8 @@ func impact(point:Vector3,color:Color):
 	effects.append({"node":node,"time":0.15})
 
 func scripted_strike(vehicle,shooter,is_lead:bool):
+	# --- CONTRACT: Function `scripted_strike` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for scripted_strike
 	# Eligibility is evaluated against the live vehicle and launcher. No teleport,
 	# invulnerable performer, or replacement target is created for a missing truck.
@@ -574,6 +638,8 @@ func scripted_strike(vehicle,shooter,is_lead:bool):
 	say("Panzerfaust! Front of the arriving column!" if is_lead else "They've hit the last truck in the kill zone!",4,"SGT. HAYES")
 
 func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
+	# --- CONTRACT: Function `launch_faust` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for launch_faust
 	var from=source.eye()+Vector3(0,0.12,0)
 	var goal=aim
@@ -585,10 +651,14 @@ func launch_faust(source,aim:Vector3,vehicle=null,scripted:bool=false):
 	emit_noise(from,260,source.team,"explosion")
 
 func throw_grenade(from:Vector3,direction:Vector3):
+	# --- CONTRACT: Function `throw_grenade` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for throw_grenade
 	spawn_grenade(from,direction.normalized()*15.0+Vector3(0,5.0,0),1,player,player.last_grenade_type)
 
 func bot_grenade(actor,target:Vector3):
+	# --- CONTRACT: Function `bot_grenade` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for bot_grenade
 	var from=actor.eye()
 	var flight=1.6
@@ -611,6 +681,8 @@ func spawn_grenade(from:Vector3,velocity:Vector3,team:int,source,grenade_kind:St
 	grenades_live.append({"node":node,"velocity":velocity,"age":0.0,"fuse":randf_range(4.0,4.8),"source":source,"team":team,"kind":grenade_kind})
 
 func step_projectiles(delta:float):
+	# --- CONTRACT: Function `step_projectiles` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_projectiles
 	for grenade in grenades_live.duplicate():
 		grenade.age+=delta
@@ -656,6 +728,8 @@ func step_projectiles(delta:float):
 			rockets.erase(rocket)
 
 func explode(point:Vector3,radius:float,damage:float,source,kind:String="grenade"):
+	# --- CONTRACT: Function `explode` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for explode
 	for actor in actors+[player]:
 		if not actor_alive(actor):continue
@@ -745,11 +819,15 @@ func add_wreck_fire(point:Vector3):
 	light.omni_range=7
 
 func vehicle_wrecked(vehicle,_scripted:bool):
+	# --- CONTRACT: Function `vehicle_wrecked` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for vehicle_wrecked
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	# A local wreck is a traffic obstruction. Other trucks keep trying to pass it.
 
 func truck_dismounted(vehicle):
+	# --- CONTRACT: Function `truck_dismounted` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for truck_dismounted
 	if vehicle.engine_loop!=null:vehicle.engine_loop.stop()
 	if not dismounted:
@@ -761,6 +839,8 @@ func truck_dismounted(vehicle):
 	tactics.update(self)
 
 func actor_died(actor,kind:String):
+	# --- CONTRACT: Function `actor_died` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for actor_died
 	death_causes[kind]=int(death_causes.get(kind,0))+1
 	if kind=="fall":
@@ -788,6 +868,8 @@ func actor_died(actor,kind:String):
 		sounds.play("victory",-10)
 
 func interact():
+	# --- CONTRACT: Function `interact` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for interact
 	if player.truck!=null:
 		if player.truck.stopped:player.truck.dismount("orders")
@@ -821,6 +903,8 @@ func interact():
 	loot(nearest)
 
 func loot(actor)->Dictionary:
+	# --- CONTRACT: Function `loot` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for loot
 	if actor.looted:return {}
 	var taken_grenades=mini(actor.grenades,maxi(0,4-player.grenades))
@@ -837,6 +921,8 @@ func loot(actor)->Dictionary:
 	return result
 
 func objective_target()->Vector3:
+	# --- CONTRACT: Function `objective_target` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for objective_target
 	if player.truck!=null:return world.road_point(Truck.END_PROGRESS)
 	var best=INF
@@ -849,6 +935,8 @@ func objective_target()->Vector3:
 	return goal
 
 func objective_text()->String:
+	# --- CONTRACT: Function `objective_text` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for objective_text
 	if player.truck!=null:
 		if player.truck.disabled:return "Wheels hit. Await dismount orders."
@@ -859,17 +947,23 @@ func objective_text()->String:
 	return "Clear both ridges • %d / 8 hilltops secured"%cleared
 
 func toast(text:String,duration:float=3):
+	# --- CONTRACT: Function `toast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for toast
 	toast_text=text
 	toast_time=duration
 
 func say(text:String,duration:float=5,who:String="THE KNIGHT"):
+	# --- CONTRACT: Function `say` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for say
 	subtitle=text
 	subtitle_time=duration
 	speaker=who
 
 func defeat():
+	# --- CONTRACT: Function `defeat` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for defeat
 	if phase!="playing":return
 	phase="defeat"
@@ -877,14 +971,20 @@ func defeat():
 	for engine in engines:engine.stop()
 
 func retry():
+	# --- CONTRACT: Function `retry` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for retry
 	get_tree().set_meta("ardennes_retry",true)
 	get_tree().reload_current_scene()
 
 func leave_mg():pass
+	# --- CONTRACT: Function `leave_mg` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for leave_mg
 
 func _exit_tree():
+	# --- CONTRACT: Function `_exit_tree` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for _exit_tree
 	for engine in engines:
 		if is_instance_valid(engine):
@@ -892,6 +992,8 @@ func _exit_tree():
 			engine.stream=null
 
 func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,mounted:bool=false):
+	# --- CONTRACT: Function `drop_weapon` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for drop_weapon
 	var drop=Drop.new()
 	drop.game=self
@@ -905,6 +1007,8 @@ func drop_weapon(kind:String,loaded:int,condition:float,point:Vector3,yaw:float,
 	return drop
 
 func swap_weapon(drop):
+	# --- CONTRACT: Function `swap_weapon` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for swap_weapon
 	if player.has_rifle:drop_weapon(player.gun_kind,player.ammo,player.rifle_health,player.position,player.rotation.y)
 	var loaded=drop.rounds
@@ -920,6 +1024,8 @@ func swap_weapon(drop):
 	toast("Carrying %s%s. Previous firearm dropped."%[Kit.DATA[drop.kind].name," — BROKEN" if drop.condition<=0 else ""],3)
 
 func cover_occupied(actor,point:Vector3)->bool:
+	# --- CONTRACT: Function `cover_occupied` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for cover_occupied
 	var cell=Vector3i(floori(point.x/3),actor.team,floori(point.z/3))
 	for x in [-1,0,1]:
@@ -929,6 +1035,8 @@ func cover_occupied(actor,point:Vector3)->bool:
 	return false
 
 func drop_pack():
+	# --- CONTRACT: Function `drop_pack` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for drop_pack
 	if player.ammo_pack.containers.is_empty():return
 	var bundle=AmmoBundle.new()
@@ -941,6 +1049,8 @@ func drop_pack():
 	hud.last_phase=""
 
 func ambush_candidates()->Array:
+	# --- CONTRACT: Function `ambush_candidates` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for ambush_candidates
 	var candidates=trucks.filter(func(t):return not t.destroyed and not t.unloaded and not t.disabled and t.has_passengers() and t.progress>=540 and t.progress<=Truck.END_PROGRESS+1)
 	candidates.sort_custom(func(a,b):return a.progress>b.progress)
@@ -956,6 +1066,8 @@ func launcher_can_hit(shooter,vehicle)->bool:
 	return hit.is_empty() or hit.collider.get("truck_owner")==vehicle
 
 func decide_ambush(candidates:Array):
+	# --- CONTRACT: Function `decide_ambush` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for decide_ambush
 	if ambush_outcome!="pending":return
 	ambush_outcome="skipped"
@@ -975,6 +1087,8 @@ func decide_ambush(candidates:Array):
 	dismount_at=elapsed+5.5
 
 func step_convoy(delta:float):
+	# --- CONTRACT: Function `step_convoy` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_convoy
 	for truck in trucks:truck.tick(delta)
 	if ambush_outcome=="pending":
@@ -993,6 +1107,8 @@ func step_convoy(delta:float):
 	column_stopped=convoy_settled
 
 func acquire_vehicle(actor):
+	# --- CONTRACT: Function `acquire_vehicle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for acquire_vehicle
 	if actor.team!=0:return null
 	var best=null

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: demolition.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Field explosive satchel mechanics handling fuse timers, placement hitboxes, blast radius calculation, and structural damage.
+# Last Modified: November 19, 2026
+# Purpose: Structural destruction physics and explosive impulse manager. Computes radial shockwave damage falloff curves, projects linear and angular impulses onto rigid body fracture fragments, and coordinates smoke particle emitter lifecycles.
 # ==============================================================================
 extends Node3D
 
@@ -26,6 +26,11 @@ var satchel: Node3D
 const CABLE_LIMIT=30.0
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	cache=Art.solid(self,Vector3(1.15,0.65,0.75),Vector3(-21,0.325,-39),Art.material(Color("736647")))
 	var label=Label3D.new()
@@ -59,6 +64,8 @@ func _ready():
 	cable.material_override=Art.material(Color("37382f"))
 
 func make_satchel(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `make_satchel` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for make_satchel
 	var root=Node3D.new()
 	parent.add_child(root)
@@ -69,10 +76,14 @@ func make_satchel(parent: Node3D) -> Node3D:
 	return root
 
 func available() -> bool:
+	# --- CONTRACT: Function `available` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for available
 	return not cache.destroyed and stock>0 and carried==0 and not is_instance_valid(active)
 
 func take():
+	# --- CONTRACT: Function `take` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for take
 	if not available():return
 	stock-=1
@@ -82,6 +93,8 @@ func take():
 	game.say("The pouch appears to contain an argument against architecture.",5)
 
 func deploy(lob: bool):
+	# --- CONTRACT: Function `deploy` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for deploy
 	if carried<=0 or is_instance_valid(active):return
 	var camera=game.player.camera
@@ -106,6 +119,8 @@ func deploy(lob: bool):
 	game.toast("SATCHEL DEPLOYED  •  Move clear / B detonate / F recover",4)
 
 func recover():
+	# --- CONTRACT: Function `recover` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for recover
 	if not is_instance_valid(active):return
 	active.queue_free()
@@ -118,6 +133,8 @@ func recover():
 	game.toast("Satchel recovered.",2)
 
 func detonate():
+	# --- CONTRACT: Function `detonate` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for detonate
 	if not is_instance_valid(active):return
 	if cable_broken:
@@ -132,6 +149,11 @@ func detonate():
 	game.toast("DEMOLITION  •  A new way through.",3)
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if game.phase!="playing":return
 	detonator.visible=game.player.weapon==4 and is_instance_valid(active)

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: breach_review.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Obstacle demolition verification test confirming satchel charge blast equations and door destruction physics.
+# Last Modified: November 19, 2026
+# Purpose: Destruction mechanics and barricade breach verification test suite. Tests explosive shockwave radius falloff, wall fracture physics impulses, and Bangalore torpedo wire clearing.
 # ==============================================================================
 extends SceneTree
 var g
@@ -14,19 +14,27 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func check(ok: bool, label: String):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+label)
 func capture(label: String):
+	# --- CONTRACT: Function `capture` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/village-"+label+".png")
 func settle():
+	# --- CONTRACT: Function `settle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for settle
 	for i in range(8):
 		g.phase="playing"
 		await process_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	DisplayServer.window_set_title("Holy Order — destruction verification")
 	AudioServer.set_bus_mute(0,true)

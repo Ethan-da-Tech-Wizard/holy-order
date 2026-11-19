@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: interface.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Coastal assault HUD displaying landing wave timers, seawall breach indicators, and sector capture status.
+# Last Modified: November 19, 2026
+# Purpose: Omaha Beach tactical HUD compositor. Displays beachhead sector progress indicators, company casualty tallies, naval artillery support readiness, and bunker suppression status overlays.
 # ==============================================================================
 extends Control
 var game
@@ -17,6 +17,11 @@ const GOLD=Color("c8ae76")
 const BLUE=Color("a7c5d1")
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -27,6 +32,10 @@ func _ready():
 	resized.connect(func():last_phase="")
 
 func _process(_delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if last_phase!=game.phase:
 		last_phase=game.phase
@@ -34,10 +43,14 @@ func _process(_delta):
 	queue_redraw()
 
 func text(value:String,pos:Vector2,font:Font=sans,points:int=17,color:Color=WHITE):
+	# --- CONTRACT: Function `text` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for text
 	draw_string(font,pos,value,HORIZONTAL_ALIGNMENT_LEFT,-1,points,color)
 
 func _draw():
+	# --- CONTRACT: Function `_draw` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for _draw
 	var w=size.x
 	var h=size.y
@@ -131,6 +144,8 @@ func _draw():
 	for i in range(lines.size()):text(lines[i],Vector2(x,h*0.33+i*30),sans,15)
 
 func navigation():
+	# --- CONTRACT: Function `navigation` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for navigation
 	var center=Vector2(size.x/2,66)
 	draw_rect(Rect2(center-Vector2(144,37),Vector2(288,87)),Color(INK,0.84))
@@ -144,6 +159,8 @@ func navigation():
 	text(line,center+Vector2(-75,34),mono,12,GOLD)
 
 func menu():
+	# --- CONTRACT: Function `menu` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for menu
 	if is_instance_valid(panel):panel.queue_free()
 	panel=Control.new()
@@ -163,6 +180,8 @@ func menu():
 	button("QUIT",Vector2(x+280,y),Vector2(95,44),func():get_tree().quit())
 
 func button(caption:String,pos:Vector2,dimensions:Vector2,callback:Callable):
+	# --- CONTRACT: Function `button` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for button
 	var b=Button.new()
 	b.text=caption

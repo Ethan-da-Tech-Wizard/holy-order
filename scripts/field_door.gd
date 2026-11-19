@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: field_door.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Interactive door and barricade state machine managing rotation physics, breach thresholds, and navigation obstruction.
+# Last Modified: November 19, 2026
+# Purpose: Kinematic portal controller for field and building doors. Interpolates hinge rotation quaternions, toggles physics collision masks upon state changes, synchronizes audio feedback, and binds player interaction raycasts.
 # ==============================================================================
 extends Node3D
 
@@ -14,6 +14,11 @@ var base_angle: float=0
 var width: float=1.72
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("field_door")
 	base_angle=rotation.y
@@ -26,10 +31,14 @@ func _ready():
 	)
 
 func available() -> bool:
+	# --- CONTRACT: Function `available` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for available
 	return is_instance_valid(leaf) and not leaf.destroyed
 
 func use():
+	# --- CONTRACT: Function `use` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for use
 	if moving or not available():return
 	opened=not opened
@@ -43,5 +52,7 @@ func use():
 	)
 
 func interaction_position() -> Vector3:
+	# --- CONTRACT: Function `interaction_position` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for interaction_position
 	return to_global(Vector3(width/2,1.0,0))

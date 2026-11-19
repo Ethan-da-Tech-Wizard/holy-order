@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: ai_simulation.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Automated headless benchmark evaluating AI decision tree performance, perception latency, and pathfinding costs.
+# Last Modified: November 19, 2026
+# Purpose: Headless integration test suite verifying enemy and friendly squad AI state machines, line-of-sight raycasting latency, cover selection heuristics, and pathfinding stability under stress.
 # ==============================================================================
 extends SceneTree
 var g
@@ -12,6 +12,8 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	g=load("res://scenes/main.tscn").instantiate()
 	root.add_child(g)

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: omaha_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Integration test suite verifying Omaha landing sequence, boat ramp physics, and bunker elimination.
+# Last Modified: November 19, 2026
+# Purpose: Core mechanics test suite for Omaha Beach. Validates water drag resistance, Higgins boat landing ramp lowering, Bangalore torpedo detonation, and bunker capture logic.
 # ==============================================================================
 extends SceneTree
 const Armor=preload("res://scripts/omaha/armor.gd")
@@ -11,6 +11,8 @@ var checks:Array=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
@@ -18,6 +20,8 @@ func ticks(n:int):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)

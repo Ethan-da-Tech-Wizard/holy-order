@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: field_navigation.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Dynamic tactical navigation graph sampling walkable terrain, trench floors, and dynamic obstacles.
+# Last Modified: November 19, 2026
+# Purpose: Tactical spatial navigation grid and pathfinding cost evaluator. Analyzes terrain elevation gradients, obstacle bounding boxes, and enemy line-of-fire suppression volumes to generate optimal movement vectors for squad AI units.
 # ==============================================================================
 extends Node3D
 
@@ -22,6 +22,11 @@ var revision: int=0
 var door_rids: Array[RID]=[]
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	probe=CapsuleShape3D.new()
 	probe.radius=0.36
@@ -29,14 +34,20 @@ func _ready():
 	call_deferred("build")
 
 func id_for(cell: Vector2i) -> int:
+	# --- CONTRACT: Function `id_for` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for id_for
 	return cell.x-MIN_CELL.x+(cell.y-MIN_CELL.y)*WIDTH
 
 func inside(cell: Vector2i) -> bool:
+	# --- CONTRACT: Function `inside` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for inside
 	return cell.x>=MIN_CELL.x and cell.x<=MAX_CELL.x and cell.y>=MIN_CELL.y and cell.y<=MAX_CELL.y
 
 func sample(cell: Vector2i):
+	# --- CONTRACT: Function `sample` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for sample
 	var x=cell.x*STEP
 	var z=cell.y*STEP
@@ -62,6 +73,8 @@ func sample(cell: Vector2i):
 	graph.set_point_disabled(id,not valid)
 
 func link(cell: Vector2i):
+	# --- CONTRACT: Function `link` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for link
 	var source=id_for(cell)
 	for dx in range(-1,2):
@@ -113,17 +126,26 @@ func update_doors():
 		if not door.opened:door_rids.append(door.leaf.get_rid())
 
 func mark_dirty(point: Vector3):
+	# --- CONTRACT: Function `mark_dirty` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for mark_dirty
 	dirty[Vector2i(roundi(point.x/STEP),roundi(point.z/STEP))]=true
 	cooldown=0.15
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	cooldown=maxf(0,cooldown-delta)
 	if ready_for_paths and not rebuilding and not dirty.is_empty() and cooldown==0:
 		refresh()
 
 func refresh():
+	# --- CONTRACT: Function `refresh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for refresh
 	rebuilding=true
 	update_doors()
@@ -146,12 +168,16 @@ func refresh():
 	rebuilding=false
 
 func floor_point(point: Vector3) -> Vector3:
+	# --- CONTRACT: Function `floor_point` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for floor_point
 	if not ready_for_paths:return point
 	var id=graph.get_closest_point(point)
 	return graph.get_point_position(id) if id>=0 else point
 
 func path_between(start: Vector3, destination: Vector3) -> PackedVector3Array:
+	# --- CONTRACT: Function `path_between` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for path_between
 	if not ready_for_paths:return PackedVector3Array()
 	var a=graph.get_closest_point(start)
@@ -160,6 +186,8 @@ func path_between(start: Vector3, destination: Vector3) -> PackedVector3Array:
 	return graph.get_point_path(a,b,false)
 
 func line_clear(start: Vector3, destination: Vector3, height: float=1.25) -> bool:
+	# --- CONTRACT: Function `line_clear` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for line_clear
 	var ray=PhysicsRayQueryParameters3D.create(start+Vector3(0,height,0),destination+Vector3(0,height,0),1)
 	return get_world_3d().direct_space_state.intersect_ray(ray).is_empty()

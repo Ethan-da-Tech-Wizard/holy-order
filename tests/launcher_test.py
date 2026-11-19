@@ -1,9 +1,8 @@
 # ==============================================================================
 # Program: launcher_test.py
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Unit test suite for Holy Order launcher. Verifies menu routing,
-#          single-instance lock arbitration, and window focus fallbacks.
+# Last Modified: November 19, 2026
+# Purpose: Unit test suite for the Holy Order launcher daemon. Verifies command-line argument routing, single-instance file lock arbitration, Hyprland window focus dispatches, and mock asset directory tree validation.
 # ==============================================================================
 """Check menu routing and cross-mission locking without opening a desktop window."""
 import fcntl

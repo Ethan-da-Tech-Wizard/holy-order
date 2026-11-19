@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: tactics.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Tactical decision engine computing squad flanking vectors, suppressive fire allocations, and retreat waypoints.
+# Last Modified: November 19, 2026
+# Purpose: Ardennes tactical AI coordinator and decision engine. Evaluates squad flanking vectors, suppressive crossfire sectors, bounding overwatch routines, and retreat thresholds based on casualties.
 # ==============================================================================
 extends RefCounted
 var book:Dictionary
@@ -27,12 +27,16 @@ func initialize(game):
 		{"side":1,"name":"RIGHT","squads":[4,5,6,7],"leader":null,"route":[7,5,3,1],"step":0,"area":7}]
 
 func area_alive(game,area:int)->bool:
+	# --- CONTRACT: Function `area_alive` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for area_alive
 	for actor in game.squads[9+area].members:
 		if actor.alive:return true
 	return false
 
 func assign_dismounted(game):
+	# --- CONTRACT: Function `assign_dismounted` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for assign_dismounted
 	var fresh:Array=[]
 	var left=0
@@ -122,6 +126,8 @@ func update(game):
 			sq.objective=game.world.on_ground(anchor-approach*book.plans[plan].approach_distance+flank)
 
 func formation_goal(game,actor)->Vector3:
+	# --- CONTRACT: Function `formation_goal` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for formation_goal
 	var sq=game.squads[actor.squad]
 	var goal:Vector3=sq.objective
@@ -136,6 +142,8 @@ func formation_goal(game,actor)->Vector3:
 	return game.world.on_ground(goal+right*(slot%3-1)*book.spacing.column-toward.normalized()*float(slot/3)*book.spacing.row)
 
 func active_areas(game)->Array:
+	# --- CONTRACT: Function `active_areas` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for active_areas
 	var result:Array=[]
 	for group in groups:

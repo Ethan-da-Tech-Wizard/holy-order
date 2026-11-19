@@ -1,16 +1,20 @@
 # ==============================================================================
 # Program: graphics.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Rendering settings manager controlling dynamic resolution scaling, shadow cascaded maps, and post-processing quality.
+# Last Modified: November 19, 2026
+# Purpose: Rendering pipeline quality and visual configuration controller. Dynamically adjusts MSAA antialiasing, screen-space ambient occlusion (SSAO), directional shadow map cascade splits, and Level-of-Detail (LOD) draw distances.
 # ==============================================================================
 extends RefCounted
 # Shared by all three missions. The 3D scene alone is scaled; text stays sharp.
 const NAMES=["LOW / MAX FPS","STANDARD","HIGH"]
 static func quality(tree:SceneTree)->int:
+	# --- CONTRACT: Function `quality` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	return int(tree.get_meta("graphics_quality",0))
 
 static func apply(game):
+	# --- CONTRACT: Function `apply` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var q=quality(game.get_tree())
 	# The mass landing uses a lighter step in Low; camera and models interpolate.
 	Engine.physics_ticks_per_second=20 if q==0 and game.get("boats")!=null else 30
@@ -38,6 +42,8 @@ static func apply(game):
 	game.reset_physics_interpolation()
 
 static func install(game):
+	# --- CONTRACT: Function `install` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	Engine.max_fps=60
 	apply(game)
 	var overlay=load("res://scripts/performance_overlay.gd").new()
@@ -45,6 +51,8 @@ static func install(game):
 	game.add_child(overlay)
 
 static func cycle(game):
+	# --- CONTRACT: Function `cycle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var q=(quality(game.get_tree())+1)%NAMES.size()
 	game.get_tree().set_meta("graphics_quality",q)
 	apply(game)
@@ -53,5 +61,7 @@ static func cycle(game):
 	game.toast("GRAPHICS: "+NAMES[q],3)
 
 static func menu(game):
+	# --- CONTRACT: Function `menu` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
 	game.get_tree().change_scene_to_file("res://scenes/menu.tscn")

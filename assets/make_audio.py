@@ -1,9 +1,8 @@
 # ==============================================================================
 # Program: make_audio.py
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Procedural audio synthesis utility generating original WAV sound effects
-#          using mathematical waveforms, frequency modulations, and envelope curves.
+# Last Modified: November 19, 2026
+# Purpose: Procedural sound synthesis engine for Holy Order. Implements mathematical waveform generators, exponential decay envelopes, frequency modulation, white noise shaping, and 16-bit mono 22.05 kHz PCM byte quantization for gunfire, ricochets, explosions, footsteps, and dynamic wind soundscapes.
 # ==============================================================================
 """Generate original sound effects; no sampled or licensed game audio."""
 from pathlib import Path

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: art.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Procedural mesh and material generation for period structures, fortifications, props, and terrain assets.
+# Last Modified: November 19, 2026
+# Purpose: Runtime procedural mesh and material construction utility. Instantiates 3D box meshes, cylinder colliders, standard PBR spatial materials, and billboarded particle textures on the fly to eliminate runtime asset streaming latency.
 # ==============================================================================
 extends RefCounted
 
@@ -12,6 +12,8 @@ static var materials: Dictionary = {}
 static var bevel_meshes: Dictionary = {}
 
 static func material(color: Color, metal: float = 0.0, rough: float = 0.85) -> StandardMaterial3D:
+	# --- CONTRACT: Function `material` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var key = str(color) + str(metal) + str(rough)
 	if materials.has(key):
 		return materials[key]
@@ -23,6 +25,8 @@ static func material(color: Color, metal: float = 0.0, rough: float = 0.85) -> S
 	return m
 
 static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var obj = MeshInstance3D.new()
 	obj.mesh = shape
 	obj.material_override = mat
@@ -31,11 +35,15 @@ static func mesh(parent: Node3D, shape: Mesh, pos: Vector3, mat: Material) -> Me
 	return obj
 
 static func box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `box` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var b = BoxMesh.new()
 	b.size = size
 	return mesh(parent, b, pos, mat)
 
 static func beveled_box(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, bevel: float = 0.003) -> MeshInstance3D:
+	# --- CONTRACT: Function `beveled_box` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var key = str(size)+str(bevel)
 	if not bevel_meshes.has(key):
 		var source = BoxMesh.new()
@@ -61,6 +69,8 @@ static func beveled_box(parent: Node3D, size: Vector3, pos: Vector3, mat: Materi
 	return mesh(parent,bevel_meshes[key],pos,mat)
 
 static func cylinder(parent: Node3D, radius: float, height: float, pos: Vector3, mat: Material, top: float = -1.0, sides: int = 20) -> MeshInstance3D:
+	# --- CONTRACT: Function `cylinder` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var c = CylinderMesh.new()
 	c.bottom_radius = radius
 	c.top_radius = radius if top < 0 else top
@@ -69,6 +79,8 @@ static func cylinder(parent: Node3D, radius: float, height: float, pos: Vector3,
 	return mesh(parent, c, pos, mat)
 
 static func sphere(parent: Node3D, radius: float, pos: Vector3, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `sphere` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var s = SphereMesh.new()
 	s.radius = radius
 	s.height = radius * 2.0
@@ -77,6 +89,8 @@ static func sphere(parent: Node3D, radius: float, pos: Vector3, mat: Material) -
 	return mesh(parent, s, pos, mat)
 
 static func solid(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, angle: float = 0.0, kind: String = "wood") -> StaticBody3D:
+	# --- CONTRACT: Function `solid` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var body = Breakable.new()
 	body.material_kind=kind
 	body.position = pos
@@ -93,6 +107,8 @@ static func solid(parent: Node3D, size: Vector3, pos: Vector3, mat: Material, an
 	return body
 
 static func segment(parent: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> MeshInstance3D:
+	# --- CONTRACT: Function `segment` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var c = cylinder(parent, radius, a.distance_to(b), (a + b) * 0.5, mat)
 	var axis = (b - a).normalized()
 	if absf(axis.dot(Vector3.UP)) < 0.999:
@@ -100,9 +116,13 @@ static func segment(parent: Node3D, a: Vector3, b: Vector3, radius: float, mat: 
 	return c
 
 static func rifle(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `rifle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	return Carcano.build(parent)
 
 static func sword(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `sword` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var steel = material(Color("b7c1c0"), 0.8, 0.24)
@@ -118,6 +138,8 @@ static func sword(parent: Node3D) -> Node3D:
 	return root
 
 static func shovel(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `shovel` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root=Node3D.new()
 	parent.add_child(root)
 	var wood=material(Color("766044"),0,0.68)
@@ -129,6 +151,8 @@ static func shovel(parent: Node3D) -> Node3D:
 	return root
 
 static func shield(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `shield` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var outline = PackedVector2Array([Vector2(-0.32, 0.4), Vector2(0.32, 0.4), Vector2(0.34, -0.12), Vector2(0, -0.57), Vector2(-0.34, -0.12)])
@@ -152,6 +176,8 @@ static func shield(parent: Node3D) -> Node3D:
 	return root
 
 static func gauntlet(parent: Node3D, pos: Vector3, angle: Vector3) -> Node3D:
+	# --- CONTRACT: Function `gauntlet` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	root.position = pos
@@ -169,6 +195,8 @@ static func gauntlet(parent: Node3D, pos: Vector3, angle: Vector3) -> Node3D:
 	return root
 
 static func knight(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `knight` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var mail = material(Color("414a4a"), 0.55, 0.54)
@@ -211,6 +239,8 @@ static func knight(parent: Node3D) -> Node3D:
 	return root
 
 static func soldier(parent: Node3D, british: bool = false) -> Dictionary:
+	# --- CONTRACT: Function `soldier` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var cloth = material(Color("9b8e65") if british else Color("8a815b"))
@@ -259,6 +289,8 @@ static func soldier(parent: Node3D, british: bool = false) -> Dictionary:
 	return {"root": root, "body": body, "legs": legs, "gun": gun}
 
 static func teacup(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `teacup` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var enamel = material(Color("cbcdbd"),0.3,0.32)
@@ -280,6 +312,8 @@ static func teacup(parent: Node3D) -> Node3D:
 	return root
 
 static func patrol_truck(parent: Node3D) -> Node3D:
+	# --- CONTRACT: Function `patrol_truck` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root = Node3D.new()
 	parent.add_child(root)
 	var paint = material(Color("a39265"),0.25,0.65)

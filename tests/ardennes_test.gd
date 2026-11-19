@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: ardennes_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: End-to-end integration test executing automated playthrough slice of the Ardennes campaign mission.
+# Last Modified: November 19, 2026
+# Purpose: Core unit test harness for Ardennes combat mechanics. Verifies bullet damage falloff, cold weather stamina penalties, truck physics collision, and squad morale transitions.
 # ==============================================================================
 extends SceneTree
 var g
@@ -14,16 +14,22 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func check(ok:bool,label:String):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+label)
 func make_game():
+	# --- CONTRACT: Function `make_game` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for make_game
 	g=load("res://scenes/ardennes.tscn").instantiate()
 	root.add_child(g)
 	Engine.max_fps=0
 	await ticks(3)
 func clean():
+	# --- CONTRACT: Function `clean` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for clean
 	g.phase="title"
 	for i in range(1200):
@@ -32,6 +38,8 @@ func clean():
 	g.queue_free()
 	await ticks(4)
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441223)

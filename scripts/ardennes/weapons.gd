@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: weapons.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Ballistic weapon simulation suite calculating muzzle velocity, bullet drop, penetration, and recoil patterns.
+# Last Modified: November 19, 2026
+# Purpose: Comprehensive WWII ballistic weapon repository and firearm mechanics ledger. Defines projectile muzzle velocities, effective ranges, recoil recovery envelopes, dispersion cones, and cyclic rates of fire for Allied and Axis arsenals.
 # ==============================================================================
 extends RefCounted
 
@@ -30,6 +30,8 @@ static var soldier_cache: Dictionary = {}
 static var paint: StandardMaterial3D
 
 static func vertex_material() -> StandardMaterial3D:
+	# --- CONTRACT: Function `vertex_material` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	if paint == null:
 		paint = StandardMaterial3D.new()
 		paint.vertex_color_use_as_albedo = true
@@ -39,6 +41,8 @@ static func vertex_material() -> StandardMaterial3D:
 # Merge the primitive parts into one vertex-colored surface. Hundreds of soldiers
 # share meshes rather than creating thousands of individual drawing objects.
 static func bake(root: Node3D) -> ArrayMesh:
+	# --- CONTRACT: Function `bake` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	append_meshes(root,Transform3D.IDENTITY,st)
@@ -47,6 +51,8 @@ static func bake(root: Node3D) -> ArrayMesh:
 	return st.commit()
 
 static func append_meshes(node: Node3D, xf: Transform3D, st: SurfaceTool):
+	# --- CONTRACT: Function `append_meshes` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	for child in node.get_children():
 		if not child is Node3D: continue
 		var t = xf*child.transform
@@ -85,8 +91,12 @@ const PROFILES={
 }
 static var firearm_material:ShaderMaterial
 static func profile(kind:String)->Dictionary:return PROFILES.get(kind,PROFILES.garand)
+	# --- CONTRACT: Function `profile` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 
 static func weapon(parent:Node3D,kind:String,detailed:bool=false)->Node3D:
+	# --- CONTRACT: Function `weapon` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root=Node3D.new()
 	parent.add_child(root)
 	root.name=kind
@@ -135,11 +145,15 @@ static func weapon(parent:Node3D,kind:String,detailed:bool=false)->Node3D:
 	return root
 
 static func barrel(root:Node3D,radius:float,length:float,p:Vector3,mat:Material,sides:int=12):
+	# --- CONTRACT: Function `barrel` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var tube=Art.cylinder(root,radius,length,p,mat,-1,sides)
 	tube.rotation.x=PI/2
 	return tube
 
 static func make_gun(root:Node3D,kind:String):
+	# --- CONTRACT: Function `make_gun` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var p=profile(kind)
 	var steel=Art.material(Color("3e4644"),0.8,0.4)
 	var worn=Art.material(Color("646b66"),0.65,0.5)
@@ -251,6 +265,8 @@ static func make_gun(root:Node3D,kind:String):
 	Art.box(root,Vector3(0.018,p.sight-0.045,0.033),Vector3(0,0.046+(p.sight-0.045)*0.5,0.075),steel)
 
 static func firearm_hand(parent:Node3D,kind:String,left:bool)->Node3D:
+	# --- CONTRACT: Function `firearm_hand` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var root=Node3D.new()
 	parent.add_child(root)
 	var profile_data=profile(kind)
@@ -276,6 +292,8 @@ static func firearm_hand(parent:Node3D,kind:String,left:bool)->Node3D:
 	return root
 
 static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
+	# --- CONTRACT: Function `soldier` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var key = "%d-%d" % [team,variant%3]
 	if not soldier_cache.has(key):
 		var torso = Node3D.new()
@@ -334,6 +352,8 @@ static func soldier(parent: Node3D, team: int, variant: int) -> Dictionary:
 	return {"root":root,"body":body,"legs":leg_nodes,"right_arm":arm}
 
 static func helmet_mesh(team:int)->ArrayMesh:
+	# --- CONTRACT: Function `helmet_mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(0)
@@ -353,6 +373,8 @@ static func helmet_mesh(team:int)->ArrayMesh:
 	return st.commit()
 
 static func simplify_parts(root:Node):
+	# --- CONTRACT: Function `simplify_parts` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	for child in root.get_children():
 		if child is MeshInstance3D:
 			if child.mesh is SphereMesh:

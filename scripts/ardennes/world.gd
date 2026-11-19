@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: world.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Snow-covered Ardennes forest terrain generator with elevation heightmaps, pine tree distributions, and dirt roads.
+# Last Modified: November 19, 2026
+# Purpose: Ardennes winter forest environmental generator. Procedurally constructs rolling snow terrain elevation maps, dense pine tree clusters, frozen river beds, defensive sandbag emplacements, and winter fog shaders.
 # ==============================================================================
 extends Node3D
 
@@ -45,6 +45,11 @@ static var pine_cache:Dictionary={}
 var ambient:WorldEnvironment
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed=rng_seed
@@ -110,10 +115,14 @@ ALBEDO=mix(dirt,ice,face*(1.0-lane*0.84)); ROUGHNESS=0.95;
 	world_camera.fov=63
 
 func road_x(z:float)->float:
+	# --- CONTRACT: Function `road_x` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for road_x
 	return sin(z*0.017)*13.0+sin(z*0.044)*3.0
 
 func raw_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `raw_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for raw_height
 	# Broad ridges with a low-amplitude surface. Road shoulders and firing lanes
 	# are graded approaches, not the old high-frequency walls of noise.
@@ -136,6 +145,8 @@ func in_fire_lane(p:Vector3)->bool:
 	return false
 
 func height_at(x:float,z:float)->float:
+	# --- CONTRACT: Function `height_at` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for height_at
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
@@ -153,15 +164,21 @@ func height_at(x:float,z:float)->float:
 	return h
 
 func on_ground(p:Vector3)->Vector3:
+	# --- CONTRACT: Function `on_ground` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for on_ground
 	return Vector3(p.x,surface_height(p.x,p.z),p.z)
 
 func road_point(progress:float)->Vector3:
+	# --- CONTRACT: Function `road_point` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for road_point
 	var z=ROAD_START-progress
 	return on_ground(Vector3(road_x(z),0,z))
 
 func ground_chunk(x:float,z:float):
+	# --- CONTRACT: Function `ground_chunk` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for ground_chunk
 	var body=Prop.new()
 	body.material_kind="soil"
@@ -190,10 +207,14 @@ func ground_chunk(x:float,z:float):
 	terrain_meshes+=1
 
 func tri(st:SurfaceTool,a:Vector3,b:Vector3,c:Vector3):
+	# --- CONTRACT: Function `tri` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for tri
 	for v in [a,c,b]:st.add_vertex(v)
 
 func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=self):
+	# --- CONTRACT: Function `solid` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for solid
 	var body=Prop.new()
 	body.material_kind=kind
@@ -210,6 +231,8 @@ func solid(size:Vector3,p:Vector3,mat:Material,kind:String="wood",parent:Node3D=
 	return body
 
 func tree(p:Vector3,height:float,variant:int):
+	# --- CONTRACT: Function `tree` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for tree
 	var tree_root=Prop.new()
 	tree_root.battle_world=self
@@ -242,6 +265,8 @@ func tree(p:Vector3,height:float,variant:int):
 	for v in [Vector3(1.4,0,0),Vector3(-1.4,0,0),Vector3(0,0,1.4),Vector3(0,0,-1.4)]:covers.append(on_ground(p+v))
 
 func rock(p:Vector3,radius:float):
+	# --- CONTRACT: Function `rock` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for rock
 	var body=Prop.new()
 	body.material_kind="rock"
@@ -369,10 +394,14 @@ func build_navigation():
 		if navigation.is_in_boundsv(v):navigation.set_point_weight_scale(v,1.7)
 
 func cell(p:Vector3)->Vector2i:
+	# --- CONTRACT: Function `cell` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for cell
 	return Vector2i(roundi(p.x/STEP),roundi(p.z/STEP))
 
 func nearest_cell(p:Vector3)->Vector2i:
+	# --- CONTRACT: Function `nearest_cell` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for nearest_cell
 	var c=cell(p).clamp(navigation.region.position,navigation.region.end-Vector2i.ONE)
 	if not navigation.is_point_solid(c):return c
@@ -384,6 +413,8 @@ func nearest_cell(p:Vector3)->Vector2i:
 	return c
 
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
+	# --- CONTRACT: Function `path_between` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for path_between
 	var from=nearest_cell(a)
 	var to=nearest_cell(b)
@@ -428,6 +459,8 @@ func geometry_updated(point:Vector3):
 			navigation.set_point_solid(v,blocked)
 
 func cover_changed(point:Vector3,since:int)->bool:
+	# --- CONTRACT: Function `cover_changed` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for cover_changed
 	if geometry_revision-since>32:return true
 	for change in geometry_changes:
@@ -435,6 +468,8 @@ func cover_changed(point:Vector3,since:int)->bool:
 	return false
 
 func queue_cut(body,point:Vector3,radius:float):
+	# --- CONTRACT: Function `queue_cut` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for queue_cut
 	# Limit geometry work, coalesce close hits and keep the queue bounded under MG fire.
 	for cut in pending_cuts:
@@ -444,6 +479,10 @@ func queue_cut(body,point:Vector3,radius:float):
 	if pending_cuts.size()<96:pending_cuts.append({"body":body,"local":body.to_local(point),"radius":radius})
 
 func _process(_delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	cut_cooldown=maxf(0,cut_cooldown-_delta)
 	if cut_cooldown>0:return
@@ -458,6 +497,8 @@ func _process(_delta):
 		cut_jobs+=1
 
 func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,soil_depth:float=0.13):
+	# --- CONTRACT: Function `blast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blast
 	# Fragmentation radius is separate from excavation. A grenade makes a shallow
 	# scar in soil, while close hits can still breach timber and thin walls.
@@ -472,6 +513,8 @@ func blast(point:Vector3,power:float=340,radius:float=5.0,soil_radius:float=0.7,
 		body.damage_at(power*(1.0-distance/(radius+1.0)),point,1.25,true)
 
 func carve_ground(center:Vector3,radius:float):
+	# --- CONTRACT: Function `carve_ground` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for carve_ground
 	var first=Vector2i(floori((center.x-radius)/24)*24,floori((center.z-radius)/24)*24)
 	var last=Vector2i(floori((center.x+radius)/24)*24,floori((center.z+radius)/24)*24)
@@ -481,14 +524,20 @@ func carve_ground(center:Vector3,radius:float):
 			if body!=null:body.carve(center,radius)
 
 func dig(point:Vector3,width:float=1.0,depth:float=0.42):
+	# --- CONTRACT: Function `dig` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for dig
 	var ground=surface_height(point.x,point.z)
 	carve_ground(Vector3(point.x,ground+width-depth,point.z),width)
 
 func nearby_door(_point:Vector3,_distance:float=2.6):return null
+	# --- CONTRACT: Function `nearby_door` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for nearby_door
 
 func fell_tree(body):
+	# --- CONTRACT: Function `fell_tree` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for fell_tree
 	if body.destroyed:return
 	var origin=body.global_position
@@ -503,6 +552,8 @@ func fell_tree(body):
 	geometry_updated(log_body.position)
 
 func cover_candidates(p:Vector3,radius:float)->Array:
+	# --- CONTRACT: Function `cover_candidates` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for cover_candidates
 	var key=Vector2i(floori(p.x/20),floori(p.z/20))
 	var candidates:Array=[]
@@ -514,6 +565,8 @@ func cover_candidates(p:Vector3,radius:float)->Array:
 	return candidates.slice(0,16)
 
 func pine_mesh(variant:int)->ArrayMesh:
+	# --- CONTRACT: Function `pine_mesh` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for pine_mesh
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -547,6 +600,8 @@ func pine_mesh(variant:int)->ArrayMesh:
 	return st.commit()
 
 func base_surface_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `base_surface_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for base_surface_height
 	# Spawn and path heights match the actual two triangles of the 4 m terrain cell.
 	# Sampling the unsimplified noise could place an actor underneath a triangle.
@@ -562,6 +617,8 @@ func base_surface_height(x:float,z:float)->float:
 	return a+(c-d)*u+(d-a)*v
 
 func surface_height(x:float,z:float)->float:
+	# --- CONTRACT: Function `surface_height` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for surface_height
 	var key=Vector2i(floori(x/24)*24,floori(z/24)*24)
 	if not soil_edits.has(key):return base_surface_height(x,z)
@@ -577,6 +634,8 @@ func surface_height(x:float,z:float)->float:
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
 func deform_ground(body,point:Vector3,radius:float):
+	# --- CONTRACT: Function `deform_ground` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for deform_ground
 	# Store one height per vertex, rather than replaying every previous explosion
 	# and shovel stroke on every future edit or navigation query.

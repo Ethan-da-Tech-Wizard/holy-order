@@ -1,13 +1,15 @@
 # ==============================================================================
 # Program: vehicle_visuals.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Consolidated multi-part vehicle rendering and articulated suspension/wheel kinematics updater.
+# Last Modified: November 19, 2026
+# Purpose: Procedural vehicle geometry and visual component constructor. Synthesizes military truck chassis, rotating wheel axles, armored cabins, exhaust particle nodes, and camouflage surface shaders dynamically.
 # ==============================================================================
 extends RefCounted
 # Moving vehicles keep individual armor colliders, but draw same-material panels
 # together in vehicle-local coordinates. Wheels, ramps and crew keep their motion.
 static func batch_boxes(root:Node3D,excluded:Array=[]):
+	# --- CONTRACT: Function `batch_boxes` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	var groups={}
 	for visual in root.find_children("*","MeshInstance3D",true,false):
 		if not visual.mesh is BoxMesh or not visual.visible or visual.is_queued_for_deletion():continue

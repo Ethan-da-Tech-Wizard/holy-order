@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: ardennes_ground_probe.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Terrain collision verification test validating ground contact normal calculations across irregular topography.
+# Last Modified: November 19, 2026
+# Purpose: Terrain collision probe and elevation verification harness. Samples procedural snow heightmap functions, slope gradient angles, and vehicle traversal bounds across the Ardennes map.
 # ==============================================================================
 extends SceneTree
 var g
@@ -12,6 +12,8 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/ardennes.tscn").instantiate()

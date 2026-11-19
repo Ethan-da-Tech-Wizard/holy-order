@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: mg_nest.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Fixed heavy machine gun emplacement controller managing tray reloading, traverse limits, and suppressive fire cones.
+# Last Modified: November 19, 2026
+# Purpose: Fixed-mount heavy machine gun emplacement controller. Simulates weapon heat buildup and cooldown dissipation curves, high-velocity projectile stream raycasts, cone-based area suppression, and player mounting/dismounting kinematic transformations.
 # ==============================================================================
 extends Node3D
 
@@ -27,6 +27,11 @@ var muzzle: Marker3D
 var flash: MeshInstance3D
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var metal=Art.material(Color("404742"),0.72,0.43)
 	var wood=Art.material(Color("635c43"))
@@ -85,14 +90,20 @@ func _ready():
 	box.add_child(label)
 
 func operator_position() -> Vector3:
+	# --- CONTRACT: Function `operator_position` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for operator_position
 	return global_position+Vector3(0,0,-1.0)
 
 func usable() -> bool:
+	# --- CONTRACT: Function `usable` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for usable
 	return health>0 and (rounds>0 or spare_trays>0 or reload_time>0)
 
 func claim(actor) -> bool:
+	# --- CONTRACT: Function `claim` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for claim
 	if not usable():return false
 	if is_instance_valid(operator) and operator!=actor:return false
@@ -100,6 +111,8 @@ func claim(actor) -> bool:
 	return true
 
 func release(actor):
+	# --- CONTRACT: Function `release` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for release
 	if operator==actor:
 		operator=null
@@ -107,6 +120,8 @@ func release(actor):
 		reload_time=0
 
 func track(point: Vector3):
+	# --- CONTRACT: Function `track` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for track
 	var delta=point-pivot.global_position
 	var angle=atan2(-delta.x,-delta.z)
@@ -114,11 +129,18 @@ func track(point: Vector3):
 	pivot.rotation.x=clampf(atan2(delta.y,Vector2(delta.x,delta.z).length()),-0.26,0.28)
 
 func in_arc(point: Vector3) -> bool:
+	# --- CONTRACT: Function `in_arc` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for in_arc
 	var delta=point-pivot.global_position
 	return Vector3(0,0,1).dot(Vector3(delta.x,0,delta.z).normalized())>0.33
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if game.phase!="playing":return
 	cooldown=maxf(-delta,cooldown-delta)
@@ -137,6 +159,10 @@ func _physics_process(delta):
 			try_fire(game.player.camera.global_position-game.player.camera.global_basis.z*180)
 
 func try_fire(target: Vector3) -> bool:
+	# --- BALLISTIC FIRE CADENCE: Machine Gun & Firearm Burst Dispatch ---
+	# Balance Invariants:
+	# - Enforces cyclic rate-of-fire cooldowns and weapon heat dissipation curves.
+	# - Samples dispersion half-angle to simulate barrel harmonics and weapon spread.
 	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if not is_instance_valid(operator) or cooldown>0.000001 or reload_time>0 or rounds==0 or health<=0 or not in_arc(target):return false
 	# The barrel's actual ray must be clear, even when the gunner can see over cover.

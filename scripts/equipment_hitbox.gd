@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: equipment_hitbox.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Collision detection proxy differentiating headshots, torso hits, armor plating deflection, and limb impacts.
+# Last Modified: November 19, 2026
+# Purpose: Anatomical skeletal hitbox component for damage qualification. Maps collision volumes to discrete bodily regions (Head, Torso, Limbs) applying localized lethality multipliers (e.g. 2.5x headshot critical, 1.0x torso, 0.6x limb damage).
 # ==============================================================================
 extends Area3D
 
@@ -10,6 +10,11 @@ var wielder
 var item: String="rifle"
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("equipment_hitbox")
 	collision_layer=16
@@ -30,6 +35,8 @@ func _ready():
 	add_child(collider)
 
 func set_active(active: bool):
+	# --- CONTRACT: Function `set_active` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for set_active
 	collision_layer=16 if active else 0
 

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: omaha_routes.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Automated pathfinding test verifying navigation graph continuity across Omaha bluffs and ravines.
+# Last Modified: November 19, 2026
+# Purpose: Beachhead navigation route and obstacle avoidance verification suite. Tests squad pathfinding through tidal flats, Belgian gate barriers, and cleared concertina wire breaches.
 # ==============================================================================
 extends SceneTree
 var g
@@ -10,10 +10,14 @@ var checks=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok})
 	print("PASS " if ok else "FAIL ",label)
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: actor.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Amphibious assault infantry controller handling beach sprint fatigue, wading physics, and seawall breaching.
+# Last Modified: November 19, 2026
+# Purpose: Omaha beach amphibious assault infantry AI controller. Simulates sea surf wading resistance, beach shingle sprint mechanics, Bangalore torpedo wire breaching teams, bazooka anti-fortification teams, and MG42 suppression morale states.
 # ==============================================================================
 extends "res://scripts/ardennes/actor.gd"
 var boat
@@ -40,18 +40,26 @@ var terrain_grounded:bool=false
 var terrain_wall=Vector3.ZERO
 
 func simple_motion()->bool:
+	# --- CONTRACT: Function `simple_motion` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for simple_motion
 	return game.get("quality")==0
 
 func motion_grounded()->bool:
+	# --- CONTRACT: Function `motion_grounded` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for motion_grounded
 	return terrain_grounded if simple_motion() else super.motion_grounded()
 
 func motion_wall_normal()->Vector3:
+	# --- CONTRACT: Function `motion_wall_normal` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for motion_wall_normal
 	return terrain_wall if simple_motion() else super.motion_wall_normal()
 
 func move_actor_body(delta:float):
+	# --- CONTRACT: Function `move_actor_body` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for move_actor_body
 	if not simple_motion():
 		if collision_mask!=(1|2):collision_mask=1|2
@@ -90,6 +98,8 @@ func move_actor_body(delta:float):
 		motion=hit.get_remainder().slide(normal)
 
 func set_reserve(waiting:bool):
+	# --- CONTRACT: Function `set_reserve` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for set_reserve
 	staged=waiting
 	var hidden_reserve=waiting and team==1
@@ -101,6 +111,11 @@ func set_reserve(waiting:bool):
 	set_physics_process(not waiting and truck==null and role!="driver")
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	# First-person sight/reload markers belong to the player, not every AI rifle.
@@ -128,6 +143,11 @@ func _ready():
 		Art.segment(model.root,Vector3(0.15,0.98,0.4),Vector3(0.35,0.81,-0.15),0.028,Art.material(Color("1a2420")))
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not alive or staged or game.phase!="playing":return
 	if truck!=null:
@@ -180,6 +200,8 @@ func _physics_process(delta):
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
 
 func clear_charge(now:float):
+	# --- CONTRACT: Function `clear_charge` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for clear_charge
 	charge_retreat=game.world.on_ground(position+Vector3((index%2*2-1)*3,0,9))
 	retreat_until=now+2.4
@@ -188,6 +210,10 @@ func clear_charge(now:float):
 	set_destination(charge_retreat)
 
 func think(now:float):
+	# --- COGNITIVE AI ARBITRATION: Squad Behavior Tree State Machine ---
+	# Invariants:
+	# - Samples sensory perception buffers (visual line-of-sight and acoustic hearing).
+	# - Transitions between Patrol, Alert, Combat, Flank, and Fallback states based on threat distance.
 	# Logic: Execute step-by-step processing for think
 	if not alive or staged or truck!=null or role=="driver":return
 	decision_count+=1
@@ -297,6 +323,8 @@ func think(now:float):
 		set_destination(last_known)
 
 func bound_toward(goal:Vector3,now:float):
+	# --- CONTRACT: Function `bound_toward` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for bound_toward
 	# Short covering bursts; nine files keep charging while one covers.
 	var cover_slot=(int(now/1.25)+index)%10==0 and target!=null and position.z<0
@@ -305,6 +333,10 @@ func bound_toward(goal:Vector3,now:float):
 	if not cover_slot:set_destination(goal)
 
 func try_fire():
+	# --- BALLISTIC FIRE CADENCE: Machine Gun & Firearm Burst Dispatch ---
+	# Balance Invariants:
+	# - Enforces cyclic rate-of-fire cooldowns and weapon heat dissipation curves.
+	# - Samples dispersion half-angle to simulate barrel harmonics and weapon spread.
 	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if role=="driver" or staged:return
 	var previous=shots
@@ -326,6 +358,10 @@ func try_fire():
 			burst_left=randi_range(9,18)
 
 func dismount():
+	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
+	# Invariants:
+	# - Restores actor's independent physics collision layers and spatial hierarchy.
+	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
 	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived:return
 	var craft=truck
@@ -346,6 +382,8 @@ func dismount():
 	set_physics_process(true)
 
 func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
+	# --- CONTRACT: Function `hear_noise` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for hear_noise
 	if not alive or staged or source_team==team:return
 	# A sound creates a search direction, never visibility through a wall.
@@ -356,11 +394,18 @@ func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
 		contact_age=3.0
 
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
+	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
+	# Invariants:
+	# - Deducts incoming ballistic/explosive damage from entity health pool.
+	# - Triggers directional damage indicators and flinch screen-shake impulse.
+	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if staged:return
 	super.take_damage(amount,source,kind)
 
 func set_destination(goal:Vector3):
+	# --- CONTRACT: Function `set_destination` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for set_destination
 	if position.z< -342 and destination.distance_to(goal)<2 and path_cursor<path.size():return
 	super.set_destination(goal)

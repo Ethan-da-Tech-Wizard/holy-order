@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: tank.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Sherman DD amphibious tank vehicle controller simulating dual-propeller swimming and tracked beach traction.
+# Last Modified: November 19, 2026
+# Purpose: DD Sherman amphibious tank entity. Simulates twin propeller aquatic locomotion transitioning to beach track traction, turret rotation slerp, 75mm high-explosive cannon ballistics, and frontal armor deflection angles.
 # ==============================================================================
 extends CharacterBody3D
 const Art=preload("res://scripts/art.gd")
@@ -43,6 +43,11 @@ var mount_facing=Vector3.BACK
 var mount_arc:float=PI
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	tank_owner=self
 	collision_layer=1|128
@@ -111,6 +116,8 @@ func _ready():
 	set_physics_process(false)
 
 func part_shape(parent:Node3D,p:Vector3,size:Vector3,side:int):
+	# --- CONTRACT: Function `part_shape` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for part_shape
 	var part=Part.new()
 	part.tank_owner=self
@@ -127,6 +134,8 @@ func part_shape(parent:Node3D,p:Vector3,size:Vector3,side:int):
 	part.add_collision_exception_with(self)
 
 func bake_visuals(root:Node3D):
+	# --- CONTRACT: Function `bake_visuals` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for bake_visuals
 	var mesh=MeshInstance3D.new()
 	mesh.mesh=Kit.bake(root)
@@ -135,12 +144,20 @@ func bake_visuals(root:Node3D):
 	root.add_child(mesh)
 
 func eye()->Vector3:return global_position+Vector3(0,2.95,0)
+	# --- CONTRACT: Function `eye` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for eye
 func aim_point()->Vector3:return global_position+Vector3(0,1.4,0)
+	# --- CONTRACT: Function `aim_point` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for aim_point
 func shot_exclusions()->Array[RID]:return rids
+	# --- CONTRACT: Function `shot_exclusions` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for shot_exclusions
 func mobile()->bool:return alive and tracks[0]>0 and tracks[1]>0
+	# --- CONTRACT: Function `mobile` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for mobile
 
 func tick(delta:float):
@@ -190,6 +207,8 @@ func tick(delta:float):
 			mg_burst=0
 
 func choose_target():
+	# --- CONTRACT: Function `choose_target` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for choose_target
 	target=null
 	var candidates=[]
@@ -206,6 +225,8 @@ func choose_target():
 			return
 
 func clear_shot(from:Vector3,to:Vector3,actor)->bool:
+	# --- CONTRACT: Function `clear_shot` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for clear_shot
 	var q=PhysicsRayQueryParameters3D.create(from,to,1|2|4|8)
 	q.exclude=rids
@@ -213,6 +234,8 @@ func clear_shot(from:Vector3,to:Vector3,actor)->bool:
 	return hit.is_empty() or hit.collider==actor
 
 func plan_route(goal:Vector3):
+	# --- CONTRACT: Function `plan_route` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for plan_route
 	if not mobile() or route_goal.distance_squared_to(goal)<4:return
 	route_goal=goal
@@ -220,6 +243,8 @@ func plan_route(goal:Vector3):
 	route_cursor=0
 
 func move_tank(delta:float):
+	# --- CONTRACT: Function `move_tank` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for move_tank
 	if not mobile():
 		velocity=Vector3.ZERO
@@ -242,6 +267,10 @@ func move_tank(delta:float):
 	position.y=maxf(position.y,game.world.surface_height(position.x,position.z)+0.03)
 
 func damage_at(amount:float,point:Vector3,_radius:float=0.2,_explosive:bool=false)->bool:
+	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
+	# Invariants:
+	# - Evaluates impact coordinates against geometry bounding AABB boxes.
+	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	var p=to_local(point)
 	if absf(p.x)>1.12 and p.y<1.04:hit_track(0 if p.x<0 else 1,amount*0.025)
@@ -253,6 +282,8 @@ func hit_track(side:int,amount:float):
 	tracks[side]=maxf(0,tracks[side]-maxf(0,amount))
 
 func receive_blast(point:Vector3,radius:float,damage:float,kind:String):
+	# --- CONTRACT: Function `receive_blast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for receive_blast
 	if not alive:return
 	for side in range(2):

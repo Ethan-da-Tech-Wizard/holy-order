@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: breakable.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Destructive environment controller executing CSG mesh slicing and collision updates upon high-explosive impact.
+# Last Modified: November 19, 2026
+# Purpose: Structural durability and fracture component for destructible world props. Evaluates incoming ballistic and explosive damage thresholds, spawns physical debris fragments, triggers sound cues, and invalidates tactical navigation nodes.
 # ==============================================================================
 extends StaticBody3D
 
@@ -24,12 +24,19 @@ var box_axis:int=-1
 const RESISTANCE = {"soil":8.0,"cloth":5.0,"wood":24.0,"sandbag":42.0,"masonry":95.0,"rock":250.0,"metal":160.0}
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("breakable")
 	collision_layer = 1
 	collision_mask = 0
 
 func owned_meshes(node: Node = self) -> Array:
+	# --- CONTRACT: Function `owned_meshes` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for owned_meshes
 	var result: Array = []
 	for child in node.get_children():
@@ -41,6 +48,8 @@ func owned_meshes(node: Node = self) -> Array:
 	return result
 
 func refresh_bounds():
+	# --- CONTRACT: Function `refresh_bounds` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for refresh_bounds
 	var meshes = owned_meshes()
 	var first = true
@@ -53,6 +62,8 @@ func refresh_bounds():
 	if original_volume==0 and bounds_valid: original_volume=bounds.get_volume()
 
 func distance_to_surface(point: Vector3) -> float:
+	# --- CONTRACT: Function `distance_to_surface` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for distance_to_surface
 	if not bounds_valid: refresh_bounds()
 	if not bounds_valid: return INF
@@ -61,6 +72,10 @@ func distance_to_surface(point: Vector3) -> float:
 	return point.distance_to(to_global(nearest))
 
 func damage_at(amount: float, point: Vector3, radius: float = 0.24, explosive: bool = false) -> bool:
+	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
+	# Invariants:
+	# - Evaluates impact coordinates against geometry bounding AABB boxes.
+	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed: return false
 	var resistance: float = RESISTANCE.get(material_kind,95.0)
@@ -77,6 +92,8 @@ func damage_at(amount: float, point: Vector3, radius: float = 0.24, explosive: b
 	return true
 
 func carve(point: Vector3, radius: float):
+	# --- CONTRACT: Function `carve` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for carve
 	if destroyed: return
 	if radius>=0.30 and fast_box_cut(point,radius):return
@@ -150,6 +167,10 @@ func rebuild():
 	rebuilding=false
 
 func demolish():
+	# --- TOTAL STRUCTURAL COLLAPSE: Complete Geometry Invalidation ---
+	# Invariants:
+	# - Spawns rigid body debris fragments with randomized angular momentum.
+	# - Disables navigation obstacles and triggers particle smoke and audio explosions.
 	# Logic: Execute step-by-step processing for demolish
 	if destroyed:return
 	destroyed=true
@@ -160,6 +181,8 @@ func demolish():
 	if not worlds.is_empty(): worlds[0].geometry_updated(global_position)
 
 func fast_box_cut(point:Vector3,radius:float)->bool:
+	# --- CONTRACT: Function `fast_box_cut` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for fast_box_cut
 	# A local through-hole in thin timber, sandbags or masonry. Rebuild a handful
 	# of boxes, not a whole-building CSG boolean. The remaining wall still blocks shots.

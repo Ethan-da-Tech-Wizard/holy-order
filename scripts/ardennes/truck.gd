@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: truck.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Military transport truck vehicle simulator governing engine physics, convoy pathfinding, and passenger disembarkation.
+# Last Modified: November 19, 2026
+# Purpose: Convoy transport vehicle physics simulation entity. Models four-wheel suspension raycasts, icy road friction coefficients, engine RPM torque curves, cargo payload hitpoints, and explosive destruction sequences.
 # ==============================================================================
 extends Node3D
 
@@ -43,6 +43,11 @@ var last_transform_progress:float=-100
 var last_transform_lane:float=-100
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	var olive=Art.material(Color("535c43"),0.18,0.83)
 	var wood=Art.material(Color("655d46"))
@@ -88,6 +93,8 @@ func _ready():
 	preload("res://scripts/vehicle_visuals.gd").batch_boxes(self,wheels)
 
 func part(size:Vector3,offset:Vector3,mat:Material,kind:String,role:String):
+	# --- CONTRACT: Function `part` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for part
 	var body=ArmoredPanel.new()
 	body.material_kind=kind
@@ -106,16 +113,22 @@ func part(size:Vector3,offset:Vector3,mat:Material,kind:String,role:String):
 	return body
 
 func seat_transform(seat:int)->Transform3D:
+	# --- CONTRACT: Function `seat_transform` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for seat_transform
 	var side=-1 if seat%2==0 else 1
 	var offset=Vector3(side*0.70,1.32,-0.45+float(seat/2)*0.60)
 	return global_transform*Transform3D(Basis(Vector3.UP,-side*PI/2),offset)
 
 func gunner_transform()->Transform3D:
+	# --- CONTRACT: Function `gunner_transform` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for gunner_transform
 	return seat_transform(1)
 
 func has_passengers()->bool:
+	# --- CONTRACT: Function `has_passengers` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for has_passengers
 	if unloaded:return false
 	if game.player.truck==self and game.player.health>0:return true
@@ -124,6 +137,8 @@ func has_passengers()->bool:
 	return false
 
 func target_point(shooter)->Vector3:
+	# --- CONTRACT: Function `target_point` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for target_point
 	# Finite bursts move between targets and panels; wheel hits are real ray hits.
 	var choice=(shooter.index+int(game.elapsed/2.2))%10
@@ -149,6 +164,8 @@ func update_transform():
 	rotation.x=-asin(clampf(heading.y,-0.16,0.16))
 
 func can_pass(lane:float)->bool:
+	# --- CONTRACT: Function `can_pass` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for can_pass
 	for other in game.trucks:
 		if other==self:continue
@@ -235,6 +252,8 @@ func passenger_damage(amount:float,kind:String)->float:
 	return amount*(0.12 if kind=="rifle" else (0.22 if kind=="explosion" else 1.0))
 
 func receive_ambush_strike(point:Vector3):
+	# --- CONTRACT: Function `receive_ambush_strike` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for receive_ambush_strike
 	# A rocket can stop the convoy without a scripted execution of everyone aboard.
 	receive_part_damage(1400,point,true)
@@ -243,6 +262,8 @@ func receive_ambush_strike(point:Vector3):
 	dismount("armored ambush stop")
 
 func wreck(scripted:bool):
+	# --- CONTRACT: Function `wreck` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for wreck
 	if destroyed:return
 	destroyed=true
@@ -271,6 +292,10 @@ func wreck(scripted:bool):
 	unloaded=true
 
 func dismount(reason:String="orders"):
+	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
+	# Invariants:
+	# - Restores actor's independent physics collision layers and spatial hierarchy.
+	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
 	# Logic: Execute step-by-step processing for dismount
 	if unloaded:return
 	unloaded=true

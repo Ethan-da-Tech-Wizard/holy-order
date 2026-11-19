@@ -1,7 +1,7 @@
 # ==============================================================================
 # Program: armor.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
+# Last Modified: November 19, 2026
 # Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for armor.gd.
 # ==============================================================================
 extends "res://scripts/ardennes/prop.gd"

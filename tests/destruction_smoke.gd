@@ -1,14 +1,16 @@
 # ==============================================================================
 # Program: destruction_smoke.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Particle and volumetric effect test verifying performance impact of explosive smoke and debris meshes.
+# Last Modified: November 19, 2026
+# Purpose: Smoke particle and visual effect longevity smoke test. Monitors GPU draw call spikes, particle emitter lifetime bounds, and memory leakage during intense demolition sequences.
 # ==============================================================================
 extends SceneTree
 const Art=preload("res://scripts/art.gd")
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	var world=Node3D.new()
 	root.add_child(world)

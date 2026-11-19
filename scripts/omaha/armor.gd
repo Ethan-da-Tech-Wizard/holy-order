@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: armor.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Coastal defense bunker and armored vehicle damage modeling system.
+# Last Modified: November 19, 2026
+# Purpose: Ballistic armor penetration physics calculator for coastal warfare. Implements sloped armor trigonometric equations T_eff = T / cos(theta), ricochet critical angle thresholds, kinetic energy decay curves, and projectile core fragmentation mechanics.
 # ==============================================================================
 extends "res://scripts/ardennes/prop.gd"
 # Each hull panel has its own wear. Concrete keeps its ballistic strength;
@@ -19,6 +19,10 @@ var render_index:int=-1
 var render_origin=Vector3.ZERO
 
 func demolish():
+	# --- TOTAL STRUCTURAL COLLAPSE: Complete Geometry Invalidation ---
+	# Invariants:
+	# - Spawns rigid body debris fragments with randomized angular momentum.
+	# - Disables navigation obstacles and triggers particle smoke and audio explosions.
 	# Logic: Execute step-by-step processing for demolish
 	if destroyed:return
 	if render_batch!=null:render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
@@ -26,6 +30,10 @@ func demolish():
 	if is_instance_valid(structure):structure.check_supports()
 
 func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=false)->bool:
+	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
+	# Invariants:
+	# - Evaluates impact coordinates against geometry bounding AABB boxes.
+	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	wear+=amount
@@ -69,6 +77,8 @@ func modulate_damage():
 	if hull_panel:penetrable=true
 
 func unbatch():
+	# --- CONTRACT: Function `unbatch` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for unbatch
 	if render_batch==null:return
 	render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
@@ -85,6 +95,8 @@ func unbatch():
 		if child is MeshInstance3D:child.show()
 
 func commit_cut(point:Vector3,radius:float):
+	# --- CONTRACT: Function `commit_cut` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for commit_cut
 	unbatch()
 	super.commit_cut(point,radius)

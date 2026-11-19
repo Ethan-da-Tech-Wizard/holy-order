@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: unified_test.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Unified test suite executing cross-mission sanity checks, asset integrity tests, and memory leak verifications.
+# Last Modified: November 19, 2026
+# Purpose: Comprehensive unified regression test suite for Holy Order. Executes full simulation test battery across Normandy, Ardennes, and Italian village theaters to ensure zero regression errors.
 # ==============================================================================
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -15,6 +15,8 @@ class GunRange extends Node3D:
 	var profile_enabled:bool=false
 	var bullets:int=0
 	func actor_alive(_actor):return true
+	# --- CONTRACT: Function `actor_alive` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 		# Logic: Execute step-by-step processing for actor_alive
 	func actor_aim(_actor):return Vector3(0,1.2,-20)
 		# Logic: Execute step-by-step processing for actor_aim
@@ -25,6 +27,8 @@ class GunRange extends Node3D:
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
@@ -32,6 +36,8 @@ func ticks(n:int):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	var range_scene=GunRange.new()

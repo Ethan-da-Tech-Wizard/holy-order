@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: weapon_review.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Ballistics regression test verifying muzzle velocities, recoil patterns, and penetration depths across all firearms.
+# Last Modified: November 19, 2026
+# Purpose: Ballistics and firearm balance review harness. Measures theoretical and simulated DPS, effective range envelopes, reload latency, and hit probability across all WWII firearm models.
 # ==============================================================================
 extends SceneTree
 
@@ -18,6 +18,8 @@ func _initialize():
 	call_deferred("run")
 
 func settle():
+	# --- CONTRACT: Function `settle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for settle
 	game.phase = "playing"
 	for i in range(100): game.player.update_view(1.0 / 60.0)
@@ -28,12 +30,16 @@ func settle():
 	await RenderingServer.frame_post_draw
 
 func snap(suffix: String):
+	# --- CONTRACT: Function `snap` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for snap
 	var path = "res://reviews/rifle-" + label + "-" + suffix + ".png"
 	review_viewport.get_texture().get_image().save_png(path)
 	print("WEAPON_CAPTURE ", path)
 
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	DisplayServer.window_set_title("Holy Order — weapon review")
 	AudioServer.set_bus_mute(0,true)

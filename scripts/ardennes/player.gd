@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: player.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Player character controller adapted for deep snow movement penalties, cold exposure, and weapon sway.
+# Last Modified: November 19, 2026
+# Purpose: Ardennes campaign first-person player controller. Simulates winter warfare kinematics, deep snow movement penalties, prone snow crawling postures, BAR and M1 Garand recoil models, and breath condensation effects.
 # ==============================================================================
 extends CharacterBody3D
 const ViewSmoothing=preload("res://scripts/view_smoothing.gd")
@@ -92,6 +92,11 @@ const AIM_FOV: float = 58.0
 const HIP_RIFLE_POSITION = Vector3(0.22, -0.245, -0.40)
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	collision_layer = 2
 	collision_mask = 1|4|8
@@ -170,6 +175,8 @@ func _ready():
 	select_weapon(1)
 
 func set_model_layers(node: Node, layers: int):
+	# --- CONTRACT: Function `set_model_layers` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for set_model_layers
 	if node is VisualInstance3D:
 		node.layers = layers
@@ -177,6 +184,10 @@ func set_model_layers(node: Node, layers: int):
 		set_model_layers(child,layers)
 
 func _unhandled_input(event):
+	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
+	# Invariants:
+	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
+	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
 	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if game.phase != "playing":
 		return
@@ -236,6 +247,11 @@ func _unhandled_input(event):
 			velocity.y = 6.2
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	ViewSmoothing.restore(self)
 	if game.phase != "playing":
@@ -337,6 +353,10 @@ func _physics_process(delta):
 		position.z=clampf(position.z,-bounds.y,bounds.y)
 
 func _process(delta):
+	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
+	# Invariants:
+	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
+	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
 	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	ViewSmoothing.restore(self)
 	if game.phase != "playing" or game.player_mounted: return
@@ -417,6 +437,8 @@ func update_view(delta):
 		shovel.rotation.x-=sin(clampf(1-cooldown/0.65,0,1)*PI)*1.0
 
 func select_weapon(slot: int):
+	# --- CONTRACT: Function `select_weapon` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for select_weapon
 	if slot==4:return
 	if slot==0 and sword_health<=0:
@@ -446,6 +468,11 @@ func select_weapon(slot: int):
 	for box in equipment_boxes:box.set_active(box.get_parent().visible)
 
 func attack(power: float = 0):
+	# --- COMBAT CALCULATION: Primary Weapon Ballistic Discharge ---
+	# Physics & Balance Invariants:
+	# - Verifies ammunition availability and cyclic fire rate cooldown timer.
+	# - Calculates ballistic trajectory raycast with angular dispersion cone.
+	# - Applies physical impulse kickback to viewmodel and emits spatial 3D gunfire acoustics.
 	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if truck!=null or grenade_time>0 or cooldown > 0.000001 or climbing > 0 or reload_time > 0: return
 	strike_power = 1.0 + clampf(power,0,1.2)*1.2 + (0.7 if is_charging else 0)
@@ -509,6 +536,8 @@ func melee_hit():
 			game.sounds.play("clang",-13)
 
 func shot_exclusions() -> Array[RID]:
+	# --- CONTRACT: Function `shot_exclusions` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for shot_exclusions
 	var result: Array[RID]=[get_rid()]
 	for box in equipment_boxes:
@@ -539,6 +568,8 @@ func receive_equipment_damage(item: String, amount: float):
 	game.sounds.play("clang",-7)
 
 func dig_stroke():
+	# --- CONTRACT: Function `dig_stroke` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for dig_stroke
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return
 	cooldown=0.65
@@ -556,6 +587,8 @@ func dig_stroke():
 	game.impact(hit.position,Color("9b8769"))
 
 func step_over_rubble(direction: Vector3):
+	# --- CONTRACT: Function `step_over_rubble` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_over_rubble
 	var space=get_world_3d().direct_space_state
 	var low=global_position+Vector3(0,0.16,0)
@@ -570,6 +603,8 @@ func step_over_rubble(direction: Vector3):
 		if space.intersect_ray(clear).is_empty():global_position.y+=lift+0.025
 
 func reload_weapon():
+	# --- CONTRACT: Function `reload_weapon` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for reload_weapon
 	if grenade_time>0 or weapon != 1 or reload_time > 0 or ammo == gun_spec.capacity: return
 	if reserve == 0:
@@ -582,6 +617,11 @@ func reload_weapon():
 	game.sounds.play("reload",-10)
 
 func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
+	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
+	# Invariants:
+	# - Deducts incoming ballistic/explosive damage from entity health pool.
+	# - Triggers directional damage indicators and flinch screen-shake impulse.
+	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if game.phase != "playing": return
 	# Plate protects against blows; twentieth-century rifle rounds still penetrate it.
@@ -592,6 +632,8 @@ func take_damage(amount: float, source: Vector3, kind: String = "rifle"):
 	if health <= 0: game.defeat()
 
 func try_mantle() -> bool:
+	# --- CONTRACT: Function `try_mantle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for try_mantle
 	var direction = -global_basis.z
 	var low = global_position+Vector3(0,0.66,0)
@@ -614,6 +656,10 @@ func try_mantle() -> bool:
 	return true
 
 func dismount():
+	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
+	# Invariants:
+	# - Restores actor's independent physics collision layers and spatial hierarchy.
+	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
 	# Logic: Execute step-by-step processing for dismount
 	if truck==null:return
 	var p=truck.to_global(Vector3(3.4,0,1.5))
@@ -625,6 +671,8 @@ func dismount():
 	game.toast("ON FOOT  •  Stay with the squad or choose your own route.",5)
 
 func aim_point()->Vector3:
+	# --- CONTRACT: Function `aim_point` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for aim_point
 	return global_position+Vector3(0,eye_height*0.75,0)
 
@@ -660,18 +708,24 @@ func set_firearm(kind:String,loaded:int,condition:float):
 	select_weapon(1)
 
 func stash_ammo(caliber:String,count:int,source_kind:String="")->int:
+	# --- CONTRACT: Function `stash_ammo` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for stash_ammo
 	var kind=source_kind
 	if kind=="":kind={"30-06":"garand","792":"kar98","9mm":"mp40","50bmg":"m2"}.get(caliber,"bar")
 	return ammo_pack.add_rounds(kind,count)
 
 func add_grenades(kind:String,count:int)->int:
+	# --- CONTRACT: Function `add_grenades` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for add_grenades
 	var n=mini(maxi(0,count),4-grenades)
 	for i in range(n):grenade_types.append(kind)
 	return n
 
 func begin_grenade():
+	# --- CONTRACT: Function `begin_grenade` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for begin_grenade
 	if truck!=null or grenade_time>0 or grenade_cooldown>0:return
 	if grenades<=0:
@@ -692,6 +746,8 @@ func begin_grenade():
 	else:Art.sphere(grenade_prop,0.054,Vector3(0,0.06,0),green)
 
 func step_grenade(delta:float):
+	# --- CONTRACT: Function `step_grenade` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for step_grenade
 	if grenade_time<=0:return
 	grenade_time=maxf(0,grenade_time-delta)

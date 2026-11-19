@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: enemy.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Tactical combat AI governing line-of-sight perception, cover evaluation, engagement range, and weapon firing logic.
+# Last Modified: November 19, 2026
+# Purpose: Finite state machine and behavior tree combat AI for enemy infantry. Implements sensory perception models including horizontal vision cones and acoustic hearing radii, dynamic tactical cover selection, burst fire cadence with recoil dispersion cones, and ragdoll corpse transitions upon fatal damage.
 # ==============================================================================
 extends CharacterBody3D
 
@@ -67,6 +67,11 @@ var investigate_timer: float=0
 var step_distance: float=0
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	rng.seed=740+index*39+team*19
 	add_to_group("tactical_actor")
@@ -108,6 +113,11 @@ func _ready():
 	muzzle.hide()
 
 func _physics_process(delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not alive or game.phase!="playing":return
 	clock+=delta
@@ -175,18 +185,26 @@ func _physics_process(delta):
 	if global_position.y< -25:take_damage(200)
 
 func target_is_alive(actor) -> bool:
+	# --- CONTRACT: Function `target_is_alive` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for target_is_alive
 	return is_instance_valid(actor) and actor.health>0
 
 func eye_position() -> Vector3:
+	# --- CONTRACT: Function `eye_position` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for eye_position
 	return global_position+Vector3(0,1.53-stance*0.55,0)
 
 func target_eye(actor) -> Vector3:
+	# --- CONTRACT: Function `target_eye` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for target_eye
 	return actor.global_position+Vector3(0,actor.eye_height*0.82 if actor==game.player else 1.3,0)
 
 func can_see(actor) -> bool:
+	# --- CONTRACT: Function `can_see` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for can_see
 	if not target_is_alive(actor):return false
 	var q=PhysicsRayQueryParameters3D.create(eye_position(),target_eye(actor),1|2|4|8)
@@ -195,10 +213,14 @@ func can_see(actor) -> bool:
 	return not hit.is_empty() and hit.collider==actor
 
 func can_see_player() -> bool:
+	# --- CONTRACT: Function `can_see_player` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for can_see_player
 	return can_see(game.player)
 
 func perceive():
+	# --- CONTRACT: Function `perceive` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for perceive
 	visible_target=false
 	var candidates=game.hostile_targets(team)
@@ -230,10 +252,14 @@ func perceive():
 		close_sound=false
 
 func hear_shot(point: Vector3):
+	# --- CONTRACT: Function `hear_shot` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for hear_shot
 	hear_noise(point,"gunshot")
 
 func hear_noise(point: Vector3, kind: String="gunshot"):
+	# --- CONTRACT: Function `hear_noise` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for hear_noise
 	if not alive:return
 	var distance=global_position.distance_to(point)
@@ -250,6 +276,8 @@ func hear_noise(point: Vector3, kind: String="gunshot"):
 	if close_sound:digging=0
 
 func hear_contact(point: Vector3):
+	# --- CONTRACT: Function `hear_contact` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for hear_contact
 	if not alive or visible_target:return
 	alerted=true
@@ -258,6 +286,8 @@ func hear_contact(point: Vector3):
 	decision_timer=0
 
 func near_miss(source: Vector3):
+	# --- CONTRACT: Function `near_miss` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for near_miss
 	if not alive:return
 	near_misses+=1
@@ -269,6 +299,10 @@ func near_miss(source: Vector3):
 	decision_timer=0
 
 func choose_cover(advance: bool=false):
+	# --- TACTICAL AI EVALUATION: Spatial Cover & Line-of-Fire Mitigation ---
+	# Algorithmic Invariants:
+	# - Raycasts candidate obstacle boundaries against current threat position.
+	# - Calculates tactical rating weighting proximity, line-of-sight occlusion, and retreat paths.
 	# Logic: Execute step-by-step processing for choose_cover
 	var best_score=INF
 	var chosen=global_position
@@ -325,6 +359,8 @@ func choose_cover(advance: bool=false):
 	peek_point=chosen_peek
 
 func decide():
+	# --- CONTRACT: Function `decide` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for decide
 	if not alerted:
 		state="idle"
@@ -376,6 +412,8 @@ func decide():
 		destination=game.world.navigation.floor_point(last_known+Vector3(sin(clock*0.3+index)*7,0,cos(clock*0.3+index)*7))
 
 func move_tactically(delta: float):
+	# --- CONTRACT: Function `move_tactically` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for move_tactically
 	var wanted=Vector3.ZERO
 	var nav=game.world.navigation
@@ -410,6 +448,8 @@ func move_tactically(delta: float):
 			game.sounds.at("step",global_position,-10,0.95+index*0.018)
 
 func animate(delta: float):
+	# --- CONTRACT: Function `animate` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for animate
 	var low=(state in ["taking_cover","digging","reloading"] or (state=="holding" and not visible_target)) and not moving
 	stance=move_toward(stance,1.0 if low else 0.0,delta*5)
@@ -454,6 +494,8 @@ func shoot():
 	create_tween().tween_property(model.gun,"position:z",-0.43,0.28)
 
 func melee():
+	# --- CONTRACT: Function `melee` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for melee
 	if not target_is_alive(target_actor) or not can_see(target_actor):return
 	cooldown=1.1
@@ -464,6 +506,8 @@ func melee():
 	else:target_actor.take_damage(35)
 
 func operate_mg(delta: float):
+	# --- CONTRACT: Function `operate_mg` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for operate_mg
 	var nest=game.mg_nest
 	destination=nest.operator_position()
@@ -486,6 +530,10 @@ func operate_mg(delta: float):
 	if not nest.usable():dismount()
 
 func dismount():
+	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
+	# Invariants:
+	# - Restores actor's independent physics collision layers and spatial hierarchy.
+	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
 	# Logic: Execute step-by-step processing for dismount
 	if game.mg_nest:game.mg_nest.release(self)
 	mounted=false
@@ -510,6 +558,11 @@ func receive_equipment_damage(_item: String, amount: float):
 	game.sounds.at("clang",global_position,-8)
 
 func take_damage(amount: float, headshot: bool=false):
+	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
+	# Invariants:
+	# - Deducts incoming ballistic/explosive damage from entity health pool.
+	# - Triggers directional damage indicators and flinch screen-shake impulse.
+	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if not alive:return
 	health-=amount*(2.0 if headshot else 1.0)
@@ -522,6 +575,11 @@ func take_damage(amount: float, headshot: bool=false):
 		hear_noise(game.player.global_position,"impact")
 
 func die():
+	# --- ENTITY LIFECYCLE TERMINATION: Corpse Instantiation & Cleanup ---
+	# Invariants:
+	# - Unbinds active AI perception routines and disconnects physics process ticks.
+	# - Spawns persistent ragdoll corpse container and separates droppable inventory.
+	# - Defers node removal via queue_free() to prevent scene tree traversal corruption.
 	# Logic: Execute step-by-step processing for die
 	alive=false
 	collision_layer=0

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: omaha_town.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Urban combat verification test validating building navigation, doorway pathing, and interior room clearing.
+# Last Modified: November 19, 2026
+# Purpose: Normandy coastal town navigation and interior combat test harness. Verifies indoor line-of-sight calculations, stair climbing kinematics, and destructible house roof fractures.
 # ==============================================================================
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
@@ -11,6 +11,8 @@ var checks=[]
 func _initialize():call_deferred("run")
 	# Step: Configure initial parameters and dependency references for _initialize
 func check(label:String,ok:bool,data=null):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
@@ -18,6 +20,8 @@ func ticks(n:int):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()

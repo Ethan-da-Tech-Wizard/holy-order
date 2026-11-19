@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: ardennes_review.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Tactical behavioral evaluation suite verifying squad maneuvers, ambush logic, and convoy retreat actions.
+# Last Modified: November 19, 2026
+# Purpose: Ardennes mission balance and pacing verification suite. Validates convoy escort survival ratios, German ambush wave trigger intervals, and ammunition economy constraints.
 # ==============================================================================
 extends SceneTree
 var g
@@ -13,11 +13,15 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func capture(label):
+	# --- CONTRACT: Function `capture` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
 	print("CAPTURE ",label)
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	AudioServer.set_bus_mute(0,true)

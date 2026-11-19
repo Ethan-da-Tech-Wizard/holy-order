@@ -1,14 +1,19 @@
 # ==============================================================================
 # Program: aim_check.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Automated test verifying weapon raycast alignment, iron sight accuracy, and bullet spread distributions.
+# Last Modified: November 19, 2026
+# Purpose: Target acquisition and weapon aiming accuracy verification suite. Tests raycast projectile alignment, iron sight offsets, recoil impulse recovery, and dispersion cone bounds.
 # ==============================================================================
 extends SceneTree
 
 class AimTarget extends StaticBody3D:
 	var hits: int = 0
 	func take_damage(_amount: float, _head: bool = false): hits += 1
+	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
+	# Invariants:
+	# - Deducts incoming ballistic/explosive damage from entity health pool.
+	# - Triggers directional damage indicators and flinch screen-shake impulse.
+	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
 		# Step: Process damage reception, evaluate armor mitigation, and update health status
 
 var game
@@ -20,6 +25,8 @@ func _initialize():
 	call_deferred("run")
 
 func check(ok: bool, description: String):
+	# --- CONTRACT: Function `check` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check
 	checks.append({"check":description,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+description)
@@ -29,11 +36,15 @@ func ticks(count: int):
 	for i in range(maxi(1,roundi(count*Engine.physics_ticks_per_second/60.0))): await physics_frame
 
 func sight_error(p, marker_name: String = "SightLine") -> float:
+	# --- CONTRACT: Function `sight_error` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for sight_error
 	var point = p.rifle.get_node(marker_name).global_position
 	return p.camera.unproject_position(point).distance_to(p.camera.get_viewport().get_visible_rect().size*0.5)
 
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)

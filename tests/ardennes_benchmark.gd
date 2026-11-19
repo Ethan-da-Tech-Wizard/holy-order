@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: ardennes_benchmark.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Performance stress test measuring frame rate stability and draw calls across 100+ active Ardennes entities.
+# Last Modified: November 19, 2026
+# Purpose: Performance benchmark and memory profiling suite for the Ardennes theater. Measures frame time variance, physics tick stability under 60-agent skirmishes, and particle pool allocation overhead.
 # ==============================================================================
 extends SceneTree
 var g
@@ -18,10 +18,14 @@ func ticks(n):
 	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
 func capture(label):
+	# --- CONTRACT: Function `capture` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
 func run():
+	# --- CONTRACT: Function `run` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441224)
@@ -102,6 +106,8 @@ func run():
 	quit()
 
 func summarize(values:Array)->Dictionary:
+	# --- CONTRACT: Function `summarize` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for summarize
 	if values.is_empty():return {"frames":0}
 	values.sort()

@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: audio.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Winter woodland acoustic environment controller managing wind whistling, footstep crunches in snow, and distant echoes.
+# Last Modified: November 19, 2026
+# Purpose: Theater-specific audio manager for the Ardennes winter campaign. Orchestrates sub-zero acoustic environmental sounds, rifle echos, vehicle diesel engines, and artillery explosions with 3D spatial attenuation.
 # ==============================================================================
 extends "res://scripts/audio.gd"
 
@@ -12,6 +12,11 @@ var voices:Array[AudioStreamPlayer3D]=[]
 var next_voice:int=0
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	if not enabled:return
@@ -23,6 +28,8 @@ func _ready():
 		streams[key]=load("res://assets/audio/"+key+".wav")
 
 func at(sound:String,pos:Vector3,volume:float=0,pitch:float=1.0):
+	# --- CONTRACT: Function `at` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for at
 	if not enabled or not streams.has(sound):return
 	if voice_frame!=Engine.get_process_frames():

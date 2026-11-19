@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: corpse.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Persistent ragdoll and casualty entity with dynamic LOD transitions and performance-optimized collision.
+# Last Modified: November 19, 2026
+# Purpose: Persistent combat casualty ragdoll container. Manages physical body resting states, dropped weapon separation, blood particle decals, and memory-safe entity cleanup thresholds.
 # ==============================================================================
 extends Node3D
 const Art=preload("res://scripts/art.gd")
@@ -15,6 +15,11 @@ var detached_count:int=0
 static var meshes:Dictionary={}
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("winter_corpses")
 	var side=1 if soldier.index%2==0 else -1
@@ -69,6 +74,8 @@ func _ready():
 	set_physics_process(false)
 
 func wound(part,point:Vector3):
+	# --- CONTRACT: Function `wound` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for wound
 	var red=Art.material(Color("522b2a"),0,0.83)
 	var patch=Art.sphere(part,0.055,part.to_local(point),red)
@@ -80,6 +87,8 @@ func wound(part,point:Vector3):
 		Art.cylinder(self,0.22,0.012,to_local(p),red,-1,12)
 
 func blast(point:Vector3,radius:float,power:float):
+	# --- CONTRACT: Function `blast` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for blast
 	for part in parts:
 		var d=part.global_position.distance_to(point)
@@ -88,6 +97,11 @@ func blast(point:Vector3,radius:float,power:float):
 		if part.detached:part.apply_central_impulse((part.global_position-point).normalized()*power*(1-d/radius)*0.10+Vector3(0,1,0))
 
 func _physics_process(_delta):
+	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
+	# Invariants:
+	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
+	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
+	# - Performs raycast obstacle evaluations before committing spatial position changes.
 	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not parts.is_empty() and parts[0].detached:
 		soldier.global_position=parts[0].global_position

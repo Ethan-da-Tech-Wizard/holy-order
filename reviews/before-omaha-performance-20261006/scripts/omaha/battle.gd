@@ -1,7 +1,7 @@
 # ==============================================================================
 # Program: battle.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
+# Last Modified: November 19, 2026
 # Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for battle.gd.
 # ==============================================================================
 extends "res://scripts/ardennes/battle.gd"

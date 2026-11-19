@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: wire.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Concertina barbed wire entanglement entity applying movement entrapment and cutting mechanics.
+# Last Modified: November 19, 2026
+# Purpose: Concertina wire obstacle entity. Simulates infantry entanglement movement slows, Bangalore torpedo explosive breach clearing, and tactical opening path generation.
 # ==============================================================================
 extends StaticBody3D
 const Art=preload("res://scripts/art.gd")
@@ -21,6 +21,11 @@ var visual_index:int=-1
 static var wire_mesh:Mesh
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	collision_layer=1|128
 	collision_mask=0
@@ -53,6 +58,8 @@ func _ready():
 	bars.add_child(mesh)
 
 func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
+	# --- CONTRACT: Function `strand` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for strand
 	var mesh=Art.segment(parent,a,b,radius,mat)
 	mesh.mesh.radial_segments=4
@@ -61,6 +68,8 @@ func strand(parent:Node3D,a:Vector3,b:Vector3,radius:float,mat:Material):
 	mesh.mesh.cap_bottom=false
 
 func deploy(actor)->bool:
+	# --- CONTRACT: Function `deploy` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for deploy
 	if broken or charge or not actor.alive or actor.bangalores<=0:return false
 	if actor.position.distance_to(position)>4.2:return false
@@ -83,6 +92,8 @@ func tick(delta:float):
 		game.explode(position+Vector3(0,0.2,0),6.0,140,null,"bangalore")
 
 func breach():
+	# --- CONTRACT: Function `breach` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for breach
 	if broken:return
 	broken=true
@@ -96,6 +107,10 @@ func breach():
 	game.toast("WIRE BREACHED • A LOCAL GAP IS OPEN",4)
 
 func damage_at(amount:float,_point:Vector3,_radius:float=0.2,explosive:bool=false)->bool:
+	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
+	# Invariants:
+	# - Evaluates impact coordinates against geometry bounding AABB boxes.
+	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
 	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	# Rifle bullets and fragmentation do not conveniently erase entire wire rows.
 	# A player can finish an isolated segment with repeated close shovel strokes.

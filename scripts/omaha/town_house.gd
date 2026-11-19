@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: town_house.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Normandy coastal village structure with destructible masonry, interior rooms, and sniper vantage points.
+# Last Modified: November 19, 2026
+# Purpose: Procedural Normandy coastal architecture builder. Generates multi-story stone town houses with destructible roofs, sniper attics, interior floorboards, and rubble debris piles.
 # ==============================================================================
 extends Node3D
 # Three occupied levels share static geometry. Only damaged panels are rebuilt.
@@ -21,6 +21,11 @@ var timber:Material
 var roof_material:Material
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
 	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	facade=world.town_materials[index%world.town_materials.size()]
 	timber=world.town_timber
@@ -101,6 +106,8 @@ func _ready():
 	decorative.set_meta("skip_static_batch",true)
 
 func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry"):
+	# --- CONTRACT: Function `panel` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for panel
 	if mat==timber and kind=="masonry":kind="wood"
 	var body=world.strong(size,p,mat,self,kind)
@@ -112,15 +119,21 @@ func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry
 	return body
 
 func contains(p:Vector3,padding:float=0.0)->bool:
+	# --- CONTRACT: Function `contains` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for contains
 	var local=p-position
 	return absf(local.x)<11+padding and absf(local.z)<13+padding
 
 func floor_at(p:Vector3)->int:
+	# --- CONTRACT: Function `floor_at` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for floor_at
 	return clampi(roundi((p.y-position.y)/3.2),0,2)
 
 func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
+	# --- CONTRACT: Function `route_inside` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for route_inside
 	var path=PackedVector3Array()
 	var floor_id=floor_at(start) if contains(start) else 0
@@ -146,6 +159,8 @@ func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
 	return path
 
 func check_supports():
+	# --- CONTRACT: Function `check_supports` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for check_supports
 	if collapsed or supports.is_empty():return
 	var capacity=0.0
@@ -161,6 +176,8 @@ func check_supports():
 	if not stable:collapse()
 
 func collapse():
+	# --- CONTRACT: Function `collapse` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	# Logic: Execute step-by-step processing for collapse
 	if collapsed:return
 	collapsed=true

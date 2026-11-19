@@ -1,8 +1,8 @@
 # ==============================================================================
 # Program: layout.gd
 # Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 18, 2026
-# Purpose: Spatial coordinate manifest defining bunker placements, shingle berm lines, hedgehogs, and barbed wire belts.
+# Last Modified: November 19, 2026
+# Purpose: Historical beachhead spatial layout generator. Projects coordinate vectors for the water line, tidal flats, Belgian gate obstacles, razor wire belts, shingle embankment, and Wiederstandsnest bunker complexes.
 # ==============================================================================
 extends RefCounted
 # Gameplay distances in metres. Troops, weapons and fortifications retain their scale.
@@ -34,7 +34,11 @@ const VILLAGE:float=-362.0
 const CHURCH:float=-494.0
 
 static func assault_lane(x:float)->float:
+	# --- CONTRACT: Function `assault_lane` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	return ASSAULT_LANES[clampi(roundi(x/72.0)+1,0,2)]
 
 static func sector_for(x:float)->int:
+	# --- CONTRACT: Function `sector_for` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
 	return clampi(roundi((x+168)/48),0,7)
