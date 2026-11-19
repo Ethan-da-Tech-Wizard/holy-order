@@ -1,9 +1,23 @@
-# ==============================================================================
-# Program: game.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Central game loop orchestration controller for the Italian village campaign. Manages discrete 60 FPS physics tick synchronization, player kinematic state machines, enemy squad AI coordination, 3D spatial gunshot noise propagation, ballistic raycasting, dynamic environment demolition, and HUD notification event dispatching.
-# ==============================================================================
+## Game controller for the desert mission ("First Contact", scenes/main.tscn).
+##
+## Role: the root of the mission. It builds the world, the player, six enemy
+## soldiers, the grenade crate, the machine-gun nest, the demolition cache and
+## the HUD, owns the game phase and quest progress, and provides the shared
+## services every other script calls: noise propagation, projectiles,
+## explosions, interaction prompts, toasts and subtitles, and the two
+## scripted cutscenes (rifle pickup, tea with the British patrol).
+##
+## Phases (`phase`): title -> briefing -> playing <-> paused/inventory/
+## objectives; cinematic during cutscenes; victory and defeat end the run.
+## While phase != "playing" the player and all AI skip their physics logic,
+## so a pause stops the simulation and not only the input.
+## Quest chain (`quest`): sentry -> rifle -> outpost -> patrol -> complete.
+##
+## Command line (after `--`): --self-test (runs tests/encounter_test.gd and
+## skips the briefing), --preview-play (start immediately), --capture-title
+## (save a title screenshot and quit), --visual-check (tests/visual_check.gd).
+## Related files: world.gd, player.gd, enemy.gd, interface.gd, audio.gd,
+## mg_nest.gd, demolition.gd, graphics.gd.
 extends Node3D
 
 const World = preload("res://scripts/world.gd")
@@ -12,51 +26,123 @@ const Enemy = preload("res://scripts/enemy.gd")
 const Interface = preload("res://scripts/interface.gd")
 const Sounds = preload("res://scripts/audio.gd")
 const Art = preload("res://scripts/art.gd")
+
+## The World node (terrain, village, navigation).
 var world
+
+## The Breda machine-gun nest.
 var mg_nest
+
+## The demolition satchel system.
 var demolition
+
+## British patrol soldiers (team 1); empty until the patrol spawns.
 var friendlies: Array=[]
+
+## True while the player operates the machine gun.
 var player_mounted: bool=false
+
+## The player node (player.gd).
 var player
+
+## The Interface node drawing the HUD and menus.
 var hud
+
+## The audio service (audio.gd).
 var sounds
+
+## The six Italian soldiers (team 0); index 0 is the sentry.
 var enemies: Array = []
+
+## Current game phase string (see class comment).
 var phase: String = "title"
+
+## Seconds of play time (counts only while playing); shown on the victory screen.
 var elapsed: float = 0
+
+## Collected pocket lint, a harmless joke collectible.
 var lint: int = 0
+
+## Loot records {enemy, looted, weapon_taken, lint} for dead soldiers.
 var corpses: Array = []
+
+## The sentry's dropped rifle model, until picked up.
 var rifle_drop: Node3D
+
+## True while the dropped rifle can be taken.
 var rifle_available: bool = false
+
+## The crate that holds three grenades.
 var grenade_crate: Node3D
+
+## True until the grenades are taken.
 var grenade_available: bool = true
+
+## Current transient message.
 var toast_text: String = ""
+
+## Seconds the toast remains visible.
 var toast_time: float = 0
+
+## Timer driving the HUD hit marker.
 var hit_flash: float = 0
+
+## Timer driving the red damage vignette.
 var damage_flash: float = 0
+
+## World direction the last damage came from.
 var last_damage_direction = Vector3.ZERO
+
+## Set when the sentry spots the player (written by enemy.gd; nothing reads it yet).
 var has_seen_rifle: bool = false
+
+## Grenades in flight: {node, velocity, fuse, age}.
 var grenades_live: Array = []
+
+## Time counter that runs in every phase (used for UI animation).
 var visual_elapsed: float = 0
+
+## Current subtitle text.
 var subtitle: String = ""
+
+## Name shown above the subtitle.
 var speaker: String = "THE KNIGHT"
+
+## Seconds the subtitle remains visible.
 var subtitle_time: float = 0
+
+## True once the rifle pickup cutscene has been shown (it plays once).
 var pickup_played: bool = false
+
+## Temporary knight model used by the pickup cutscene.
 var cutscene_actor: Node3D
+
+## Temporary camera used by whichever cutscene is playing.
 var cutscene_camera: Camera3D
+
+## True once the tea cutscene has started.
 var tea_played: bool = false
+
+## Current quest stage (see class comment).
 var quest: String = "sentry"
+
+## World position where the British truck waits (x=42, z=-71).
 var patrol_point = Vector3(42,0,-71)
+
+## The British patrol truck.
 var patrol_vehicle: Node3D
+
+## The British soldier who greets the player.
 var patrol_greeter: Node3D
+
+## Countdown (s) to a one-off line after the pickup scene; -1 when unused.
 var post_quip_time: float = -1
 
+## Godot lifecycle hook: registers inputs, then creates everything in
+## dependency order (world, sounds, player, enemies, crate, MG nest,
+## demolition, HUD), starts on the title camera and handles command-line flags.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
+	# Frame cap; physics rate is set by graphics.gd to 20 or 30 Hz.
 	Engine.max_fps = 60
 	register_inputs()
 	world = World.new()
@@ -68,6 +154,9 @@ func _ready():
 	player.game = self
 	player.position = Vector3(0,0.05,53)
 	add_child(player)
+
+	# Enemy spawn points and roles come from the village layout; the first
+	# soldier (index 0) is the lone sentry the quest begins with.
 	var positions = world.village.enemy_positions
 	for i in range(positions.size()):
 		var enemy = Enemy.new()
@@ -79,6 +168,8 @@ func _ready():
 		enemy.rotation.y = PI
 		add_child(enemy)
 		enemies.append(enemy)
+
+	# Grenade crate at (20.5, -9), in the village's east lane.
 	grenade_crate = Art.solid(self,Vector3(0.8,0.5,0.6),Vector3(20.5,0.25,-9),Art.material(Color("556044")))
 	Art.box(grenade_crate,Vector3(0.3,0.01,0.23),Vector3(0,0.26,0),Art.material(Color("baae82")))
 	var label = Label3D.new()
@@ -87,6 +178,8 @@ func _ready():
 	label.pixel_size = 0.005
 	label.position = Vector3(0,0.04,0.306)
 	grenade_crate.add_child(label)
+
+	# Machine-gun nest at the far end of the village (3, -49).
 	mg_nest=load("res://scripts/mg_nest.gd").new()
 	mg_nest.game=self
 	mg_nest.position=Vector3(3,0,-49)
@@ -99,9 +192,14 @@ func _ready():
 	hud = Interface.new()
 	hud.game = self
 	canvas.add_child(hud)
+
+	# Title screen: show the world camera with the display knight; the player's
+	# camera takes over in begin().
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	player.camera.current = false
 	world.world_camera.current = true
+
+	# "Play again" reloads the scene and skips the title and briefing.
 	if get_tree().has_meta("restart_playing"):
 		get_tree().remove_meta("restart_playing")
 		begin()
@@ -115,12 +213,13 @@ func _ready():
 	if "--visual-check" in args:
 		call_deferred("run_visual_check")
 
+	# Last, because it scans the finished scene for lights, meshes and cameras.
 	preload("res://scripts/graphics.gd").install(self)
 
+## Adds the InputMap actions in code (no project-file dependency): keyboard
+## actions from a table, plus attack = left mouse button and aim = right mouse button.
+## Safe to call repeatedly: existing actions are not recreated.
 func register_inputs():
-	# --- CONTRACT: Function `register_inputs` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for register_inputs
 	var bindings = {"move_forward":KEY_W,"move_back":KEY_S,"move_left":KEY_A,"move_right":KEY_D,"sprint":KEY_SHIFT,"jump":KEY_SPACE,"crouch":KEY_C,"prone":KEY_Z,"objectives":KEY_J,"lean_left":KEY_Q,"lean_right":KEY_E,"reload":KEY_R,"interact":KEY_F,"grenade":KEY_G,"weapon_sword":KEY_1,"weapon_rifle":KEY_2,"weapon_fists":KEY_3,"weapon_shovel":KEY_4,"weapon_demolition":KEY_5,"detonate":KEY_B,"inventory":KEY_TAB,"pause":KEY_ESCAPE,"fullscreen":KEY_F11}
 	for action in bindings:
 		if not InputMap.has_action(action): InputMap.add_action(action)
@@ -133,12 +232,10 @@ func register_inputs():
 		event.button_index = MOUSE_BUTTON_LEFT if action=="attack" else MOUSE_BUTTON_RIGHT
 		InputMap.action_add_event(action,event)
 
+## Global hotkeys: F11 fullscreen, Esc pause/resume, Tab inventory, J
+## objectives, Enter to begin from the title screen.
+## [param event] the input event.
 func _unhandled_input(event):
-	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
-	# Invariants:
-	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
-	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
-	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if event.is_action_pressed("fullscreen"):
 		var full = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -154,19 +251,16 @@ func _unhandled_input(event):
 	if phase == "title" and event is InputEventKey and event.pressed and event.keycode == KEY_ENTER:
 		begin()
 
+## Pauses automatically when the window loses focus during play.
 func _notification(what):
-	# --- CONTRACT: Function `_notification` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for _notification
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and phase == "playing":
 		pause_game("paused")
 
+## Per-frame timers: toast, flashes, subtitle, play time; fires the delayed
+## line after the rifle pickup; starts the tea cutscene when the player
+## reaches the British greeter (within 4.3 m).
+## [param delta] frame time in seconds.
 func _process(delta):
-	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
-	# Invariants:
-	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
-	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
-	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	visual_elapsed += delta
 	subtitle_time = maxf(0,subtitle_time-delta)
 	if phase != "playing": return
@@ -184,13 +278,11 @@ func _process(delta):
 		if player.position.distance_to(greet)<4.3:
 			tea_scene()
 
+## Simulates live grenades: gravity 14 m/s^2, ray-checked movement so they
+## cannot tunnel through walls, 35% bounce, and explosion on impact (after
+## 0.35 s of arming) or when the 4 s fuse ends.
+## [param delta] physics step in seconds.
 func _physics_process(delta):
-	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
-	# Invariants:
-	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
-	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
-	# - Performs raycast obstacle evaluations before committing spatial position changes.
-	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if phase != "playing": return
 	for grenade in grenades_live.duplicate():
 		grenade.age += delta
@@ -212,71 +304,60 @@ func _physics_process(delta):
 			grenade.node.queue_free()
 			grenades_live.erase(grenade)
 
+## Leaves the title screen: shows the briefing (or goes straight to play in
+## self-test mode) and hands the camera to the player.
 func begin():
-	# --- CONTRACT: Function `begin` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for begin
 	phase = "playing" if "--self-test" in OS.get_cmdline_user_args() else "briefing"
 	world.menu_knight.visible = false
 	player.camera.current = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if phase=="playing" else Input.MOUSE_MODE_VISIBLE
 	toast("An isolated sentry ahead. The main position lies beyond him.",5)
 
+## Stops the simulation by changing phase to `next_phase`
+## ("paused", "inventory", "objectives", "defeat" or "victory"), cancels any
+## charged melee swing, and frees the mouse.
 func pause_game(next_phase: String):
-	# --- CONTRACT: Function `pause_game` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for pause_game
 	phase = next_phase
 	player.holding_attack = false
 	player.power_hold = 0
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
+## Returns to "playing" and recaptures the mouse.
 func resume_game():
-	# --- CONTRACT: Function `resume_game` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for resume_game
 	phase = "playing"
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
+## Reloads the scene and starts playing immediately (marker meta
+## "restart_playing" is consumed by _ready).
 func restart_game():
-	# --- CONTRACT: Function `restart_game` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for restart_game
 	get_tree().set_meta("restart_playing",true)
 	get_tree().reload_current_scene()
 
+## Reloads the scene and shows the title screen again.
 func restart_to_title():
-	# --- CONTRACT: Function `restart_to_title` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for restart_to_title
 	get_tree().reload_current_scene()
 
+## Quits the application.
 func quit_game():
-	# --- CONTRACT: Function `quit_game` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for quit_game
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().quit()
 
+## Called when the player dies: pauses on the defeat screen.
 func defeat():
-	# --- CONTRACT: Function `defeat` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for defeat
 	pause_game("defeat")
 
+## Returns how many Italian soldiers are still alive.
 func remaining() -> int:
-	# --- CONTRACT: Function `remaining` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for remaining
 	var count = 0
 	for enemy in enemies:
 		if enemy.alive: count += 1
 	return count
 
+## Called by Enemy.die(): records loot, and handles the sentry specially: his
+## rifle drops (and the pickup cutscene is triggered if the player is within
+## 4.5 m) unless it was ruined. When all six are dead the British patrol arrives.
+## [param enemy] the soldier that just died.
 func enemy_down(enemy):
-	# --- CONTRACT: Function `enemy_down` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for enemy_down
 	corpses.append({"enemy":enemy,"looted":false,"weapon_taken":enemy.sentry,"lint":1+enemy.index%3})
 	if enemy.sentry and enemy.weapon_health>0:
 		rifle_drop = Art.rifle(self)
@@ -295,8 +376,9 @@ func enemy_down(enemy):
 	if remaining() == 0:
 		spawn_patrol()
 
+## Creates the British truck and greeter at patrol_point (once) and moves the
+## quest to "patrol".
 func spawn_patrol():
-	# Step: Instantiate and position node hierarchy into scene tree for spawn_patrol
 	if is_instance_valid(patrol_vehicle): return
 	quest = "patrol"
 	subtitle_time = 0
@@ -317,10 +399,8 @@ func spawn_patrol():
 	patrol_greeter.rotation.y = -0.9
 	toast("POSITION CLEARED  •  Meet the British patrol on the road",6)
 
+## One-line objective shown on the HUD for the current quest stage.
 func objective_text() -> String:
-	# --- CONTRACT: Function `objective_text` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for objective_text
 	match quest:
 		"sentry": return "Defeat the isolated sentry"
 		"rifle": return "Recover the sentry's rifle"
@@ -328,10 +408,8 @@ func objective_text() -> String:
 		"patrol": return "Meet the British patrol"
 	return "First Contact complete"
 
+## World position the compass and the gold marker point at for the current stage.
 func objective_target() -> Vector3:
-	# --- CONTRACT: Function `objective_target` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for objective_target
 	match quest:
 		"sentry": return enemies[0].position+Vector3(0,2.4,0)
 		"rifle": return enemies[0].position+Vector3(0,1.8,0)
@@ -339,18 +417,19 @@ func objective_target() -> Vector3:
 		"patrol": return patrol_point+Vector3(-3,2.5,2)
 	return Vector3.ZERO
 
+## True if nothing solid blocks a ray from the camera to `point` (or the first
+## thing hit is `allowed`), so prompts do not appear through walls.
 func interaction_visible(point: Vector3, allowed=null) -> bool:
-	# --- CONTRACT: Function `interaction_visible` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for interaction_visible
 	var ray=PhysicsRayQueryParameters3D.create(player.camera.global_position,point,1)
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
 	return hit.is_empty() or hit.collider==allowed
 
+## Finds what the F key would do now and returns a Dictionary with "kind"
+## (leave_mg, recover_satchel, demolition, mg, rifle, body, spare_rifle,
+## grenade, door) and extras. Priority: dismount, satchel, MG, rifle,
+## then the closest of bodies and the grenade crate within 3.2 m, with a door
+## overriding when the player is facing one (dot > 0.15).
 func nearest_interaction() -> Dictionary:
-	# --- CONTRACT: Function `nearest_interaction` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for nearest_interaction
 	if player_mounted:return {"kind":"leave_mg"}
 	var best: Dictionary={}
 	var distance: float=3.2
@@ -384,10 +463,8 @@ func nearest_interaction() -> Dictionary:
 			best={"kind":"door","door":door}
 	return best
 
+## HUD prompt text for the current interaction, or an empty string.
 func interaction_prompt() -> String:
-	# --- CONTRACT: Function `interaction_prompt` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for interaction_prompt
 	var item=nearest_interaction()
 	match item.get("kind",""):
 		"mg":return "F  •  USE BREDA M37  /  %d LOADED + %d TRAYS"%[mg_nest.rounds,mg_nest.spare_trays]
@@ -401,10 +478,9 @@ func interaction_prompt() -> String:
 		"door":return "F  •  CLOSE DOOR" if item.door.opened else "F  •  OPEN DOOR"
 	return ""
 
+## Transfers a dead soldier's intact rifle (with its loaded rounds) to the player.
+## [param corpse] loot record from `corpses`.
 func recover_rifle(corpse: Dictionary):
-	# --- CONTRACT: Function `recover_rifle` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for recover_rifle
 	if corpse.weapon_taken or corpse.enemy.weapon_health<=0:return
 	corpse.weapon_taken=true
 	corpse.enemy.model.gun.hide()
@@ -416,10 +492,10 @@ func recover_rifle(corpse: Dictionary):
 	player.select_weapon(1)
 	toast("Recovered Carcano  •  %d loaded rounds"%player.ammo,3)
 
+## Executes the F-key action chosen by nearest_interaction(): enter/leave the
+## MG, take or recover demolition, take the rifle, loot bodies (ammunition,
+## lint, and an entrenching tool the first time), take grenades, use doors.
 func interact():
-	# --- CONTRACT: Function `interact` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for interact
 	var item=nearest_interaction()
 	match item.get("kind",""):
 		"mg":enter_mg()
@@ -440,6 +516,9 @@ func interact():
 			quest="patrol" if remaining()==0 else "outpost"
 			sounds.play("bolt",-8)
 			toast("Carcano M91. %d loaded rounds. F to search pockets."%player.ammo,4)
+
+		# A looted body yields reserve ammunition, lint, and the shovel; the
+		# rifle comes along only if the player has none yet.
 		"body":
 			item.corpse.looted=true
 			lint+=item.corpse.lint
@@ -465,31 +544,31 @@ func interact():
 			toast("Three Breda M35 grenades. G to throw. Masonry can be breached.",4)
 		"door":item.door.use()
 
+## Applies projectile/blow damage to the breakable under a ray hit.
+## [param hit] intersect_ray result. [param amount] damage points.
+## [param radius] hole radius in metres.
 func damage_environment(hit: Dictionary, amount: float, radius: float):
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if hit.is_empty():return
 	if hit.collider.has_method("damage_at"):
 		hit.collider.damage_at(amount,hit.position,radius)
 
+## Shows a transient banner message.
+## [param message] text. [param duration] seconds on screen (default 3).
 func toast(message: String, duration: float = 3):
-	# --- CONTRACT: Function `toast` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for toast
 	toast_text = message
 	toast_time = duration
 
+## Shows a subtitle line.
+## [param line] text. [param duration] seconds (default 5). [param who] speaker name.
 func say(line: String, duration: float = 5, who: String = "THE KNIGHT"):
-	# --- CONTRACT: Function `say` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for say
 	subtitle = line
 	subtitle_time = duration
 	speaker = who
 
+## Plays the short cutscene in which the knight kneels and picks up the dropped
+## rifle: a temporary actor, a camera and a tween timeline, with the real
+## player hidden. Ends in finish_pickup_scene().
 func rifle_pickup_scene():
-	# --- CONTRACT: Function `rifle_pickup_scene` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for rifle_pickup_scene
 	if pickup_played or not rifle_available: return
 	pickup_played = true
 	phase = "cinematic"
@@ -515,6 +594,9 @@ func rifle_pickup_scene():
 	cutscene_camera.current = true
 	say("A most discourteous welcome.",2.2)
 	var rifle_pos = rifle_drop.global_position
+
+	# The tween timeline below: wait, crouch with the reaching hand, reparent
+	# the rifle onto the hand, then stand up with it.
 	var reach = Art.gauntlet(cutscene_actor,Vector3(0.4,1.0,-0.28),Vector3(-0.6,0,0))
 	var pickup = create_tween()
 	pickup.tween_interval(0.75)
@@ -533,10 +615,9 @@ func rifle_pickup_scene():
 	pickup.tween_interval(0.7)
 	pickup.tween_callback(finish_pickup_scene)
 
+## Ends the pickup cutscene: gives the player the rifle (with the sentry's
+## remaining rounds), updates the quest, restores player and camera.
 func finish_pickup_scene():
-	# --- CONTRACT: Function `finish_pickup_scene` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for finish_pickup_scene
 	rifle_available = false
 	player.has_rifle = true
 	player.rifle_health = enemies[0].weapon_health
@@ -555,10 +636,8 @@ func finish_pickup_scene():
 	toast("CARCANO M91  •  %d ROUNDS  •  F to search the sentry's pockets"%player.ammo,4)
 	post_quip_time = 8.5
 
+## Final cutscene: the British leader offers tea; ends the mission with victory.
 func tea_scene():
-	# --- CONTRACT: Function `tea_scene` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for tea_scene
 	if tea_played: return
 	tea_played = true
 	phase = "cinematic"
@@ -588,6 +667,9 @@ func tea_scene():
 	held.visible = false
 	var hand = Art.gauntlet(held,Vector3(0.07,-0.07,0.015),Vector3(0.1,0,-0.2))
 	say("Welcome, old crusader. Climb in. Have a cup of tea.",4.0,"BRITISH PATROL LEADER")
+
+	# Timeline: establishing shot, camera move, cup handed over and raised,
+	# dialogue lines on timers, then victory after the last line.
 	var tw = create_tween()
 	tw.tween_interval(2.4)
 	tw.tween_property(cutscene_camera,"position",Vector3(3.6,2.28,-3.0),0.7)
@@ -614,22 +696,23 @@ func tea_scene():
 		pause_game("victory")
 	)
 
+## Returns the list of soldiers on a team: enemies for team 0, friendlies for team 1.
 func squad(team: int) -> Array:
-	# --- CONTRACT: Function `squad` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for squad
 	return enemies if team==0 else friendlies
 
+## Actors a soldier of `team` may target: team 0 targets the player and
+## British soldiers; team 1 targets the Italians.
 func hostile_targets(team: int) -> Array:
-	# --- CONTRACT: Function `hostile_targets` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for hostile_targets
 	return [player]+friendlies if team==0 else enemies
 
+## Broadcasts a sound to every soldier.
+## [param pos] origin. [param radius] hearing range in metres.
+## [param source_team] team of the noisemaker (the player is 1).
+## [param kind] "gunshot", "footstep", "melee", "blast"...
+## Footsteps are not heard by the same team; footsteps and melee noise are
+## reduced to 40% of their range when a wall blocks the line to the listener.
+## A soldier already searching on his own contact ignores same-team noise.
 func emit_noise(pos: Vector3, radius: float, source_team: int=1, kind: String="gunshot"):
-	# --- CONTRACT: Function `emit_noise` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for emit_noise
 	for actor in enemies+friendlies:
 		if not actor.alive:continue
 		if kind=="footstep" and actor.team==source_team:continue
@@ -642,34 +725,30 @@ func emit_noise(pos: Vector3, radius: float, source_team: int=1, kind: String="g
 			if actor.team==source_team and actor.alerted and actor.memory>0:continue
 			actor.hear_noise(pos,kind)
 
+## Convenience wrapper that makes a gunshot-type noise at `pos` of `radius`.
 func alert_near(pos: Vector3, radius: float):
-	# --- CONTRACT: Function `alert_near` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for alert_near
 	emit_noise(pos,radius)
 
+## True if `actor` is in front of the camera and not hidden behind a wall;
+## used to decide which enemies show on the compass.
 func player_can_see(actor) -> bool:
-	# --- CONTRACT: Function `player_can_see` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for player_can_see
 	var target=actor.eye_position()
 	if player.camera.is_position_behind(target):return false
 	var ray=PhysicsRayQueryParameters3D.create(player.camera.global_position,target,1|4)
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
 	return not hit.is_empty() and hit.collider==actor
 
+## Shares a sighting with squad mates within 38 m: they treat `point` as a
+## contact report (with some positional error).
 func share_contact(source, point: Vector3):
-	# --- CONTRACT: Function `share_contact` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for share_contact
 	for actor in squad(source.team):
 		if actor!=source and actor.alive and actor.position.distance_to(source.position)<38:
 			actor.hear_contact(point)
 
+## Bounding overwatch for assaulting soldiers: only one assaulter advances at
+## a time, switching every 5.5 s, and none advances if the partner is
+## suppressed or reloading (so they cannot cover each other).
 func assault_can_move(actor) -> bool:
-	# --- CONTRACT: Function `assault_can_move` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for assault_can_move
 	var assault: Array=[]
 	for ally in squad(actor.team):
 		if ally.alive and ally.role=="assault":assault.append(ally)
@@ -681,10 +760,11 @@ func assault_can_move(actor) -> bool:
 	var slot=int(elapsed/5.5)%assault.size()
 	return assault[slot]==actor
 
+## Tells soldiers on the other team that a shot passed near them: any whose
+## eye lies within 1.65 m of the bullet's path (and further than 2 m from the
+## shooter) receive near_miss(), which pins them down.
+## [param start] origin. [param end] impact. [param source_team] shooter's team.
 func notify_projectile(start: Vector3, end: Vector3, source_team: int):
-	# --- CONTRACT: Function `notify_projectile` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for notify_projectile
 	var segment=end-start
 	var length_sq=segment.length_squared()
 	if length_sq<0.001:return
@@ -695,8 +775,14 @@ func notify_projectile(start: Vector3, end: Vector3, source_team: int):
 		if point.distance_to(start+segment*t)<1.65 and point.distance_to(start)>2:
 			actor.near_miss(start)
 
+## Fires an AI or MG round as a ray (180 m max, layers world, player, both
+## teams and equipment) and applies the result: equipment hit areas take 65
+## (115 from the player's gun); the player takes `damage` from team 0 only;
+## soldiers of the other team take `damage`; anything else takes
+## `environment_damage`. Always spawns a tracer and notifies near misses.
+## [param origin] muzzle. [param aim] target point. [param source] shooter.
+## [param extra_exclude] more RIDs to ignore (e.g. a gun's own hit area).
 func fire_projectile(origin: Vector3, aim: Vector3, source, damage: float, environment_damage: float, extra_exclude: Array=[]):
-	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var team=1 if source==player else source.team
 	var end=origin+(aim-origin).normalized()*180
 	var query=PhysicsRayQueryParameters3D.create(origin,end,1|2|4|8|16)
@@ -720,10 +806,9 @@ func fire_projectile(origin: Vector3, aim: Vector3, source, damage: float, envir
 	notify_projectile(origin,end,team)
 	tracer(origin,end,Color("ecc583"))
 
+## Puts the player on the machine gun: snaps them behind it facing front,
+## hides hands and personal hit areas, and shows the controls.
 func enter_mg():
-	# --- CONTRACT: Function `enter_mg` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for enter_mg
 	if not mg_nest.claim(player):return
 	player_mounted=true
 	player.global_position=mg_nest.operator_position()
@@ -736,10 +821,8 @@ func enter_mg():
 	for box in player.equipment_boxes:box.set_active(false)
 	toast("BREDA M37  •  LMB fire / RMB aim / F dismount",4)
 
+## Takes the player off the gun and restores the previously equipped weapon and FOV.
 func leave_mg():
-	# --- CONTRACT: Function `leave_mg` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for leave_mg
 	if not player_mounted:return
 	mg_nest.release(player)
 	player_mounted=false
@@ -747,19 +830,17 @@ func leave_mg():
 	player.select_weapon(player.weapon)
 	player.camera.fov=player.HIP_FOV
 
+## Draws a short-lived glowing line (55 ms) from `start` to `end`; unshaded so
+## it is visible in shadow.
 func tracer(start: Vector3, end: Vector3, color: Color):
-	# --- CONTRACT: Function `tracer` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for tracer
 	var mat = Art.material(color).duplicate()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var trace = Art.segment(self,start,end,0.009,mat)
 	get_tree().create_timer(0.055).timeout.connect(trace.queue_free)
 
+## Spawns five small particles that burst out and shrink: a dust/spark effect.
+## [param pos] where. [param color] particle colour.
 func impact(pos: Vector3, color: Color):
-	# --- CONTRACT: Function `impact` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for impact
 	var mat = Art.material(color)
 	for i in range(5):
 		var p = Art.sphere(self,0.035,pos,mat)
@@ -768,10 +849,9 @@ func impact(pos: Vector3, color: Color):
 		tw.tween_property(p,"scale",Vector3.ZERO,0.4)
 		tw.finished.connect(p.queue_free)
 
+## Creates a grenade at `pos` (0.6 m ahead) that flies along `direction` at
+## 14 m/s with 3 m/s lift; _physics_process then simulates it.
 func throw_grenade(pos: Vector3, direction: Vector3):
-	# --- CONTRACT: Function `throw_grenade` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for throw_grenade
 	var root = Node3D.new()
 	add_child(root)
 	root.position = pos+direction*0.6
@@ -780,10 +860,12 @@ func throw_grenade(pos: Vector3, direction: Vector3):
 	# M35 impact grenade: a short arming interval, impact detonation, timed fallback.
 	grenades_live.append({"node":root,"velocity":direction*14+Vector3(0,3,0),"fuse":4.0,"age":0.0})
 
+## Detonates an explosive at `pos`: noise (210 m), sound, flash light,
+## damage to soldiers within 7 m (150) and the player within 6 m (60) if
+## unobstructed, damage to the world through World.blast, and damage to
+## equipment hit areas within 3.2 m.
+## [param power] breakable damage at the centre. [param radius] blast radius in m.
 func explode(pos: Vector3, power: float=340, radius: float=4.4):
-	# --- CONTRACT: Function `explode` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for explode
 	emit_noise(pos,210,1,"blast")
 	sounds.at("rifle",pos,7)
 	impact(pos,Color("e5b373"))
@@ -810,30 +892,26 @@ func explode(pos: Vector3, power: float=340, radius: float=4.4):
 		if equipment.collision_layer!=0 and equipment.global_position.distance_to(pos)<3.2:
 			equipment.receive_hit(115,pos)
 
+## Screenshot helper (--capture-title): waits three seconds, saves
+## reviews/start-screen.png and quits.
 func capture_title():
-	# --- CONTRACT: Function `capture_title` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for capture_title
 	await get_tree().create_timer(3).timeout
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://reviews/start-screen.png")
 	print("TITLE_SCREEN_CAPTURED")
 	get_tree().quit()
 
+## Starts the encounter self-test (--self-test) after two physics frames so
+## everything is initialised.
 func run_tests():
-	# --- CONTRACT: Function `run_tests` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run_tests
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	var tests = load("res://tests/encounter_test.gd").new()
 	add_child(tests)
 	tests.run(self)
 
+## Starts the scripted visual check (--visual-check), see tests/visual_check.gd.
 func run_visual_check():
-	# --- CONTRACT: Function `run_visual_check` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run_visual_check
 	var check_script=load("res://tests/visual_check.gd").new()
 	add_child(check_script)
 	check_script.run(self)
