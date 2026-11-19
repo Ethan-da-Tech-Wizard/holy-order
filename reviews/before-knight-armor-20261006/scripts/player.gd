@@ -4,70 +4,138 @@
 # Last Modified: November 19, 2026
 # Purpose: Core Holy Order game component managing state, rendering, kinematics, or sound for player.gd.
 # ==============================================================================
+## First-person player controller for the desert mission (the knight).
+##
+## A CharacterBody3D that owns the camera rig, the four held items (rifle, sword, fists, shovel)
+## plus the demolition satchel hooks, stance and stamina, melee charge, aiming and reload
+## animation, and a visible body model for stowed equipment. The mission script (`game`) sets
+## `game` and drives phases; this script reads input in `_unhandled_input`, simulates movement
+## in `_physics_process` (fixed tick) and cosmetic motion in `_process` (every rendered frame).
+## The Ardennes and Omaha players (ardennes/player.gd, omaha/player.gd) are separate scripts.
+## NOTE: only the first part of this file (setup, input, movement, start of update_view) is
+## documented in this pass.
 extends CharacterBody3D
 
+# Art helpers and the hitbox that lets bullets hit equipment.
 const Art = preload("res://scripts/art.gd")
 const EquipmentHitbox=preload("res://scripts/equipment_hitbox.gd")
+
+# Mission controller: phase, sounds, demolition, interaction and toast helpers.
 var game
+
+# Camera rig: the head pivot carries the camera; `hands` is a child of the camera so held items follow the view.
 var camera: Camera3D
 var head: Node3D
 var hands: Node3D
+
+# Held items: rifle, sword, fists, shovel (shown only for the selected weapon).
 var rifle: Node3D
 var blade: Node3D
 var fists: Node3D
 var shovel: Node3D
+
+# True once the shovel was picked up from a body.
 var has_shovel: bool=false
+
+# Item condition 0-100+: shots and strikes on the equipment hitbox lower it, and a broken item cannot be used.
 var rifle_health: float=100
 var sword_health: float=140
 var shovel_health: float=110
+
+# The equipment hitboxes created in _ready.
 var equipment_boxes: Array=[]
+
+# Third-person body model (hidden from the camera), the slung rifle, scabbard and sheathed sword visuals.
 var body_model: Node3D
 var slung: Node3D
 var scabbard: Node3D
 var sheathed: Node3D
+
+# Collision capsule; its height changes with the stance.
 var shape: CollisionShape3D
 var health: float = 100
+
+# Stamina 0-100; drained by sprinting and charging, regained when walking.
 var stamina: float = 100
+
+# Rounds in the rifle and in reserve; has_rifle becomes true after the sentry's rifle is recovered.
 var ammo: int = 0
 var reserve: int = 0
 var has_rifle: bool = false
+
+# Selected weapon: 0 sword, 1 rifle, 2 fists (3 shovel and 4 demolition are handled in the code below).
 var weapon: int = 0 # 0 sword, 1 rifle, 2 fists
+
+# Grenades carried.
 var grenades: int = 0
+
+# Camera height in metres above the feet; eased between stand, crouch and prone values.
 var eye_height: float = 1.68
+
+# Stance and action flags set every physics tick from the inputs.
 var is_sprinting: bool = false
 var crouched: bool = false
 var prone: bool = false
+
+# Melee charge state: is_charging (sprint + aim), power_hold (0..1.2 s of held attack) and holding_attack.
 var is_charging: bool = false
 var power_hold: float = 0
 var holding_attack: bool = false
+
+# Multiplier for the next melee strike.
 var strike_power: float = 1
+
+# Seconds left of the reload (2.3 s animation in update_view).
 var reload_time: float = 0
+
+# Aim-down-sights state and cooldown until the next attack.
 var aiming: bool = false
 var cooldown: float = 0
+
+# Melee swing timer and a flag that applies the hit part-way through the swing.
 var attack_time: float = 0
 var attack_pending: bool = false
+
+# Cosmetic accumulators: walking bob phase, footstep timer, lean amount, recoil kick.
 var bob: float = 0
 var step_clock: float = 0
 var lean: float = 0
 var recoil: float = 0
+
+# Mouse sensitivity in radians per pixel.
 var sensitivity: float = 0.0021
+
+# Shots fired and hits scored, for the end screen and tests.
 var shot_count: int = 0
 var hit_count: int = 0
+
+# Mantle (ledge climb) state: seconds left and the start and end positions.
 var climbing: float = 0
 var climb_from: Vector3
 var climb_to: Vector3
+
+# Muzzle flash sphere.
 var muzzle: MeshInstance3D
+
+# 0..1 blend between hip and aimed rifle poses.
 var aim_blend: float = 0
+
+# The two gauntlet hands on the rifle, moved during the reload animation.
 var grip_hand: Node3D
 var support_hand: Node3D
+
+# Field of view when hip-firing and when aiming (degrees), and the rifle's position at the hip in camera space.
 const HIP_FOV: float = 83.0
 const AIM_FOV: float = 58.0
 const HIP_RIFLE_POSITION = Vector3(0.22, -0.245, -0.40)
 
+## Build the collider, camera rig, held items, body model and hitboxes.
 func _ready():
+	# Layer 2 = player; mask 1|4 = world and enemy bodies.
 	collision_layer = 2
 	collision_mask = 1|4
 	floor_snap_length = 0.35
+	# Capsule 0.32 m radius, 1.8 m tall; it shrinks while crouching or prone.
 	shape = CollisionShape3D.new()
 	var capsule = CapsuleShape3D.new()
 	capsule.radius = 0.32
@@ -78,11 +146,13 @@ func _ready():
 	head = Node3D.new()
 	add_child(head)
 	head.position.y = eye_height
+	# Camera: 2.5 cm near plane so the rifle does not clip, 450 m far plane (graphics.gd may reduce it), physics interpolation off because ViewSmoothing handles it.
 	camera = Camera3D.new()
 	head.add_child(camera)
 	camera.near = 0.025
 	camera.far = 450
 	camera.fov = 83
+	# Held items are children of the camera so they stay in view.
 	hands = Node3D.new()
 	camera.add_child(hands)
 	rifle = Art.rifle(hands)
@@ -98,19 +168,24 @@ func _ready():
 	Art.gauntlet(fists,Vector3(-0.22,0,0),Vector3(-0.65,0,0.2))
 	Art.gauntlet(fists,Vector3(0.22,-0.025,0),Vector3(-0.65,0,-0.2))
 	shovel=Art.shovel(hands)
+	# Unshaded warm muzzle flash.
 	var glow = Art.material(Color("ffe7aa")).duplicate()
 	glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	muzzle = Art.sphere(rifle,0.035,rifle.get_node("Muzzle").position,glow)
 	muzzle.visible = false
 	# Visible legs, breastplate and carried weapons; equipment is physically stowed.
+	# Visible legs, breastplate and carried weapons; equipment is physically stowed.
 	body_model = Art.knight(self)
+	# Hide the world model's head from the first-person camera using layer two.
 	# Hide the world model's head from the first-person camera using layer two.
 	set_model_layers(body_model,2)
 	camera.cull_mask = 1
+	# Legs and boots drawn on the player body (visible when looking down).
 	var steel = Art.material(Color("788684"),0.72,0.36)
 	for x in [-0.15,0.15]:
 		Art.cylinder(self,0.10,0.60,Vector3(x,0.43,0.02),steel,0.13)
 		Art.box(self,Vector3(0.20,0.14,0.34),Vector3(x,0.09,-0.08),steel)
+	# Slung rifle and sheathed sword, shown when the other weapon is in hand.
 	slung = Art.rifle(self)
 	slung.position = Vector3(0.26,1.04,0.28)
 	slung.rotation = Vector3(PI/2,0,-0.18)
@@ -120,33 +195,41 @@ func _ready():
 	scabbard.rotation.z = -2.93
 	Art.box(scabbard,Vector3(0.079,0.98,0.034),Vector3(0,0.58,0),Art.material(Color("473a2b")))
 	sheathed = Art.sword(scabbard)
+	# Each item gets a hitbox so enemies can shoot the equipment out of the player's hands.
 	for entry in [[rifle,"rifle"],[slung,"rifle"],[blade,"sword"],[sheathed,"sword"],[shovel,"shovel"]]:
 		var hitbox=EquipmentHitbox.new()
 		hitbox.wielder=self
 		hitbox.item=entry[1]
 		entry[0].add_child(hitbox)
 		equipment_boxes.append(hitbox)
+	# Start with the sword drawn.
 	select_weapon(0)
 
+## Set the render layer of a node and all of its descendants.
+## @param node Subtree root. @param layers Layer bit mask.
 func set_model_layers(node: Node, layers: int):
 	if node is VisualInstance3D:
 		node.layers = layers
 	for child in node.get_children():
 		set_model_layers(child,layers)
 
+## Handle mouse look and key presses (only while the game phase is "playing").
 func _unhandled_input(event):
 	if game.phase != "playing":
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Preserve screen-space control when aiming magnifies the scene.
+		# Preserve screen-space control when aiming magnifies the scene.
 		var aim_sensitivity = tan(deg_to_rad(camera.fov * 0.5)) / tan(deg_to_rad(HIP_FOV * 0.5))
 		rotate_y(-event.relative.x*sensitivity*aim_sensitivity)
 		head.rotation.x = clampf(head.rotation.x-event.relative.y*sensitivity*aim_sensitivity,-1.35,1.35)
+	# Seated at the MG: limit the traverse (+/-1.2 rad) and pitch, and let interact leave the gun.
 	if game.player_mounted:
 		rotation.y=PI+clampf(wrapf(rotation.y-PI,-PI,PI),-1.20,1.20)
 		head.rotation.x=clampf(head.rotation.x,-0.25,0.28)
 		if event.is_action_pressed("interact"):game.leave_mg()
 		return
+	# Weapon selection, satchel placement/detonation and the attack button; the attack button does different things per weapon (rifle shot, dig stroke, place satchel, or start a melee charge).
 	if event.is_action_pressed("weapon_demolition"):select_weapon(4)
 	if event.is_action_pressed("detonate"):game.demolition.detonate()
 	if weapon==4 and event.is_action_pressed("aim"):game.demolition.deploy(true)
@@ -165,10 +248,12 @@ func _unhandled_input(event):
 		else:
 			holding_attack = true
 			power_hold = 0
+	# Releasing the attack button after a hold swings with the accumulated power.
 	if event.is_action_released("attack") and weapon in [0,2] and holding_attack:
 		holding_attack = false
 		attack(power_hold)
 		power_hold = 0
+	# Toggle prone, reload, interact and grenade. The grenade count is decremented before the throw call.
 	if event.is_action_pressed("prone"):
 		prone = not prone
 	if event.is_action_pressed("reload"):
@@ -181,60 +266,78 @@ func _unhandled_input(event):
 			game.throw_grenade(camera.global_position,-camera.global_basis.z)
 		else:
 			game.toast("No grenades. The outpost has a supply crate.",2)
+	# Jump: stand up, try a mantle first, otherwise jump at 6.2 m/s from the floor.
 	if event.is_action_pressed("jump"):
 		prone = false
 		if climbing<=0 and not try_mantle() and is_on_floor():
 			velocity.y = 6.2
 
+## Fixed-tick update: stance, movement, leaning, footsteps and basic bounds.
+## @param delta Seconds per physics tick.
 func _physics_process(delta):
 	if game.phase != "playing":
 		return
+	# On the MG: only zoom the camera; no walking.
 	if game.player_mounted:
 		camera.fov=lerpf(camera.fov,58.0 if Input.is_action_pressed("aim") else HIP_FOV,delta*10)
 		return
+	# Mantling overrides movement: lerp from the start to the end position over 0.48 s.
 	if climbing > 0:
 		climbing = maxf(0,climbing-delta)
 		global_position = climb_from.lerp(climb_to,smoothstep(0,1,1-climbing/0.48))
 		return
 	cooldown = maxf(0,cooldown-delta)
+	# Hold the attack button to keep digging with the shovel.
 	if weapon==3 and Input.is_action_pressed("attack") and cooldown==0:dig_stroke()
+	# Reload completes: fill the rifle up to 6 rounds from reserve.
 	if reload_time > 0:
 		reload_time = maxf(0,reload_time-delta)
 		if reload_time == 0:
 			var rounds = mini(6-ammo,reserve)
 			ammo += rounds
 			reserve -= rounds
+	# Hold-to-charge power grows up to 1.2 s.
 	if holding_attack: power_hold = minf(1.2,power_hold+delta)
 	attack_time = maxf(0,attack_time-delta)
+	# Apply the melee hit part-way through the swing (0.35 s left for the sword, 0.22 s for others).
 	if attack_pending and attack_time < (0.35 if weapon == 0 else 0.22):
 		attack_pending = false
 		melee_hit()
+	# Input: move axes, crouch toggle, aim (only with the rifle and not while reloading), sprint (forward only, with stamina) and melee charge.
 	var input_dir = Input.get_vector("move_left","move_right","move_forward","move_back")
 	crouched = Input.is_action_pressed("crouch") and not prone
 	aiming = Input.is_action_pressed("aim") and weapon == 1 and reload_time <= 0
 	is_sprinting = Input.is_action_pressed("sprint") and input_dir.y < -0.1 and stamina > 3 and not crouched and not prone and not aiming
 	is_charging = is_sprinting and weapon in [0,2] and Input.is_action_pressed("aim") and stamina > 5
+	# Speeds in m/s: charge 11.4, sprint 7.8, prone 1.15, crouch 2.3, walk 4.9, aiming 2.8.
 	var speed = 11.4 if is_charging else (7.8 if is_sprinting else (1.15 if prone else (2.3 if crouched else 4.9)))
 	if aiming:
 		speed = 2.8
+	# Stamina: charging costs 28/s, sprinting 19/s, otherwise 15/s recovers.
 	stamina = clampf(stamina+(-28 if is_charging else (-19 if is_sprinting else 15))*delta,0,100)
 	var direction = transform.basis*Vector3(input_dir.x,0,input_dir.y)
+	# 25 m/s^2 acceleration for responsive but not instant movement; gravity is 20 m/s^2.
 	velocity.x = move_toward(velocity.x,direction.x*speed,25*delta)
 	velocity.z = move_toward(velocity.z,direction.z*speed,25*delta)
 	if not is_on_floor():
 		velocity.y -= 20*delta
 	elif direction.length()>0.1:
+		# Step up small rubble while walking.
 		step_over_rubble(direction.normalized())
 	move_and_slide()
+	# Falling out of the world counts as defeat.
 	if global_position.y< -26:
 		game.defeat()
+	# Crouch adjusts both viewpoint and the hittable collision volume.
 	# Crouch adjusts both viewpoint and the hittable collision volume.
 	eye_height = lerpf(eye_height,0.51 if prone else (1.12 if crouched else 1.68),delta*12)
 	shape.shape.height = 0.66 if prone else (1.22 if crouched else 1.80)
 	shape.position.y = shape.shape.height*0.5
+	# Head bob scales with speed and almost vanishes while aiming.
 	var moving = Vector2(velocity.x,velocity.z).length()
 	bob += delta*moving*1.8
 	head.position.y = eye_height+sin(bob)*lerpf(0.027,0.006,aim_blend)*minf(moving,1)
+	# Leaning: pushed by 0.35 m toward the side unless a wall is in the way, then smoothed.
 	var desired_lean = Input.get_axis("lean_left","lean_right")
 	var side = global_basis.x*desired_lean*0.35
 	var from = global_position+Vector3(0,eye_height,0)
@@ -244,31 +347,41 @@ func _physics_process(delta):
 	lean = lerpf(lean,desired_lean,delta*9)
 	camera.position.x = lean*0.29
 	camera.rotation.z = -lean*0.13
+	# Footsteps: sound plus a noise event whose radius depends on stance (prone 1.6 m, crouch 3, sprint 14, walk 7 m) so quiet movement is stealthy.
 	if is_on_floor() and moving > 0.5:
 		step_clock += delta*moving
 		if step_clock > (2.7 if is_sprinting else 2.1):
 			step_clock = 0
 			game.sounds.play("step",-14 if crouched else -9,randf_range(0.85,1.1))
 			game.emit_noise(global_position,1.6 if prone else (3.0 if crouched else (14.0 if is_sprinting else 7.0)),1,"footstep")
+	# Keep the player inside the rocky basin (x +/-74, z from -85 to 61).
 	if absf(position.x)>74 or position.z < -85 or position.z > 61:
 		game.toast("The outpost lies within the rocky basin.",2)
 		position.x = clampf(position.x,-74,74)
 		position.z = clampf(position.z,-85,61)
 
+## Per-frame cosmetic update (not tied to the physics tick).
 func _process(delta):
 	if game.phase != "playing" or game.player_mounted: return
+	# Cosmetic movement follows rendered frames, not the fixed physics tick rate.
 	# Cosmetic movement follows rendered frames, not the fixed physics tick rate.
 	recoil = move_toward(recoil,0,delta*2.8)
 	camera.rotation.x = recoil*0.020
 	update_view(delta)
 
+## Update camera zoom and weapon animation (sights, bob, recoil, reload, bolt cycle).
+## @param delta Seconds.
 func update_view(delta):
+	# Aim blend reaches 0 or 1 in 0.2 s; its smoothstep gives eased hip-to-sights transition.
 	aim_blend = move_toward(aim_blend,1.0 if aiming else 0.0,delta/0.20)
 	var aim_weight = smoothstep(0,1,aim_blend)
+	# Field of view: wider while sprinting (88) or charging (96), narrowing to 58 when aiming, eased independently of frame rate.
 	var target_fov = lerpf(96.0 if is_charging else (88.0 if is_sprinting else HIP_FOV),AIM_FOV,aim_weight)
 	camera.fov = lerpf(camera.fov,target_fov,1-exp(-15*delta))
+	# Walking sway scales with speed (normalised by 4.9 m/s).
 	var motion = clampf(Vector2(velocity.x,velocity.z).length()/4.9,0,1)
 	var sway = sin(bob)*0.008*motion
+	# The rifle is positioned so its sight line lines up with the camera axis when aiming.
 	var sight = rifle.get_node("SightLine") as Marker3D
 	var aim_position = Vector3(-sight.position.x,-sight.position.y,-0.48)
 	var hip_position = HIP_RIFLE_POSITION+Vector3(sin(bob*0.5)*0.004*motion,sway,0)
@@ -282,6 +395,7 @@ func update_view(delta):
 	support_hand.position = Vector3(-0.022,-0.090,-0.40)
 	support_hand.rotation = Vector3(-0.9,0,0.2)
 	clip.visible = false
+	# Reload animation: progress 0..1 over 2.3 s; the rifle tilts, the bolt opens, the clip appears and the support hand reaches for it in defined phases.
 	if reload_time > 0:
 		var progress = clampf(1-reload_time/2.3,0,1)
 		var lifted = smoothstep(0,0.16,progress)*(1-smoothstep(0.82,1,progress))
