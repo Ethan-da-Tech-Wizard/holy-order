@@ -1,45 +1,80 @@
 ## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
 ## review. The documentation was carried over from the live script scripts/omaha/world.gd for every
 ## code line that is unchanged; lines that differ from the live script have no extra notes.
-# ==============================================================================
-# Program: world.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha Beach 3D coastal environmental system. Synthesizes animated ocean wave vertex shaders, dynamic tidal water planes, sand bluff cliffs, concrete bunker meshes, and artillery crater terrain deformation.
-# ==============================================================================
+## The Omaha Beach battlefield: sea, beach, bluffs with three draws, three
+## barbed-wire rows, a sea wall, eight bunkers with trenches, obstacles and mines,
+## and a three-by-eight block French village with streets, a church and a
+## street navigation grid.
+##
+## Role: derived from the Ardennes world (ardennes/world.gd), reusing its
+## terrain chunking, deformation, cover and navigation API (road_x is replaced by
+## the street grid here), but with a different terrain function, a larger map and
+## many builders. Created by omaha/battle.gd (sets `game`); all layout numbers
+## come from layout.gd. Randomness is seeded with 19440606 (D-Day) so the map is identical on every run.
+## Terrain: 48 m tiles (TILE); height in metres comes from raw_height() (beach
+## slope, shingle, bluff with three draws, plateau at TOWN_GROUND), then trenches,
+## bunker platforms and shell craters in height_at(). Tiles near the fortifications use
+## a 2 m grid, elsewhere 4 m (grid_step), and tiles hit by shells refine to 1 m cells.
+## Performance: static box visuals are merged into per-material, per-96 m MultiMeshes
+## (batch_static_boxes) while their colliders stay; first damage "unbatches" a panel (armor.gd).
 extends "res://scripts/ardennes/world.gd"
 const Armor=preload("res://scripts/omaha/armor.gd")
 const Wire=preload("res://scripts/omaha/wire.gd")
 const Layout=preload("res://scripts/omaha/layout.gd")
+
+## Terrain tile size in metres (48).
 const TILE:int=48
+
+## Map width from layout.gd.
 const WIDTH:float=Layout.WIDTH
+
+## Map depth from layout.gd.
 const DEPTH:float=Layout.DEPTH
+
+## z of the three wire rows.
 const WIRE_ROWS=Layout.WIRE_ROWS
+
+## All wire segments.
 var wires:Array=[]
+
+## Wire segments per row, ordered by x (used to find the segment in a lane).
 var wires_by_row:Array=[[],[],[]]
+
+## Breached segments per row; AI paths through these.
 var gaps_by_row:Array=[[],[],[]]
+
+## Number of merged box batches (statistic).
 var static_batches:int=0
+
+## Bunker records.
 var bunkers:Array=[]
+
+## Mined posts {point, live}.
 var mines:Array=[]
+
+## Reference points in the village for AI.
 var town_points:Array[Vector3]=[]
+
+## Bunker concrete material.
 var concrete:StandardMaterial3D
+
+## Stone/masonry material.
 var masonry:StandardMaterial3D
+
+## Sea surface mesh.
 var sea:MeshInstance3D
+
+## Trench centre lines as pairs of Vector2 (x, z); height_at digs along them.
 var trench_segments:Array=[]
+
+## Key -> MultiMeshInstance3D for instanced scenery (hedgehogs, posts, wire, boxes).
 var obstacle_batches:Dictionary={}
 
+## Playable half extents in metres: the map minus a margin.
 func play_bounds()->Vector2:return Vector2(WIDTH-8,DEPTH-10)
-	# --- CONTRACT: Function `play_bounds` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for play_bounds
 
+## Godot lifecycle hook: seeds noise and craters, builds trench lines (two cross-beach rows and a trench to each sector), sets up terrain tiles and builds everything in order: coastal light, sea, obstacles, wire, sea wall, bunkers, trench details, village, street navigation, then merges static boxes.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	add_to_group("battle_world")
 	rng.seed=19440606
 	noise.seed=19440606
@@ -87,10 +122,9 @@ func _ready():
 	world_camera.far=2400
 	world_camera.fov=74
 
+## Creates a StandardMaterial3D from a tiling texture set in assets/omaha.
+## [param kind] texture family ("concrete", "rock"). [param scale_uv] texture repeat scale. [param tint] colour multiplier.
 func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
-	# --- CONTRACT: Function `textured` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for textured
 	var m=StandardMaterial3D.new()
 	m.albedo_color=tint
 	m.albedo_texture=load("res://assets/omaha/"+kind+"_diff.jpg")
@@ -104,10 +138,8 @@ func textured(kind:String,scale_uv:float,tint:Color)->StandardMaterial3D:
 	m.roughness=0.92
 	return m
 
+## Terrain height before trenches/craters: below sea level in the water (z > 0), a gentle beach slope capped at 5.45 m, a bluff rising to 42 m between 178 and 313 m inland with three draws (at x = 0 and +-72) forming gentler routes, noise, and a blend to the flat town plateau between 300 and 356 m.
 func raw_height(x:float,z:float)->float:
-	# --- CONTRACT: Function `raw_height` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for raw_height
 	if z>0:return -0.07*z-0.1
 	var beach=minf(-z*0.017,5.45)
 	var bluff=smoothstep(178.0,313.0,-z)*42.0
@@ -118,10 +150,9 @@ func raw_height(x:float,z:float)->float:
 	h+=noise.get_noise_2d(x,z)*minf(2.1,maxf(0,(-z-5)*0.012))
 	return h
 
+## Final terrain height: raw_height, bunker platforms (blend 10 to 21 m), trenches dug up to 1.65 m deep along the trench segments, then another bunker-doorway flattening and shell craters.
+## Results are cached once the cache is enabled.
 func height_at(x:float,z:float)->float:
-	# --- CONTRACT: Function `height_at` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for height_at
 	var key=Vector2(x,z)
 	if height_cache_enabled and height_cache.has(key):return height_cache[key]
 	var h=raw_height(x,z)
@@ -148,15 +179,11 @@ func height_at(x:float,z:float)->float:
 	if height_cache_enabled:height_cache[key]=h
 	return h
 
+## Cell size for a tile at depth z: 2 m between z = -192 and -384 (the fortified belt) and 4 m elsewhere.
 func grid_step(z:float)->int:return 2 if z< -192 and z>=-384 else 4
-	# --- CONTRACT: Function `grid_step` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for grid_step
 
+## Builds one terrain tile as a soil Prop with a mesh and a trimesh collider (same idea as the Ardennes chunk).
 func ground_chunk(x:float,z:float):
-	# --- CONTRACT: Function `ground_chunk` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for ground_chunk
 	var body=Prop.new()
 	body.material_kind="soil"
 	body.battle_world=self
@@ -171,10 +198,9 @@ func ground_chunk(x:float,z:float):
 	terrain_lookup[Vector2i(int(x),int(z))]=body
 	terrain_meshes+=1
 
+## Builds a tile mesh: cells of `step` metres as two triangles, refined to 1 m in cells listed in edited_cells (impact sites).
+## [param heights] optional 49 x 49 stored heights of an edited tile; empty means sample height_at.
 func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloat32Array())->ArrayMesh:
-	# --- CONTRACT: Function `terrain_mesh` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for terrain_mesh
 	var st=SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_smooth_group(0)
@@ -190,10 +216,8 @@ func terrain_mesh(x:float,z:float,step:int,heights:PackedFloat32Array=PackedFloa
 	st.index()
 	return st.commit()
 
+## Terrain height at (x, z) interpolated on the same triangle the mesh uses at this tile's step.
 func base_surface_height(x:float,z:float)->float:
-	# --- CONTRACT: Function `base_surface_height` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for base_surface_height
 	var step=grid_step(floorf(z/TILE)*TILE)
 	var gx=floorf(x/step)*step
 	var gz=floorf(z/step)*step
@@ -205,10 +229,8 @@ func base_surface_height(x:float,z:float)->float:
 	var d=height_at(gx,gz+step)
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
+## Terrain height including shell/shovel edits from soil_edits.
 func surface_height(x:float,z:float)->float:
-	# --- CONTRACT: Function `surface_height` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for surface_height
 	var key=Vector2i(floori(x/TILE)*TILE,floori(z/TILE)*TILE)
 	if not soil_edits.has(key):return base_surface_height(x,z)
 	var gx=clampi(floori(x-key.x),0,47)
@@ -222,19 +244,15 @@ func surface_height(x:float,z:float)->float:
 	var d=h[gx*49+gz+1]
 	return a+(b-a)*u+(c-b)*v if u>=v else a+(c-d)*u+(d-a)*v
 
+## Lowers the terrain inside a sphere by asking each affected tile to carve.
 func carve_ground(center:Vector3,radius:float):
-	# --- CONTRACT: Function `carve_ground` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for carve_ground
 	for x in range(floori((center.x-radius)/TILE)*TILE,floori((center.x+radius)/TILE)*TILE+1,TILE):
 		for z in range(floori((center.z-radius)/TILE)*TILE,floori((center.z+radius)/TILE)*TILE+1,TILE):
 			var body=terrain_lookup.get(Vector2i(x,z))
 			if body!=null:body.carve(center,radius)
 
+## Lowers a tile's stored heights to the bottom of a sphere (never more than 2.2 m below the base), marks the touched cells for 1 m refinement, rebuilds the mesh and collider, and calls geometry_updated.
 func deform_ground(body,point:Vector3,radius:float):
-	# --- CONTRACT: Function `deform_ground` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for deform_ground
 	var key=Vector2i(roundi(body.position.x),roundi(body.position.z))
 	var heights:PackedFloat32Array
 	if soil_edits.has(key):heights=soil_edits[key]
@@ -258,20 +276,21 @@ func deform_ground(body,point:Vector3,radius:float):
 	body.bounds_valid=false
 	geometry_updated(point)
 
+## Bumps the revision, clears the path cache and remembers the change for cover_changed (no grid update; the street grid is rebuilt by build_street_navigation when houses collapse).
 func geometry_updated(point:Vector3):
-	# Step: Update internal simulation state and refresh cached coordinates
 	geometry_revision+=1
 	path_cache.clear()
 	geometry_changes.append({"revision":geometry_revision,"point":point})
 	if geometry_changes.size()>32:geometry_changes.pop_front()
 
+## Route for infantry. In the village (z in front of the town) it joins the
+## house interiors' routes (entering by a door, climbing stairs, leaving by the door) with the open street route; nearby teammates (within 6 m on level ground with clear rays) just walk straight; otherwise falls back to the ardennes A* grid.
 func path_between(a:Vector3,b:Vector3)->PackedVector3Array:
 	return PackedVector3Array([a,b]) # Mission waypoints provide wire / bunker / draw routing.
 
+## Creates a destructible Armor panel with a bevelled box and a collider.
+## [param size] metres. [param p] local position. [param mat] material. [param parent] parent node. [param kind] material kind ("masonry", "sandbag", ...). Returns the panel.
 func strong(size:Vector3,p:Vector3,mat:Material,parent:Node3D=self,kind:String="masonry"):
-	# --- CONTRACT: Function `strong` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for strong
 	var body=Armor.new()
 	body.material_kind=kind
 	body.protected_concrete=kind=="masonry"
@@ -288,8 +307,8 @@ func strong(size:Vector3,p:Vector3,mat:Material,parent:Node3D=self,kind:String="
 	body.add_child(cs)
 	return body
 
+## Builds concrete strongpoint `i` with narrow embrasures through thick walls, an open rear doorway, a roof and an MG position, plus a separate sandbag field nest above or below.
 func build_bunker(i:int):
-	# Step: Instantiate and position node hierarchy into scene tree for build_bunker
 	var root=Node3D.new()
 	add_child(root)
 	root.position=anchors[i]
@@ -317,8 +336,8 @@ func build_bunker(i:int):
 	build_field_nest(p,i)
 	for x in [-8.0,8.0]:covers.append(on_ground(anchors[i]+Vector3(x,0,6)))
 
+## Builds a sandbag machine-gun position at `p` (back wall, two side walls, three rows of decorative bags, ammunition box) and registers it with facing +Z and a 1.25 rad arc.
 func build_field_nest(p:Vector3,i:int):
-	# Step: Instantiate and position node hierarchy into scene tree for build_field_nest
 	var bag=Art.material(Color("797762"),0,1)
 	var root=Node3D.new()
 	add_child(root)
@@ -331,8 +350,8 @@ func build_field_nest(p:Vector3,i:int):
 	nests.append({"position":p,"kind":"mg42","operator":null,"facing":Vector3(0,0,1),"arc":1.25,"bunker":i})
 	covers.append(p)
 
+## Lays three rows of 8 m wire segments across the beach (spacing from WIRE_EDGE) on the ground, and merges their visuals into batches of 12 per row (hidden individually on a breach).
 func build_wire():
-	# Step: Instantiate and position node hierarchy into scene tree for build_wire
 	for row in range(3):
 		for x in range(-Layout.WIRE_EDGE,Layout.WIRE_EDGE,8):
 			var wire=Wire.new()
@@ -357,10 +376,9 @@ func build_wire():
 				group[i].visual_batch=batch.multimesh
 				group[i].visual_index=i
 
+## Wire segment ahead of a position in a lane, i.e. the first row not yet crossed (null if none or already behind).
+## [param p] position. [param lane] lane x.
 func blocking_wire(p:Vector3,lane:float):
-	# --- CONTRACT: Function `blocking_wire` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for blocking_wire
 	for row in range(3):
 		if p.z<WIRE_ROWS[row]-2:continue
 		var column=clampi(floori((lane+Layout.WIRE_EDGE)/8),0,wires_by_row[row].size()-1)
@@ -377,6 +395,7 @@ func nearest_gap(row:int,x:float):
 			chosen=wire
 	return chosen
 
+## Builds the sea wall with overlapping breaks that give crawl-height recesses and routes through.
 func build_seawall():
 	for x in range(-360,360,12):
 		# Overlapping breaks provide crawl-height recesses and routes through the wall.
@@ -386,10 +405,8 @@ func build_seawall():
 		covers.append(on_ground(p+Vector3(0,0,2.5)))
 	for c in craters:covers.append(on_ground(c.p))
 
+## Creates a MultiMeshInstance3D for a mesh and a list of transforms and stores it in obstacle_batches[key].
 func instance_batch(key:String,mesh:Mesh,transforms:Array):
-	# --- CONTRACT: Function `instance_batch` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for instance_batch
 	var m=MultiMeshInstance3D.new()
 	m.multimesh=MultiMesh.new()
 	m.multimesh.transform_format=MultiMesh.TRANSFORM_3D
@@ -400,8 +417,8 @@ func instance_batch(key:String,mesh:Mesh,transforms:Array):
 	add_child(m)
 	obstacle_batches[key]=m
 
+## Places Czech hedgehogs (5 rows x 28 columns with random jitter, three crossed beams each, baked to one mesh and instanced) with box colliders and cover points, and 48 mined posts in two rows (instanced; the mine records are kept in `mines`).
 func build_obstacles():
-	# Step: Instantiate and position node hierarchy into scene tree for build_obstacles
 	var root=Node3D.new()
 	var iron=Art.material(Color("373d36"),0.78,0.72)
 	for angle in [Vector3(0,0,PI/4),Vector3(0,0,-PI/4),Vector3(PI/2,0,0)]:
@@ -443,8 +460,8 @@ func build_obstacles():
 		mines.append({"point":p,"live":true})
 	instance_batch("mined_posts",mesh,transforms)
 
+## Adds a timber duckboard and two upright posts every 12 m along both trench lines (baked into one mesh visible up to 650 m) and a cover point on each.
 func build_trench_details():
-	# Step: Instantiate and position node hierarchy into scene tree for build_trench_details
 	var timber=Art.material(Color("534d3d"))
 	var root=Node3D.new()
 	for x in range(-340,340,12):
@@ -507,8 +524,8 @@ func build_village():
 	for sx in [-1,1]:Art.box(self,Vector3(0.25,4,0.25),p+Vector3(sx*2,32,0),frame)
 	Art.box(self,Vector3(5,0.3,0.3),p+Vector3(0,32.8,0),frame)
 
+## Creates the coastal environment (sky, fog, tonemap) and the sun light.
 func build_coastal_light():
-	# Step: Instantiate and position node hierarchy into scene tree for build_coastal_light
 	ambient=WorldEnvironment.new()
 	var env=Environment.new()
 	env.background_mode=Environment.BG_SKY
@@ -541,10 +558,8 @@ func build_coastal_light():
 	sun.directional_shadow_max_distance=95
 	add_child(sun)
 
+## Merges every plain box visual (outside nodes flagged skip_static_batch) into MultiMeshes grouped by material and 96 m cell. Groups of fewer than 3 are left alone. Damageable armor panels remember their batch slot and original mesh so they can be unbatched when hit.
 func batch_static_boxes():
-	# --- CONTRACT: Function `batch_static_boxes` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for batch_static_boxes
 	# Keep every original collision/damage body. Only their box visuals are instanced.
 	# Spatial grouping keeps offscreen village blocks eligible for normal culling.
 	var groups={}
@@ -578,8 +593,8 @@ func batch_static_boxes():
 			visual.hide()
 		static_batches+=1
 
+## Builds the sea surface.
 func build_sea():
-	# Step: Instantiate and position node hierarchy into scene tree for build_sea
 	var plane=PlaneMesh.new()
 	plane.size=Vector2(7600,3600)
 	plane.subdivide_width=32
