@@ -1,33 +1,30 @@
-# ==============================================================================
-# Program: player.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Amphibious landing first-person player controller. Simulates water drag resistance, sand spray particle emission, suppressive fire tunnel-vision vignette shaders, and rapid beachhead traversal mechanics.
-# ==============================================================================
+## Omaha version of the player: starts on a landing craft's deck and has a
+## Garand, a bit of wading and wire-cutting.
+##
+## Differences from the Ardennes player: starts with an M1 Garand (8 rounds, 96
+## spare); is seated differently: walks on the boat deck (`deck_position`) until the ramp drops and then steps off; wading
+## in the sea is capped at 4.4 m/s and limited to z <= 35; far plane 750 m; the
+## shovel can cut barbed wire.
 extends "res://scripts/ardennes/player.gd"
 const Wire=preload("res://scripts/omaha/wire.gd")
+
+## Time of the last shot; reserved for AI awareness, currently unused.
 var last_fired:float=-999
+
+## Player position in the boat's local space: x across the deck, z along it (negative toward the ramp), y deck height.
 var deck_position=Vector3(0,0.27,1.99)
 
+## Godot lifecycle hook: runs the base setup, then replaces the starting kit with a Garand and 96 spare rounds, and extends the camera range.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	ammo_pack.containers.clear()
 	set_firearm("garand",8,100)
 	ammo_pack.add_rounds("garand",96)
 	camera.far=750
 
+## Steps off the boat once it has arrived and the player is beyond the ramp
+## hinge (z < -6.4), and gives a small forward and downward velocity into the water.
 func dismount():
-	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
-	# Invariants:
-	# - Restores actor's independent physics collision layers and spatial hierarchy.
-	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
-	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived or deck_position.z> -6.4:return
 	var p=global_position
 	truck=null
@@ -38,13 +35,11 @@ func dismount():
 	climbing=0
 	game.toast("MOVE OFF THE RAMP • USE THE OBSTACLES • Z PRONE",6)
 
+## While on the boat, moves along the deck (step_on_deck); on foot, runs the
+## base physics, then limits speed to 4.4 m/s in the water (z > 0) and stops the
+## player at z = 35 ("deep water").
+## [param delta] physics step in seconds.
 func _physics_process(delta):
-	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
-	# Invariants:
-	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
-	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
-	# - Performs raycast obstacle evaluations before committing spatial position changes.
-	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if truck!=null:
 		step_on_deck(delta)
 		return
@@ -59,10 +54,10 @@ func _physics_process(delta):
 			position.z=35
 			game.toast("Deep water • head for the beach",2)
 
+## Deck movement on the landing craft: only after arrival with the ramp down; walk speed 3.2 m/s inside the deck box (x +-1.12, z -7 to 3),
+## blocked by soldiers in front; the deck height ramps down along the ramp; yaw follows the boat; dismounts at z < -6.5.
+## [param delta] physics step in seconds.
 func step_on_deck(delta:float):
-	# --- CONTRACT: Function `step_on_deck` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for step_on_deck
 	ViewSmoothing.restore(self)
 	if game.phase!="playing":return
 	update_view(delta)
@@ -87,19 +82,13 @@ func step_on_deck(delta:float):
 	stamina=100
 	if deck_position.z< -6.5:dismount()
 
+## Ignores input during the opening cinematic (game.intro_active).
 func _unhandled_input(event):
-	# --- INPUT DISPATCH BUS: Raw Hardware Event Processing ---
-	# Invariants:
-	# - Intercepts mouse motion and key state transitions not consumed by UI canvas overlays.
-	# - Applies sensitivity coefficients and clamps mouse pitch to [-85 deg, +85 deg].
-	# Step: Ingest and handle hardware input events (mouse look, keystrokes, actions)
 	if game.intro_active:return
 	super._unhandled_input(event)
 
+## Like the base shovel stroke but a hit on wire cuts it instead: each strike adds a cut, and 16 cuts breach the segment.
 func dig_stroke():
-	# --- CONTRACT: Function `dig_stroke` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for dig_stroke
 	# Preserve digging; close shovel work can cut one wire segment if every engineer falls.
 	if truck!=null or grenade_time>0 or cooldown>0 or not has_shovel:return
 	var ray=PhysicsRayQueryParameters3D.create(camera.global_position,camera.global_position-camera.global_basis.z*3.1,1)

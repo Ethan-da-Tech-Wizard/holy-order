@@ -1,38 +1,63 @@
-# ==============================================================================
-# Program: town_house.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Procedural Normandy coastal architecture builder. Generates multi-story stone town houses with destructible roofs, sniper attics, interior floorboards, and rubble debris piles.
-# ==============================================================================
+## A three-storey masonry house in the Omaha village, built from destructible
+## panels with a real interior (stairwell, windows, firing positions) and a
+## structural collapse.
+##
+## Role: created by omaha/world.gd, which sets `world` and `index`. Walls are
+## armor.gd panels with their own hit points; each house is 22 m wide, 26 m deep
+## and 9.6 m high, with streets on the front and back, doors, three levels
+## (3.2 m apart) and a pitched roof. Decorative non-breakable fittings are
+## baked into one mesh. The AI uses `stations` (firing posts with a weapon and
+## facing) and route_inside() to fight indoors.
+## Collapse: ground-floor piers are the `supports`; when too little of their strength remains or the remaining piers no longer surround the
+## centre (check_supports), the house falls, killing occupants, damaging tanks and leaving rubble.
 extends Node3D
 # Three occupied levels share static geometry. Only damaged panels are rebuilt.
 const Art=preload("res://scripts/art.gd")
 const Kit=preload("res://scripts/ardennes/weapons.gd")
+
+## The Omaha world (materials, strong() builder, street navigation).
 var world
+
+## House number; picks materials, shutter colours and the street sign (index / 8).
 var index:int=0
+
+## All armor panels of this house.
 var panels:Array=[]
+
+## The load-bearing panels (corner piers and ground-floor piers).
 var supports:Array=[]
+
+## Firing positions: {point, kind (weapon id), facing, indoor}.
 var stations:Array=[]
+
+## True after collapse().
 var collapsed:bool=false
+
+## Node holding non-destructible fittings (shutters, treads, signs).
 var decorative:Node3D
+
+## Rubble blocks left after a collapse.
 var rubble:Array=[]
+
+## Wall material.
 var facade:Material
+
+## Wood material for floors, stairs and sills.
 var timber:Material
+
+## Roof material (two variants).
 var roof_material:Material
 
+## Godot lifecycle hook: builds the house in this order: side walls with pillars, front and back walls with doorway, windows and piers per floor, shutters,
+## floors with stairwell and treads, roof, chimney, decoration, street sign and firing stations; then bakes the decoration into a single mesh.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	facade=world.town_materials[index%world.town_materials.size()]
 	timber=world.town_timber
 	roof_material=world.town_roofs[index%2]
 	decorative=Node3D.new()
 	add_child(decorative)
 	# Continuous side walls, opening onto two streets through front/back doors.
+	# Side walls: one continuous 2400 hp wall per side plus pillars for supports.
 	for side in [-1,1]:
 		panel(Vector3(0.6,9.6,26),Vector3(side*11,4.8,0),facade,2400)
 		for z in [-12.7,0.0,12.7]:
@@ -40,6 +65,8 @@ func _ready():
 			supports.append(pier)
 	for side in [-1,1]:
 		var z=side*12.7
+
+		# Per floor: sill, lintel and wall piers around window openings. The ground-floor centre is left open as a doorway.
 		for floor_id in range(3):
 			var y=floor_id*3.2
 			# The ground-floor middle opening is a genuine walk-through doorway.
@@ -57,6 +84,7 @@ func _ready():
 				for edge in [-1,1]:
 					Art.box(decorative,Vector3(0.52,1.48,0.12),Vector3(x+edge*1.18,y+1.62,z+side*0.38),world.town_shutters[index%3])
 	# Floor plates leave a real stairwell; wide landings at both ends.
+	# Upper floors: a floor plate with a stairwell cut-out on the +X side, landings at both ends and a sloped stair collision under the visual treads.
 	for floor_id in [1,2]:
 		var y=floor_id*3.2
 		panel(Vector3(18,0.24,25.5),Vector3(-1.9,y-0.12,0),timber,1600)
@@ -87,6 +115,8 @@ func _ready():
 	sign.modulate=Color("c7d5d8")
 	sign.outline_modulate=Color("24404c")
 	sign.no_depth_test=false
+
+	# Firing stations: [position in house, weapon id, direction faced]; most are upstairs windows; mg42 posts get a tripod and sandbags.
 	for entry in [
 		[Vector3(-5.8,3.22,11.45),"mg42",Vector3.BACK],
 		[Vector3(5.8,3.22,11.45),"g43",Vector3.BACK],
@@ -98,6 +128,7 @@ func _ready():
 			Art.cylinder(decorative,0.035,1.1,s+Vector3(0,0.54,0),world.town_metal,-1,8)
 			panel(Vector3(1.8,0.7,0.55),s+Vector3(0,0.32,entry[2].z*0.75),world.town_bags,650,"sandbag")
 	# Bake unbreakable fittings once per house; they disappear with its shell.
+	# Bake the decoration into one mesh once, keeping draw calls low.
 	var mesh=MeshInstance3D.new()
 	mesh.mesh=Kit.bake(decorative)
 	for child in decorative.get_children():
@@ -105,10 +136,10 @@ func _ready():
 	decorative.add_child(mesh)
 	decorative.set_meta("skip_static_batch",true)
 
+## Adds one wall/floor panel as a destructible armor body registered in `panels`.
+## [param size] metres. [param p] local position. [param mat] material (timber becomes "wood", else masonry unless `kind`).
+## [param hp] hit points (default 950). [param kind] damage material kind.
 func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry"):
-	# --- CONTRACT: Function `panel` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for panel
 	if mat==timber and kind=="masonry":kind="wood"
 	var body=world.strong(size,p,mat,self,kind)
 	body.protected_concrete=false
@@ -118,23 +149,18 @@ func panel(size:Vector3,p:Vector3,mat:Material,hp:float=950,kind:String="masonry
 	panels.append(body)
 	return body
 
+## True if a world position lies inside this house's footprint (22 x 26 m) expanded by `padding`.
 func contains(p:Vector3,padding:float=0.0)->bool:
-	# --- CONTRACT: Function `contains` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for contains
 	var local=p-position
 	return absf(local.x)<11+padding and absf(local.z)<13+padding
 
+## Which storey (0 to 2) the height of `p` is on, using 3.2 m per level.
 func floor_at(p:Vector3)->int:
-	# --- CONTRACT: Function `floor_at` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for floor_at
 	return clampi(roundi((p.y-position.y)/3.2),0,2)
 
+## Builds a path for an AI soldier from `start` to `goal` through this house: enters by the front or back door, climbs or descends the +X stair with a landing on each floor, and ends at the goal.
+## [param start] starting world position. [param goal] target world position. Returns an array of waypoints.
 func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
-	# --- CONTRACT: Function `route_inside` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for route_inside
 	var path=PackedVector3Array()
 	var floor_id=floor_at(start) if contains(start) else 0
 	if not contains(start):
@@ -158,10 +184,8 @@ func route_inside(start:Vector3,goal:Vector3)->PackedVector3Array:
 	path.append(goal)
 	return path
 
+## Tests whether the building still stands: total remaining strength of the support piers must be at least 34% and at least three supports must be above 20% strength with the centre of the house inside their convex hull.
 func check_supports():
-	# --- CONTRACT: Function `check_supports` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check_supports
 	if collapsed or supports.is_empty():return
 	var capacity=0.0
 	var footprint=PackedVector2Array()
@@ -175,10 +199,8 @@ func check_supports():
 	if stable:stable=Geometry2D.is_point_in_polygon(Vector2.ZERO,Geometry2D.convex_hull(footprint))
 	if not stable:collapse()
 
+## Collapses the house: demolishes every panel, hides decorations, kills everyone inside (all floors), damages tanks inside (250), creates rubble blocks with street-obstacle rectangles, updates navigation and plays a rumble.
 func collapse():
-	# --- CONTRACT: Function `collapse` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for collapse
 	if collapsed:return
 	collapsed=true
 	for panel_body in panels:

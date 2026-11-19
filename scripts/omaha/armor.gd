@@ -1,40 +1,62 @@
-# ==============================================================================
-# Program: armor.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ballistic armor penetration physics calculator for coastal warfare. Implements sloped armor trigonometric equations T_eff = T / cos(theta), ricochet critical angle thresholds, kinetic energy decay curves, and projectile core fragmentation mechanics.
-# ==============================================================================
+## Destructible wall/hull panel for Omaha (landing craft plating, concrete,
+## sandbags, masonry town walls): a Prop with per-panel integrity and
+## batching support.
+##
+## Role: created by the Omaha world and boat builders, which set the flags.
+## Visuals may be merged into MultiMeshes for speed; the first real damage
+## "unbatches" the panel back into its own mesh so it can be carved.
+## `structure` (if set) is told to re-check its supports so unsupported walls
+## and roofs collapse (check_supports).
+## Damage rules: protected concrete only takes explosive damage (25%); other
+## materials take 100% explosive, 80% hull-panel, 12% masonry or 40% other.
 extends "res://scripts/ardennes/prop.gd"
 # Each hull panel has its own wear. Concrete keeps its ballistic strength;
 # thin landing-craft plating becomes penetrable before a panel fails.
+
+## Remaining hit points of the panel.
 var integrity:float=900
+
+## Starting integrity; used to decide when a hull panel becomes penetrable.
 var max_integrity:float=900
+
+## True when bullets can pass through the (damaged) plate.
 var penetrable:bool=false
+
+## True for bunker concrete: only explosions hurt it.
 var protected_concrete:bool=false
+
+## True for landing-craft hull plates, which report hits to their boat.
 var hull_panel:bool=false
+
+## Building or craft that owns this panel and re-checks its supports after damage.
 var structure
+
+## Data {mesh, material, transform} to rebuild an individual visual when leaving a batch.
 var render_source:Dictionary={}
+
+## MultiMesh the panel's visual currently lives in, or null.
 var render_batch:MultiMesh
+
+## Slot in render_batch.
 var render_index:int=-1
+
+## Position used to collapse the batched instance.
 var render_origin=Vector3.ZERO
 
+## Hides the batched visual, runs the Prop demolition, then asks the structure
+## to check whether anything above or beside it lost its support.
 func demolish():
-	# --- TOTAL STRUCTURAL COLLAPSE: Complete Geometry Invalidation ---
-	# Invariants:
-	# - Spawns rigid body debris fragments with randomized angular momentum.
-	# - Disables navigation obstacles and triggers particle smoke and audio explosions.
-	# Logic: Execute step-by-step processing for demolish
 	if destroyed:return
 	if render_batch!=null:render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
 	super.demolish()
 	if is_instance_valid(structure):structure.check_supports()
 
+## Registers a hit using the rules in the class comment and returns true.
+## [param amount] damage points. [param point] hit position. [param _radius] hole size basis. [param explosive] true for blasts.
+## Thin batched town walls turn into editable pieces at the first heavy (>= 95) explosion; masonry, wood and sandbags are carved once their
+## local cell (0.6 m) has taken 320 (masonry) or 85 damage or any explosion hits.
+## Hull panels also count hits for their vehicle and become penetrable below 64% integrity.
 func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=false)->bool:
-	# --- STRUCTURAL FRACTURE MECHANICS: Localized Destruction & Voxel Carving ---
-	# Invariants:
-	# - Evaluates impact coordinates against geometry bounding AABB boxes.
-	# - Subdivides or carves mesh surfaces and applies physical impulses to fractured debris fragments.
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if destroyed:return false
 	wear+=amount
 	bullet_mark(point)
@@ -64,8 +86,8 @@ func damage_at(amount:float,point:Vector3,_radius:float=0.24,explosive:bool=fals
 	elif is_instance_valid(structure):structure.check_supports()
 	return true
 
+## Darkens the panel the first time it is hurt enough to be penetrable, and marks the actual opening as passable.
 func modulate_damage():
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if has_meta("scarred"):return
 	set_meta("scarred",true)
 	if render_batch!=null and render_batch.use_colors:render_batch.set_instance_color(render_index,Color(0.50,0.52,0.48))
@@ -76,10 +98,8 @@ func modulate_damage():
 	# Actual visual and ballistic openings are local to this damaged panel.
 	if hull_panel:penetrable=true
 
+## Removes the panel's instance from its shared MultiMesh and gives it its own mesh, so it can be carved without leaving a ghost.
 func unbatch():
-	# --- CONTRACT: Function `unbatch` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for unbatch
 	if render_batch==null:return
 	render_batch.set_instance_transform(render_index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),render_origin))
 	render_batch=null
@@ -94,10 +114,8 @@ func unbatch():
 	for child in get_children():
 		if child is MeshInstance3D:child.show()
 
+## Performs a queued cut after leaving the batch, then re-checks the structure's supports.
 func commit_cut(point:Vector3,radius:float):
-	# --- CONTRACT: Function `commit_cut` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for commit_cut
 	unbatch()
 	super.commit_cut(point,radius)
 	if is_instance_valid(structure):structure.check_supports()
