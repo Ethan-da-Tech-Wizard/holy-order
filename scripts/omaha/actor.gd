@@ -1,66 +1,137 @@
-# ==============================================================================
-# Program: actor.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach amphibious assault infantry AI controller. Simulates sea surf wading resistance, beach shingle sprint mechanics, Bangalore torpedo wire breaching teams, bazooka anti-fortification teams, and MG42 suppression morale states.
-# ==============================================================================
+## Soldier for the Omaha mission: the Ardennes actor (ardennes/actor.gd) plus
+## the behaviour of landing-craft passengers, engineers with bangalore
+## torpedoes, wire crossing, bazooka crews, fixed German gun positions and cheaper
+## movement for the very large battle (1,200 attackers).
+##
+## Role: created by omaha/battle.gd (sets `role`, `lane`, `sector`, `wave`,
+## `bangalores`, `boat`, `mounted`, `stationary`, ...). What is overridden:
+##   - think(): assault logic with wire handling, retreat from charges and
+##     grenades, rocket team commands, bounding advance; German defenders hold position;
+##   - _physics_process: passengers ride their boat; mounted/stationary gunners
+##     do only timers and firing, with the ground check for fixed positions;
+##   - movement: when game.quality == 0 (the Low graphics preset), a "simple motion"
+##     path samples terrain height directly and only sweeps a capsule, avoiding
+##     expensive general floor queries for every soldier;
+##   - ranges and ammunition adjusted for the open beach (see _ready).
+## Roles: "rifleman", "engineer" (carries bangalores), "driver" (boat coxswain: huge health, never moves), "gunner".
 extends "res://scripts/ardennes/actor.gd"
+
+## Landing craft the soldier rides, or null.
 var boat
+
+## True for defenders fixed in a firing position (they hold and shoot; they fall back to normal AI if the floor disappears).
 var stationary:bool=false
+
+## Countdown between floor checks for stationary actors.
 var floor_check_clock:float=0
+
+## Index of the rocket team this soldier carries or recovers for, or -1.
 var bazooka_team:int=-1
+
+## Index of the rocket team this soldier loads for, or -1.
 var loader_for:int=-1
+
+## Role string (see class comment).
 var role:String="rifleman"
+
+## 0 or 1: which landing wave the soldier belongs to.
 var wave:int=0
+
+## x of the assault lane (see Layout.ASSAULT_LANES) the soldier follows.
 var lane:float=0
+
+## Defence sector (0..7) for German gunners.
 var sector:int=0
+
+## Bangalore torpedoes carried (engineers).
 var bangalores:int=0
+
+## Visual tube on the engineer's body; hidden when none is left.
 var bangalore_model:Node3D
+
+## Direction the mounted gun faces.
 var mount_facing=Vector3(0,0,1)
+
+## Half-angle (radians) the gun can traverse.
 var mount_arc:float=PI
+
+## Reserved for sharing contact memory; not used by the current logic.
 var memory:Dictionary={}
+
+## Game time of the last shot; used by AI awareness of who is shooting.
 var last_fired:float=-999
+
+## Reserved for time-slicing; unused.
 var tick_bank:float=0
+
+## True when a far-away soldier is drawn as a cheap level-of-detail instance.
 var far_visual:bool=false
+
+## MultiMesh used for far soldiers.
 var lod_mesh:MultiMesh
+
+## Slot in lod_mesh, or -1.
 var lod_slot:int=-1
+
+## True when the full model is hidden in favour of the LOD instance.
 var lod_hidden:bool=false
+
+## Whether the LOD instance is animated.
 var lod_running:bool=false
+
+## Last transform written into the LOD slot (scale zero means hidden).
 var lod_transform=Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO)
+
+## Reserved; unused.
 var wire_wait:float=0
+
+## Position to fall back to after setting a bangalore.
 var charge_retreat=Vector3.ZERO
+
+## Time until which the soldier keeps retreating.
 var retreat_until:float=0
+
+## Reserved; unused.
 var stance_pause:float=0
+
+## Reserved; unused.
 var flanking_wire:bool=false
+
+## Reserved; unused.
 var assault_stage:int=0
+
+## Cached neighbour push vector.
 var separation_cache=Vector3.ZERO
+
+## Time the cache was computed.
 var separation_at:float=-1
+
+## Countdown between wire checks for engineers (0.15 s).
 var engineer_clock:float=0
+
+## Grounded flag for simple motion.
 var terrain_grounded:bool=false
+
+## Last wall normal for simple motion.
 var terrain_wall=Vector3.ZERO
 
+## True when the low-quality (0) preset is active and the cheap movement path is used.
 func simple_motion()->bool:
-	# --- CONTRACT: Function `simple_motion` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for simple_motion
 	return game.get("quality")==0
 
+## Grounded test: from the cheap terrain sample in simple motion, else the engine's floor check.
 func motion_grounded()->bool:
-	# --- CONTRACT: Function `motion_grounded` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for motion_grounded
 	return terrain_grounded if simple_motion() else super.motion_grounded()
 
+## Wall normal: from the last cheap sweep in simple motion, else the engine's.
 func motion_wall_normal()->Vector3:
-	# --- CONTRACT: Function `motion_wall_normal` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for motion_wall_normal
 	return terrain_wall if simple_motion() else super.motion_wall_normal()
 
+## Moves the soldier. Normal mode: move_and_slide. Simple motion: reads the height
+## of the (deformable) beach at the current and next position, blocks slopes steeper than about 48 degrees (climb above 1.11 x the step), snaps
+## to the ground and sweeps the capsule up to three times with move_and_collide (collision mask world + player), sliding along walls.
+## [param delta] physics step in seconds.
 func move_actor_body(delta:float):
-	# --- CONTRACT: Function `move_actor_body` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for move_actor_body
 	if not simple_motion():
 		if collision_mask!=(1|2):collision_mask=1|2
 		super.move_actor_body(delta)
@@ -97,10 +168,9 @@ func move_actor_body(delta:float):
 		else:terrain_wall=normal
 		motion=hit.get_remainder().slide(normal)
 
+## Parks or releases a soldier in the offshore reserve: staged soldiers have their collision, hit area and physics switched off so a second wave costs nothing until it lands.
+## [param waiting] true to park, false to release.
 func set_reserve(waiting:bool):
-	# --- CONTRACT: Function `set_reserve` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for set_reserve
 	staged=waiting
 	var hidden_reserve=waiting and team==1
 	collision_layer=0 if hidden_reserve else (4 if team==0 else 8)
@@ -110,13 +180,10 @@ func set_reserve(waiting:bool):
 	# Boats own their passengers' poses. Only disembarked soldiers and gunners tick.
 	set_physics_process(not waiting and truck==null and role!="driver")
 
+## Godot lifecycle hook: runs the base setup, frees first-person-only gun markers (the player needs them, AI does not), copies the weapon spec so changes are local, and sets
+## ranges and ammunition for the beach: Americans assault at 6.2 m/s (engineers 6.6), Garand/BAR range 420 m; Germans: MGs 1000 m (mounted) or 420 m with big reserves and a wider spread when mounted (a beaten zone), rifles 360 m; the boat driver has 25000 health.
+## Adds the visible bangalore and flamethrower tanks.
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	super._ready()
 	# First-person sight/reload markers belong to the player, not every AI rifle.
 	for marker in ["SightLine","RearSightLine","Bolt","ReloadClip"]:gun.get_node(marker).free()
@@ -142,13 +209,10 @@ func _ready():
 			Art.cylinder(model.root,0.13,0.66,Vector3(x,1.20,0.34),Art.material(Color("5c6240")),-1,10)
 		Art.segment(model.root,Vector3(0.15,0.98,0.4),Vector3(0.35,0.81,-0.15),0.028,Art.material(Color("1a2420")))
 
+## Per-tick work. Passengers only animate their legs. Boat crew, mounted and stationary soldiers handle timers, reload, floor check and firing only. Everyone else
+## runs the Ardennes step_actor (slower, x0.8, in the surf), and engineers look for wire to blow.
+## [param delta] physics step in seconds.
 func _physics_process(delta):
-	# --- DETERMINISTIC SIMULATION TICK: 60 Hz Physics Frame Synchronization ---
-	# Invariants:
-	# - Parameter delta is fixed at 1/60s (approx 0.01667s) by Engine.max_fps configuration.
-	# - Integrates kinematic velocity vectors, applies gravitational acceleration, and updates bounding colliders.
-	# - Performs raycast obstacle evaluations before committing spatial position changes.
-	# Step: Execute fixed-timestep physics calculation, collision resolution, and kinematics
 	if not alive or staged or game.phase!="playing":return
 	if truck!=null:
 		if truck.arrived:
@@ -199,22 +263,22 @@ func _physics_process(delta):
 		if wire!=null and not wire.broken and wire.deploy(self):clear_charge(game.elapsed)
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
 
+## After setting a bangalore: retreat about 9 m behind (offset sideways by index) for 2.4 s so the engineer is clear of the blast.
+## [param now] game time.
 func clear_charge(now:float):
-	# --- CONTRACT: Function `clear_charge` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for clear_charge
 	charge_retreat=game.world.on_ground(position+Vector3((index%2*2-1)*3,0,9))
 	retreat_until=now+2.4
 	state="withdraw"
 	stance="stand"
 	set_destination(charge_retreat)
 
+## Decision step (see the base class). Americans: avoid grenades about to explode, throw grenades at 8-29 m, use the knife within 2.2 m, obey the rocket team, then deal with wire:
+## follow a gap, wait prone while a charge burns (withdrawing if within 9 m), engineers
+## set charges, others rally and recover bangalores; otherwise advance to the assault goal in bounds (one in eight pauses to fire) and charge with
+## the knife when out of ammunition. Germans hold position inside their guard radius and fire, standing in trenches and going prone under pressure.
+## [param now] game time.
 func think(now:float):
-	# --- COGNITIVE AI ARBITRATION: Squad Behavior Tree State Machine ---
-	# Invariants:
-	# - Samples sensory perception buffers (visual line-of-sight and acoustic hearing).
 	# - Transitions between Patrol, Alert, Combat, Flank, and Fallback states based on threat distance.
-	# Logic: Execute step-by-step processing for think
 	if not alive or staged or truck!=null or role=="driver":return
 	decision_count+=1
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
@@ -322,22 +386,16 @@ func think(now:float):
 		state="melee"
 		set_destination(last_known)
 
+## Moves toward `goal` in bounds: one in ten soldiers (by index and time, 1.25 s slots) fires from cover while the rest advance.
 func bound_toward(goal:Vector3,now:float):
-	# --- CONTRACT: Function `bound_toward` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for bound_toward
 	# Short covering bursts; nine files keep charging while one covers.
 	var cover_slot=(int(now/1.25)+index)%10==0 and target!=null and position.z<0
 	state="fire" if cover_slot else "advance"
 	stance="prone" if cover_slot and threat_pressure>3 else ("crouch" if cover_slot else "stand")
 	if not cover_slot:set_destination(goal)
 
+## Fires like the base class, but Americans also fire an inaccurate (x1.8 spread) covering shot while advancing (not engineers); records the shot time and gives sustained MG fire visible bursts with cooling pauses.
 func try_fire():
-	# --- BALLISTIC FIRE CADENCE: Machine Gun & Firearm Burst Dispatch ---
-	# Balance Invariants:
-	# - Enforces cyclic rate-of-fire cooldowns and weapon heat dissipation curves.
-	# - Samples dispersion half-angle to simulate barrel harmonics and weapon spread.
-	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	if role=="driver" or staged:return
 	var previous=shots
 	var previous_state=state
@@ -357,12 +415,8 @@ func try_fire():
 			burst_pause=randf_range(0.25,0.55)
 			burst_left=randi_range(9,18)
 
+## Steps off the landing craft: only after it has arrived; places the soldier on the ground at the seat position with a small forward velocity and re-enables physics.
 func dismount():
-	# --- KINEMATIC DETACHMENT: Vehicle / Emplacement Operator Release ---
-	# Invariants:
-	# - Restores actor's independent physics collision layers and spatial hierarchy.
-	# - Unregisters operator control locks from the stationary weapon or vehicle chassis.
-	# Logic: Execute step-by-step processing for dismount
 	if truck==null or not truck.arrived:return
 	var craft=truck
 	var p=craft.seat_transform(seat).origin
@@ -381,10 +435,8 @@ func dismount():
 	velocity=Vector3(0,0,-2)
 	set_physics_process(true)
 
+## Sounds only create a search direction (last_known) and never give sight through walls; ignored for friendly noise and when contact is fresh (< 1.2 s).
 func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
-	# --- CONTRACT: Function `hear_noise` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for hear_noise
 	if not alive or staged or source_team==team:return
 	# A sound creates a search direction, never visibility through a wall.
 	if global_position.distance_to(point)>radius:return
@@ -393,19 +445,12 @@ func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
 		last_known=point
 		contact_age=3.0
 
+## Ignores damage while parked in the reserve; otherwise as the base class.
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
-	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
-	# Invariants:
-	# - Deducts incoming ballistic/explosive damage from entity health pool.
-	# - Triggers directional damage indicators and flinch screen-shake impulse.
-	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
-	# Step: Process damage reception, evaluate armor mitigation, and update health status
 	if staged:return
 	super.take_damage(amount,source,kind)
 
+## Avoids recomputing the route when inside the town (z < -342) and the new goal is within 2 m of the current one, which would thrash streets.
 func set_destination(goal:Vector3):
-	# --- CONTRACT: Function `set_destination` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for set_destination
 	if position.z< -342 and destination.distance_to(goal)<2 and path_cursor<path.size():return
 	super.set_destination(goal)

@@ -1,58 +1,89 @@
-# ==============================================================================
-# Program: rocket_team.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Two-man bazooka anti-armor team coordinator. Manages gunner and loader tactical pairing, ammunition supply tracking, rocket propellant smoke trails, and fortified bunker target acquisition.
-# ==============================================================================
+## One bazooka team on the American side at Omaha: a launcher with six rockets
+## shared by a carrier (fires), a loader (reloads, 6.8 s) and a recoverer
+## who picks up the launcher if the carrier dies.
+##
+## Role: created by omaha/battle.gd, which calls tick() every physics step. The
+## team does not spawn soldiers: it recruits eligible friendly infantry,
+## dynamically, by setting their `bazooka_team` / `loader_for` fields, and
+## commands them through command(), which the actor's think() consults.
+## Rules (from the file's design note): one owner and one exclusive helper
+## per finite launcher; no remote or automatic reloads (the loader must stand within 2.8 m); a dropped launcher
+## stays on the ground until another soldier walks to it.
+## Targets are Panzer IVs (`game.tanks`) between 12 and 185 m.
 extends Node3D
 # A single owner and a single exclusive helper lease per finite launcher.
 const Kit=preload("res://scripts/ardennes/weapons.gd")
+
+## The Omaha battle controller.
 var game
+
+## Team number (identifies the loader/recoverer links on actors).
 var index:int=0
+
+## The soldier carrying and firing the launcher, or null.
 var carrier
+
+## Helper who reloads, or null.
 var loader
+
+## Soldier walking to pick up a dropped launcher, or null.
 var recoverer
+
+## The bazooka model.
 var launcher:Node3D
+
+## Ground position of the launcher after its carrier died; INF when carried.
 var dropped_at=Vector3.INF
+
+## Rockets left (6, finite).
 var rockets:int=6
+
+## Whether a rocket is in the launcher.
 var loaded:bool=true
+
+## Seconds of the current reload (completes at 6.8).
 var reload_progress:float=0
+
+## Countdown to the next decision (0.40-0.50 s).
 var decision_clock:float=0
+
+## Tank currently chosen.
 var target
+
+## True while the launcher is shouldered (1.25 s after choosing a shot).
 var aiming:bool=false
+
+## Time at which aiming ends.
 var aim_until:float=0
+
+## Position the carrier should move to for a clear and safe shot, or INF.
 var firing_position=Vector3.INF
+
+## Rockets fired (statistic).
 var shots:int=0
+
+## Times a new carrier picked up the launcher.
 var recoveries:int=0
+
+## Times a loader was recruited.
 var loader_changes:int=0
 
+## Godot lifecycle hook: builds the bazooka model and slings it on the carrier; physics processing is off because the controller calls tick().
 func _ready():
-	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
-	# Invariants:
-	# - Configures physics collision layers/masks and spatial spatial transforms.
-	# - Caches local references to prevent runtime get_node() tree traversal latency.
-	# - Binds event signals and initializes internal state machines.
-	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	launcher=Kit.weapon(self,"bazooka")
 	attach_launcher()
 	set_physics_process(false)
 
+## True if `actor` is alive, in play, not in a truck or boat.
 func active(actor)->bool:
-	# --- CONTRACT: Function `active` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for active
 	return is_instance_valid(actor) and actor.alive and not actor.staged and actor.truck==null and actor.boat==null
 
+## True if `actor` can join: an active US soldier who is not an engineer still carrying a bangalore (unless already past z = -186), not already in a team, and not a driver or gunner.
 func eligible(actor)->bool:
-	# --- CONTRACT: Function `eligible` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for eligible
 	return active(actor) and actor.team==1 and (actor.bangalores==0 or actor.position.z< -186) and actor.bazooka_team<0 and actor.loader_for<0 and actor.role not in ["driver","gunner"]
 
+## Attaches the launcher model to the carrier (slung on the back) and clears the dropped position.
 func attach_launcher():
-	# --- CONTRACT: Function `attach_launcher` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for attach_launcher
 	if carrier==null:return
 	launcher.reparent(carrier,false)
 	launcher.position=Vector3(-0.30,1.03,0.30)
@@ -60,17 +91,13 @@ func attach_launcher():
 	launcher.scale=Vector3.ONE
 	dropped_at=Vector3.INF
 
+## Frees the loader's link to this team.
 func release_loader():
-	# --- CONTRACT: Function `release_loader` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for release_loader
 	if is_instance_valid(loader) and loader.loader_for==index:loader.loader_for=-1
 	loader=null
 
+## When the carrier dies: leaves the launcher on the ground where he fell, clears the aim state and frees the loader.
 func lose_carrier():
-	# --- CONTRACT: Function `lose_carrier` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for lose_carrier
 	if carrier==null:return
 	dropped_at=game.world.on_ground(carrier.position)+Vector3(0,0.15,0)
 	carrier.bazooka_team=-1
@@ -83,10 +110,8 @@ func lose_carrier():
 	reload_progress=0
 	release_loader()
 
+## Returns the nearest eligible friendly soldier to `point` within `radius`, or null.
 func nearest_eligible(point:Vector3,radius:float):
-	# --- CONTRACT: Function `nearest_eligible` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for nearest_eligible
 	var nearest=null
 	var best=radius*radius
 	for actor in game.friendlies:
@@ -97,8 +122,9 @@ func nearest_eligible(point:Vector3,radius:float):
 			nearest=actor
 	return nearest
 
+## Per-physics-step update: cleans up dead helpers, advances the reload when the loader stands at the carrier, poses the launcher (shouldered or slung) and, on a 0.4 s timer, makes decisions: recover a dropped launcher, recruit a loader, pick a tank, check a clear and safe line, then fire through game.launch_heavy with 90 m/s lead on the target.
+## [param delta] physics step in seconds.
 func tick(delta:float):
-	# Step: Update internal simulation state and refresh cached coordinates
 	if carrier!=null and not carrier.alive:lose_carrier()
 	if loader!=null and (not active(loader) or loader.loader_for!=index):release_loader()
 	if recoverer!=null and not active(recoverer):
@@ -141,6 +167,8 @@ func tick(delta:float):
 	var aim=target.aim_point()
 	var from=carrier.position+Vector3(0,1.42,0)
 	var direction=(aim-from).normalized()
+
+	# If the carrier's back-blast would hit a friend or a wall, move to another position instead of firing.
 	if not safe_backblast(from,direction):
 		firing_position=find_firing_position(target)
 		return
@@ -167,10 +195,8 @@ func tick(delta:float):
 	loaded=false
 	reload_progress=0
 
+## Chooses the nearest tank (between 12 m and 185 m) that the carrier or the loader can see; a helper may spot armour while the carrier is behind cover.
 func select_tank():
-	# --- CONTRACT: Function `select_tank` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for select_tank
 	var chosen=null
 	var best=185.0*185.0
 	for tank in game.tanks:
@@ -186,19 +212,15 @@ func select_tank():
 				break
 	return chosen
 
+## True if a ray from `from` to the tank's aim point hits the tank first.
 func sees_tank(from:Vector3,tank,exclude:Array[RID])->bool:
-	# --- CONTRACT: Function `sees_tank` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for sees_tank
 	var q=PhysicsRayQueryParameters3D.create(from,tank.aim_point(),1|2|4|8)
 	q.exclude=exclude
 	var hit=get_world_3d().direct_space_state.intersect_ray(q)
 	return not hit.is_empty() and hit.collider.get("tank_owner")==tank
 
+## Searches 3, 6 and 10 m to either side of the carrier for a position that is outside houses, has a clear view of the tank and a safe back-blast; returns INF when none.
 func find_firing_position(tank)->Vector3:
-	# --- CONTRACT: Function `find_firing_position` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for find_firing_position
 	var toward=tank.position-carrier.position
 	toward.y=0
 	toward=toward.normalized()
@@ -211,10 +233,8 @@ func find_firing_position(tank)->Vector3:
 		if sees_tank(from,tank,[carrier.get_rid()]) and safe_backblast(from,direction):return candidate
 	return Vector3.INF
 
+## True if nobody within about 6.5 m stands behind the launcher (dot of their direction with the back-blast axis above 0.86) and the rear is not blocked by a wall within 3 m.
 func safe_backblast(from:Vector3,direction:Vector3)->bool:
-	# --- CONTRACT: Function `safe_backblast` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for safe_backblast
 	for actor in game.friendlies+[game.player]:
 		if actor==carrier or not game.actor_alive(actor) or actor.position.distance_squared_to(from)>42:continue
 		var offset=game.actor_aim(actor)-from
@@ -223,10 +243,8 @@ func safe_backblast(from:Vector3,direction:Vector3)->bool:
 	q.exclude=[carrier.get_rid()]
 	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
+## Called by an actor's think() to see whether the team wants to control it: sends the recoverer to the launcher, positions the loader beside the carrier, moves the carrier to the firing position, or keeps it aiming. Returns true if it took control.
 func command(actor)->bool:
-	# --- CONTRACT: Function `command` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for command
 	if actor==recoverer:
 		actor.state="advance"
 		actor.stance="stand"
@@ -254,8 +272,6 @@ func command(actor)->bool:
 		return true
 	return false
 
+## Frees the launcher model.
 func _exit_tree():
-	# --- CONTRACT: Function `_exit_tree` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for _exit_tree
 	if is_instance_valid(launcher):launcher.queue_free()
