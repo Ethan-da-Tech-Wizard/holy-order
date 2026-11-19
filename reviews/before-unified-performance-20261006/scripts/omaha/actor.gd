@@ -1,31 +1,70 @@
-# ==============================================================================
-# Program: actor.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for actor.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/actor.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends "res://scripts/ardennes/actor.gd"
 var boat
+
+## Role string (see class comment).
 var role:String="rifleman"
+
+## 0 or 1: which landing wave the soldier belongs to.
 var wave:int=0
+
+## x of the assault lane (see Layout.ASSAULT_LANES) the soldier follows.
 var lane:float=0
+
+## Defence sector (0..7) for German gunners.
 var sector:int=0
+
+## Bangalore torpedoes carried (engineers).
 var bangalores:int=0
+
+## Visual tube on the engineer's body; hidden when none is left.
 var bangalore_model:Node3D
+
+## Direction the mounted gun faces.
 var mount_facing=Vector3(0,0,1)
+
+## Half-angle (radians) the gun can traverse.
 var mount_arc:float=PI
+
+## Reserved for sharing contact memory; not used by the current logic.
 var memory:Dictionary={}
+
+## Game time of the last shot; used by AI awareness of who is shooting.
 var last_fired:float=-999
+
+## Reserved for time-slicing; unused.
 var tick_bank:float=0
+
+## True when a far-away soldier is drawn as a cheap level-of-detail instance.
 var far_visual:bool=false
+
+## Reserved; unused.
 var wire_wait:float=0
+
+## Position to fall back to after setting a bangalore.
 var charge_retreat=Vector3.ZERO
+
+## Time until which the soldier keeps retreating.
 var retreat_until:float=0
+
+## Reserved; unused.
 var stance_pause:float=0
+
+## Reserved; unused.
 var flanking_wire:bool=false
+
+## Reserved; unused.
 var assault_stage:int=0
+
+## Cached neighbour push vector.
 var separation_cache=Vector3.ZERO
+
+## Time the cache was computed.
 var separation_at:float=-1
+
+## Countdown between wire checks for engineers (0.15 s).
 var engineer_clock:float=0
 
 func _ready():
@@ -52,6 +91,9 @@ func _ready():
 			Art.cylinder(model.root,0.13,0.66,Vector3(x,1.20,0.34),Art.material(Color("5c6240")),-1,10)
 		Art.segment(model.root,Vector3(0.15,0.98,0.4),Vector3(0.35,0.81,-0.15),0.028,Art.material(Color("1a2420")))
 
+## Per-tick work. Passengers only animate their legs. Boat crew, mounted and stationary soldiers handle timers, reload, floor check and firing only. Everyone else
+## runs the Ardennes step_actor (slower, x0.8, in the surf), and engineers look for wire to blow.
+## [param delta] physics step in seconds.
 func _physics_process(delta):
 	if not alive or staged or game.phase!="playing":return
 	if truck!=null:
@@ -92,6 +134,8 @@ func _physics_process(delta):
 		if wire!=null and not wire.broken and wire.deploy(self):clear_charge(game.elapsed)
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
 
+## After setting a bangalore: retreat about 9 m behind (offset sideways by index) for 2.4 s so the engineer is clear of the blast.
+## [param now] game time.
 func clear_charge(now:float):
 	charge_retreat=game.world.on_ground(position+Vector3((index%2*2-1)*3,0,9))
 	retreat_until=now+2.4
@@ -99,7 +143,13 @@ func clear_charge(now:float):
 	stance="stand"
 	set_destination(charge_retreat)
 
+## Decision step (see the base class). Americans: avoid grenades about to explode, throw grenades at 8-29 m, use the knife within 2.2 m, obey the rocket team, then deal with wire:
+## follow a gap, wait prone while a charge burns (withdrawing if within 9 m), engineers
+## set charges, others rally and recover bangalores; otherwise advance to the assault goal in bounds (one in eight pauses to fire) and charge with
+## the knife when out of ammunition. Germans hold position inside their guard radius and fire, standing in trenches and going prone under pressure.
+## [param now] game time.
 func think(now:float):
+	# - Transitions between Patrol, Alert, Combat, Flank, and Fallback states based on threat distance.
 	if not alive or staged or truck!=null or role=="driver":return
 	decision_count+=1
 	if bangalore_model!=null:bangalore_model.visible=bangalores>0
@@ -197,6 +247,7 @@ func think(now:float):
 		state="melee"
 		set_destination(last_known)
 
+## Moves toward `goal` in bounds: one in ten soldiers (by index and time, 1.25 s slots) fires from cover while the rest advance.
 func bound_toward(goal:Vector3,now:float):
 	# Short covering bursts; nine files keep charging while one covers.
 	var cover_slot=(int(now/1.25)+index)%10==0 and target!=null and position.z<0
@@ -204,6 +255,7 @@ func bound_toward(goal:Vector3,now:float):
 	stance="prone" if cover_slot and threat_pressure>3 else ("crouch" if cover_slot else "stand")
 	if not cover_slot:set_destination(goal)
 
+## Fires like the base class, but Americans also fire an inaccurate (x1.8 spread) covering shot while advancing (not engineers); records the shot time and gives sustained MG fire visible bursts with cooling pauses.
 func try_fire():
 	if role=="driver" or staged:return
 	var previous=shots
@@ -224,6 +276,7 @@ func try_fire():
 			burst_pause=randf_range(0.25,0.55)
 			burst_left=randi_range(9,18)
 
+## Steps off the landing craft: only after it has arrived; places the soldier on the ground at the seat position with a small forward velocity and re-enables physics.
 func dismount():
 	if truck==null or not truck.arrived:return
 	var craft=truck
@@ -242,6 +295,7 @@ func dismount():
 	shape.position.y=0.88
 	velocity=Vector3(0,0,-2)
 
+## Sounds only create a search direction (last_known) and never give sight through walls; ignored for friendly noise and when contact is fresh (< 1.2 s).
 func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
 	if not alive or staged or source_team==team:return
 	# A sound creates a search direction, never visibility through a wall.
@@ -251,6 +305,7 @@ func hear_noise(point:Vector3,radius:float,source_team:int,kind:String):
 		last_known=point
 		contact_age=3.0
 
+## Ignores damage while parked in the reserve; otherwise as the base class.
 func take_damage(amount:float,source:Vector3=Vector3.ZERO,kind:String="rifle"):
 	if staged:return
 	super.take_damage(amount,source,kind)

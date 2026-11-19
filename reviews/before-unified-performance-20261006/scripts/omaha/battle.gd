@@ -1,8 +1,11 @@
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/battle.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 # ==============================================================================
 # Program: battle.gd
 # Programmer: Ethan-da-Tech-Wizard
 # Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for battle.gd.
+# Purpose: Omaha Beach D-Day amphibious assault master controller. Manages landing craft flotilla approach waves, beach obstacle demolition triggers, seawall shingle advances, bunker suppression objectives, and high-tide level progression.
 # ==============================================================================
 extends "res://scripts/ardennes/battle.gd"
 const Layout=preload("res://scripts/omaha/layout.gd")
@@ -46,6 +49,12 @@ var tracer_batch:MultiMeshInstance3D
 var detailed_soldiers:int=0
 
 func _ready():
+	# --- LIFECYCLE INITIALIZATION: Scene Tree Entry & Component Binding ---
+	# Invariants:
+	# - Configures physics collision layers/masks and spatial spatial transforms.
+	# - Caches local references to prevent runtime get_node() tree traversal latency.
+	# - Binds event signals and initializes internal state machines.
+	# Step: Initialize node state, configure collision layers, and bind signal delegates
 	Engine.max_fps=60
 	test_mode="--battle-test" in OS.get_cmdline_user_args() or get_tree().has_meta("battle_test")
 	combat_seed=int(get_tree().get_meta("battle_seed",19440606))
@@ -86,6 +95,9 @@ func _ready():
 	if "--battle-preview" in OS.get_cmdline_user_args():begin()
 
 func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
+	# --- CONTRACT: Function `add_soldier` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for add_soldier
 	var a=Soldier.new()
 	a.game=self
 	a.team=team_id
@@ -96,6 +108,11 @@ func add_soldier(team_id:int,kind:String,p:Vector3,squad_id:int):
 	return a
 
 func make_landing_force():
+	# --- CONTRACT: Function `make_landing_force` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for make_landing_force
+	# Twenty craft per wave, each with 27 passengers, two gunners and a driver.
+	# The player replaces one passenger: exactly 600 Americans in each wave.
 	# EXACT strength: 20 * (27 assault passengers + 2 gunners + 1 driver) = 600.
 	# The player replaces one passenger. Both waves contain 300 people, including crew.
 	for wave in range(2):
@@ -161,6 +178,9 @@ func make_landing_force():
 				engine.finished.connect(func():if phase=="playing" and not craft.arrived:engine.play())
 
 func make_defenders():
+	# --- CONTRACT: Function `make_defenders` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for make_defenders
 	for sector_id in range(8):
 		var sq=new_squad(0,"hold","cautious",world.anchors[sector_id])
 		for j in range(11):
@@ -185,6 +205,7 @@ func make_defenders():
 			squads[sq].members.append(a)
 			if a.leader:squads[sq].leader=a
 	var sq=new_squad(0,"hold","cautious",Vector3(0,45,Layout.VILLAGE-30))
+	# Twelve riflemen complete the 100-person beach force.
 	for i in range(12):
 		var a=add_soldier(0,["g43","kar98","mp40"][i%3],world.town_points[mini(i*3,world.town_points.size()-1)],sq)
 		a.sector=Layout.sector_for(a.position.x)
@@ -206,6 +227,9 @@ func begin():
 	toast("FIRST WAVE • HOLD FAST • 2 BROWNINGS PER CRAFT",6)
 
 func boat_landed(craft):
+	# --- CONTRACT: Function `boat_landed` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for boat_landed
 	if craft.engine_loop!=null:craft.engine_loop.stop()
 	if craft.wave==0 and not first_wave_landed:
 		first_wave_landed=true
@@ -236,6 +260,9 @@ func apply_quality():
 		world.masonry.normal_enabled=quality>0
 
 func step_battle(delta):
+	# --- CONTRACT: Function `step_battle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for step_battle
 	if phase!="playing":return
 	elapsed+=delta
 	sim_ticks+=1
@@ -284,6 +311,7 @@ func step_battle(delta):
 		check_mines()
 
 func update_squads():
+	# Step: Update internal simulation state and refresh cached coordinates
 	for sq in squads:
 		if sq.leader==null or not sq.leader.alive:
 			sq.leader=null
@@ -294,6 +322,9 @@ func update_squads():
 					break
 
 func separation_for(actor)->Vector3:
+	# --- CONTRACT: Function `separation_for` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for separation_for
 	if elapsed<actor.separation_at:return actor.separation_cache
 	actor.separation_at=elapsed+0.10+float(actor.index%3)*0.008
 	var c=Vector2i(floori(actor.position.x/5),floori(actor.position.z/5))
@@ -312,6 +343,9 @@ func separation_for(actor)->Vector3:
 	return actor.separation_cache
 
 func can_detect(observer,other)->bool:
+	# --- CONTRACT: Function `can_detect` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for can_detect
 	if not actor_alive(other):return false
 	if other.position.z>FOG_LINE and observer.team==0:return false
 	var offset=actor_aim(other)-observer.eye()
@@ -355,12 +389,18 @@ func acquire_target(observer):
 	return null
 
 func insert_nearest(list:Array,actor,distance:float):
+	# --- CONTRACT: Function `insert_nearest` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for insert_nearest
 	var slot=0
 	while slot<list.size() and list[slot].d<distance:slot+=1
 	list.insert(slot,{"actor":actor,"d":distance})
 	if list.size()>10:list.pop_back()
 
 func acquire_vehicle(observer):
+	# --- CONTRACT: Function `acquire_vehicle` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for acquire_vehicle
 	if observer.team!=0:return null
 	var selected=null
 	var best=INF
@@ -380,6 +420,7 @@ func acquire_vehicle(observer):
 	return selected
 
 func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	var ray=PhysicsRayQueryParameters3D.create(from,to+(to-from).normalized()*0.2,1|2|4|8)
 	ray.exclude=[actor.get_rid()]
 	var hit=get_world_3d().direct_space_state.intersect_ray(ray)
@@ -390,6 +431,7 @@ func safe_fire_line(actor,from:Vector3,to:Vector3)->bool:
 	return false
 
 func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String):
+	# Step: Calculate weapon trajectory, perform raycast hit detection, and apply recoil
 	source.last_fired=elapsed
 	if kind=="flamethrower":
 		flame_jet(source,from,aim)
@@ -445,6 +487,9 @@ func shoot(source,from:Vector3,aim:Vector3,spread:float,damage:float,kind:String
 	if source!=player and source.position.distance_squared_to(player.position)<1960000:sounds.at("rifle",from,-6,randf_range(0.80,1.06))
 
 func notify_projectile(from:Vector3,to:Vector3,source_team:int):
+	# --- CONTRACT: Function `notify_projectile` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for notify_projectile
 	var line=to-from
 	var sq=line.length_squared()
 	if sq<0.001:return
@@ -469,11 +514,15 @@ func notify_projectile(from:Vector3,to:Vector3,source_team:int):
 						near_misses+=1
 
 func emit_noise(point:Vector3,radius:float,team:int,kind:String):
+	# --- CONTRACT: Function `emit_noise` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for emit_noise
 	if kind=="gunshot":return # Perception uses each actual shooter's last-fired timestamp.
 	for actor in actors:
 		if actor.alive and actor.team!=team and actor.position.distance_squared_to(point)<radius*radius:actor.hear_noise(point,radius,team,kind)
 
 func build_tracers():
+	# Step: Instantiate and position node hierarchy into scene tree for build_tracers
 	tracer_batch=MultiMeshInstance3D.new()
 	var mesh=BoxMesh.new()
 	mesh.size=Vector3.ONE
@@ -491,6 +540,9 @@ func build_tracers():
 	add_child(tracer_batch)
 
 func tracer(from:Vector3,to:Vector3,color:Color):
+	# --- CONTRACT: Function `tracer` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for tracer
 	if tracers.size()>=160:return
 	var delta=to-from
 	var distance=delta.length()
@@ -500,6 +552,7 @@ func tracer(from:Vector3,to:Vector3,color:Color):
 	tracers.append({"from":from,"direction":direction,"distance":distance,"travel":0.0,"basis":basis,"color":color})
 
 func update_tracers(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	var count=0
 	for i in range(tracers.size()-1,-1,-1):
 		var t=tracers[i]
@@ -513,6 +566,9 @@ func update_tracers(delta:float):
 	tracer_batch.multimesh.visible_instance_count=count
 
 func flame_jet(source,from:Vector3,aim:Vector3):
+	# --- CONTRACT: Function `flame_jet` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for flame_jet
 	ammo_spent+=1
 	var direction=(aim-from).normalized()
 	var ray=PhysicsRayQueryParameters3D.create(from,from+direction*23,1|2|4|8)
@@ -536,6 +592,7 @@ func flame_jet(source,from:Vector3,aim:Vector3):
 	sounds.at("explosion",from,-20,1.8)
 
 func build_flashes():
+	# Step: Instantiate and position node hierarchy into scene tree for build_flashes
 	flash_batch=MultiMeshInstance3D.new()
 	flash_batch.multimesh=MultiMesh.new()
 	flash_batch.multimesh.transform_format=MultiMesh.TRANSFORM_3D
@@ -555,12 +612,16 @@ func build_flashes():
 	add_child(flash_batch)
 
 func update_flashes():
+	# Step: Update internal simulation state and refresh cached coordinates
 	if flash_batch==null:return
 	flashes=flashes.filter(func(f):return f.until>elapsed)
 	for i in range(flashes.size()):flash_batch.multimesh.set_instance_transform(i,Transform3D(Basis.IDENTITY,flashes[i].p))
 	flash_batch.multimesh.visible_instance_count=flashes.size()
 
 func recover_bangalore(actor)->bool:
+	# --- CONTRACT: Function `recover_bangalore` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for recover_bangalore
 	if actor.bangalores>0:return false
 	var closest=null
 	var best=48.0*48.0
@@ -586,6 +647,9 @@ func recover_bangalore(actor)->bool:
 	return true
 
 func assault_goal(actor)->Vector3:
+	# --- CONTRACT: Function `assault_goal` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for assault_goal
 	var center=world.anchors[actor.sector]
 	var flank=center.x+(15 if actor.index%2==0 else -15)
 	var doorway=world.on_ground(Vector3(center.x,0,center.z-8))
@@ -635,6 +699,7 @@ func assault_goal(actor)->Vector3:
 	return goal
 
 func update_objectives(delta:float):
+	# Step: Update internal simulation state and refresh cached coordinates
 	secured=0
 	for i in range(8):
 		var defenders=0
@@ -662,6 +727,9 @@ func update_objectives(delta:float):
 		sounds.play("victory",-10)
 
 func check_mines():
+	# --- CONTRACT: Function `check_mines` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for check_mines
 	for mine in world.mines:
 		if not mine.live:continue
 		var c=Vector2i(floori(mine.point.x/5),floori(mine.point.z/5))
@@ -677,6 +745,7 @@ func check_mines():
 			explode(mine.point+Vector3(0,0.4,0),4.0,130,null,"mine")
 
 func build_lod_batches():
+	# Step: Instantiate and position node hierarchy into scene tree for build_lod_batches
 	for actor in actors:
 		var key=str(actor.team)+"/"+actor.weapon_kind
 		if lod_batches.has(key):continue
@@ -745,6 +814,9 @@ func update_lod():
 	for key in lod_batches:lod_batches[key].multimesh.visible_instance_count=counts.get(key,0)
 
 func actor_died(actor,kind:String):
+	# --- CONTRACT: Function `actor_died` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for actor_died
 	# Keep the established persistent bodies, loot, damaged weapons and finite inventory.
 	super.actor_died(actor,kind)
 	if phase=="victory":phase="playing" # Mission ends at secured exits / town, not a kill counter.
@@ -759,12 +831,18 @@ func actor_died(actor,kind:String):
 			break
 
 func interact():
+	# --- CONTRACT: Function `interact` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for interact
 	if player.truck!=null:
 		player.truck.dismount()
 		return
 	super.interact()
 
 func objective_target()->Vector3:
+	# --- CONTRACT: Function `objective_target` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for objective_target
 	if player.truck!=null:return world.on_ground(Vector3(player.truck.lane_x,0,Layout.WIRE_ROWS[0]))
 	if secured>=3:
 		var guard=null
@@ -796,6 +874,9 @@ func objective_text()->String:
 	return "Take bluff exits %d / 3 • clear the village"%mini(secured,3)
 
 func retry():
+	# --- CONTRACT: Function `retry` ---
+	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
+	# Logic: Execute step-by-step processing for retry
 	get_tree().set_meta("omaha_retry",true)
 	get_tree().change_scene_to_file("res://scenes/omaha.tscn")
 

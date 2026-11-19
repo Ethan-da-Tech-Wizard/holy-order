@@ -1,9 +1,6 @@
-# ==============================================================================
-# Program: audio.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for audio.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/audio.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
 extends "res://scripts/ardennes/audio.gd"
 var voices:Array[AudioStreamPlayer3D]=[]
 var next_voice:int=0

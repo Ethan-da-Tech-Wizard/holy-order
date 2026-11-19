@@ -1,21 +1,48 @@
-# ==============================================================================
-# Program: interface.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha beach landing component implementing assault physics, tactical coordinates, or telemetry for interface.gd.
-# ==============================================================================
+## Archived review snapshot (before-unified-performance-20261006): the code below is the script as it stood for that
+## review. The documentation was carried over from the live script scripts/omaha/interface.gd for every
+## code line that is unchanged; lines that differ from the live script have no extra notes.
+## Full-screen UI for the Omaha mission: title card, HUD with a wave timer and
+## objective compass, pause/inventory/orders and end screens.
+##
+## Role: child of a CanvasLayer made by omaha/battle.gd (sets `game`). Same
+## immediate-mode design as the Ardennes HUD (ardennes/interface.gd): _draw()
+## paints everything from game state each frame, and Button nodes are rebuilt only
+## when the phase changes. Omaha-specific parts: a skippable approach
+## cinematic (game.intro_active), a landing-aborted defeat variant, counters
+## for wire gaps and living tanks, and a "Skip to ramp" button.
 extends Control
+
+## The Omaha battle controller.
 var game
+
+## Container for the current phase's buttons.
 var panel:Control
+
+## Phase the buttons were built for (cleared on resize or drop_pack to force a rebuild).
 var last_phase:String=""
+
+## Heading font.
 var serif=preload("res://assets/fonts/DejaVuSerif.ttf")
+
+## Body font.
 var sans=preload("res://assets/fonts/DejaVuSans.ttf")
+
+## Label font.
 var mono=preload("res://assets/fonts/DejaVuSansMono.ttf")
+
+## Panel background colour.
 const INK=Color("10191f")
+
+## Main text colour.
 const WHITE=Color("e5e5d9")
+
+## Accent colour.
 const GOLD=Color("c8ae76")
+
+## Secondary text colour.
 const BLUE=Color("a7c5d1")
 
+## Godot lifecycle hook: full-screen, mouse passes through, default font; resize forces a rebuild of the buttons.
 func _ready():
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -25,15 +52,20 @@ func _ready():
 	self.theme=theme
 	resized.connect(func():last_phase="")
 
+## Rebuilds buttons on phase change and redraws every frame.
 func _process(_delta):
 	if last_phase!=game.phase:
 		last_phase=game.phase
 		menu()
 	queue_redraw()
 
+## Draws one line of text (baseline at `pos`, font, size in points, colour).
 func text(value:String,pos:Vector2,font:Font=sans,points:int=17,color:Color=WHITE):
 	draw_string(font,pos,value,HORIZONTAL_ALIGNMENT_LEFT,-1,points,color)
 
+## Paints the current phase: title card (with the order of battle), the
+## letterboxed approach cinematic, the playing HUD, or the dim overlay with a
+## page of text for the other phases.
 func _draw():
 	var w=size.x
 	var h=size.y
@@ -63,6 +95,8 @@ func _draw():
 		text("OMAHA / THE LONGEST SHORE",Vector2(42,55),mono,12,GOLD)
 		text(game.objective_text(),Vector2(42,84),sans,15)
 		navigation()
+
+		# Counters: allies include the player (+1); wire gaps opened and Panzer IVs still alive.
 		text("ALLIES %03d / ENEMY %02d"%[game.allies_alive+1,game.germans_alive],Vector2(w-306,52),mono,15,BLUE)
 		text("WIRE GAPS %d • F6 GRAPHICS"%game.breaches+"",Vector2(w-306,76),mono,11,GOLD)
 		var center=size/2
@@ -117,6 +151,7 @@ func _draw():
 		lines.append("Partial magazines still occupy their full space. Excess loot stays on the body.")
 	for i in range(lines.size()):text(lines[i],Vector2(x,h*0.33+i*30),sans,15)
 
+## Draws the compass box: a gold dot showing where the objective lies relative to the view direction (inland distance in metres), and the second-wave countdown (mm:ss, or "ashore" when it has landed).
 func navigation():
 	var center=Vector2(size.x/2,66)
 	draw_rect(Rect2(center-Vector2(144,37),Vector2(288,87)),Color(INK,0.84))
@@ -129,6 +164,7 @@ func navigation():
 	var line="WAVE 2 ASHORE" if game.second_wave_landed else "WAVE 2  %02d:%02d"%[seconds/60,seconds%60]
 	text(line,center+Vector2(-75,34),mono,12,GOLD)
 
+## Rebuilds the phase's buttons: Deploy and Skip to Ramp (title), Land Again (end), Return (pause), Drop Ammo Pack (inventory), Mission Menu and Quit. Nothing is made during play.
 func menu():
 	if is_instance_valid(panel):panel.queue_free()
 	panel=Control.new()
@@ -146,6 +182,8 @@ func menu():
 	if game.phase=="inventory":button("DROP SPARE AMMO PACK",Vector2(x,y+52),Vector2(268,38),game.drop_pack)
 	button("QUIT",Vector2(x+280,y),Vector2(95,44),func():get_tree().quit())
 
+## Creates one flat-styled Button inside `panel`.
+## [param caption] label. [param pos] top-left pixels. [param dimensions] size. [param callback] pressed handler.
 func button(caption:String,pos:Vector2,dimensions:Vector2,callback:Callable):
 	var b=Button.new()
 	b.text=caption
