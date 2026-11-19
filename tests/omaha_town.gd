@@ -1,28 +1,40 @@
-# ==============================================================================
-# Program: omaha_town.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Normandy coastal town navigation and interior combat test harness. Verifies indoor line-of-sight calculations, stair climbing kinematics, and destructible house roof fractures.
-# ==============================================================================
+## Tests for the Omaha village, its houses, tanks and bazooka teams, run headless.
+##
+## Checks (PASS/FAIL printed, report written; exit 1 on failure):
+##   - forces: 100 beach defenders plus 150 staged town defenders; 24 three-level houses with 150 defended stations;
+##     three tanks, eight AI-only launchers; the intro can be skipped;
+##   - building: all 96 indoor stations have real firing apertures, upper floors have collision,
+##     infantry can climb the stairwell to the attic and descend again, and all three bluff draws connect to the town;
+##   - bazooka teams: exactly one eligible loader is nominated; the loader must stand beside the carrier to reload and
+##     no ammunition is fabricated; dead loaders are replaced once; a dead carrier drops the launcher and frees the helper;
+##     a recovered launcher gets one new carrier and loader; no helper belongs to two teams;
+##   - tank damage model: hundreds of ordinary hits cannot kill a tank; grenades only wear tracks; sustained rifle fire can
+##     sever a track; rockets damage the hull and several are needed to wreck it; a team fires a physical rocket at
+##     visible armour; tanks choose a nearer detected soldier over the player, can still fire with broken tracks and drive on streets.
+## Run: godot --headless --path <repo> --script res://tests/omaha_town.gd
 extends SceneTree
 const Kit=preload("res://scripts/ardennes/weapons.gd")
+
+## The Omaha battle controller.
 var g
+
+## Collected results.
 var checks=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Records and prints one result. [param label] description. [param ok] pass/fail. [param data] optional detail.
 func check(label:String,ok:bool,data=null):
-	# --- CONTRACT: Function `check` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
+
+## Awaits `n` physics frames.
 func ticks(n:int):
-	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
+
+## Runs all the checks in order.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()
 	root.add_child(g)

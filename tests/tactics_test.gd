@@ -1,32 +1,43 @@
-# ==============================================================================
-# Program: tactics_test.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Squad tactical AI decision tree verification suite. Tests flanking route selection, suppressive fire sector coverage, bounding overwatch cadence, and tactical withdrawal triggers.
-# ==============================================================================
+## Behaviour tests for the desert mission's enemy AI (enemy.gd, game.gd, mg_nest.gd,
+## field_navigation.gd): perception, cover, ammunition and the machine-gun nest.
+##
+## Checks (PASS/FAIL printed, exit code 1 on any failure): six actors wait quietly at
+## the title; exactly two assault roles and a designated MG gunner; the navigation graph builds and all seven houses
+## have doors; the assault route reaches the isolated checkpoint around buildings; a quiet
+## sentry takedown does not alert the village but a rifle report alerts all five and creates a search, not visual contact;
+## defenders pick occluded cover; unseen player movement does not update where an enemy thinks the player is; near
+## misses suppress and force new cover; digging continues after distant shots but is interrupted by very close footsteps;
+## assault soldiers alternate bounds; rifles consume real rounds (six, then no seventh), reloads transfer a clip, no
+## shot through an intact wall; a soldier without ammunition uses a knife; the Breda M37 starts with a 20-round tray
+## plus three, exhausts exactly 80 rounds and cannot make more; a dry gunner dismounts and keeps his rifle; loot
+## rules (ammunition once, shovel, broken player rifle).
+## Run: godot --headless --path <repo> --script res://tests/tactics_test.gd
 extends SceneTree
+
+## The desert Game node.
 var g
+
+## Collected results.
 var checks: Array=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Records and prints one assertion. [param ok] must be true. [param text] what is verified.
 func check(ok: bool, text: String):
-	# --- CONTRACT: Function `check` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check
 	checks.append({"check":text,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+text)
+
+## Awaits `n` physics frames.
 func ticks(n: int):
-	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
+
+## True if a physics ray from `a` to `b` hits world geometry (layer 1); used to confirm a wall really blocks a line of fire.
 func blocked(a: Vector3,b: Vector3) -> bool:
-	# --- CONTRACT: Function `blocked` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for blocked
 	return not g.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(a,b,1)).is_empty()
+
+## Runs all the checks in the order described above.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	g=load("res://scenes/main.tscn").instantiate()
 	root.add_child(g)
 	current_scene=g

@@ -1,12 +1,11 @@
-# ==============================================================================
-# Program: inspect_api.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Engine reflection and API contract verification utility. Validates scene tree node hierarchies, exported property types, and signal signature contracts across simulation scenes.
-# ==============================================================================
+## Developer probe, not a test: prints every Environment constant whose name
+## contains "REFLECT" so one can check which reflection options this Godot
+## version offers.
+## Run: godot --headless --path <repo> --script res://tests/inspect_api.gd
 extends SceneTree
+
+## SceneTree entry point: list the matching constants, then exit immediately.
 func _initialize():
-	# Step: Configure initial parameters and dependency references for _initialize
  for key in ClassDB.class_get_integer_constant_list("Environment"):
   if "REFLECT" in key: print(key)
  quit()

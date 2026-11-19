@@ -1,24 +1,35 @@
-# ==============================================================================
-# Program: omaha_scale.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Large-scale entity stress testing harness for Omaha Beach. Simulates concurrent performance of 100+ landing troops, multiple DD Sherman tanks, and continuous machine gun fire streams.
-# ==============================================================================
+## Scale and behaviour checks for the Omaha landing: reserves, engineers, wire,
+## the sea wall, low-quality infantry movement, instanced remains and wave two.
+##
+## Checks (PASS/FAIL printed, report written; exit 1 if any fail) include:
+##   - all 600 second-wave soldiers sleep with collision disabled until released, and all activate at two minutes;
+##   - every boat has three engineers spread along its file; twenty breach lanes fit a 228 m landing front;
+##     circling reserve hulls stay separated; terrain collision agrees with the rendered height;
+##   - engineer behaviour: approaches intact wire even if a distant gap exists, breaches its own file even when a neighbouring file is
+##     open, plants and retreats immediately; a rifleman does not cross the whole beach to a distant gap;
+##   - every file has a clear short route through the sea wall;
+##   - low-quality swept-capsule movement: stops at concrete, moves through once cover is destroyed, cannot pass intact wire, passes an opened gap;
+##   - instanced remains keep all six damageable parts, a detached body keeps moving, dropped weapons keep finite ammunition and collision, picking one up
+##     transfers its ammunition and frees the drop.
+## Run: godot --headless --path <repo> --script res://tests/omaha_scale.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Collected results.
 var checks=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Records and prints one result. [param label] description. [param ok] pass/fail. [param data] optional detail.
 func check(label:String,ok:bool,data=null):
-	# --- CONTRACT: Function `check` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check
 	checks.append({"check":label,"ok":ok,"data":data})
 	print("PASS " if ok else "FAIL ",label," ",data if data!=null else "")
+
+## Runs all the checks and writes the report.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()
@@ -162,10 +173,9 @@ func run():
 	await process_frame
 	quit(0 if result.passed==result.total else 1)
 
+## Steps one actor's physics by hand for `seconds` of simulated time (advancing the battle clock), for scenarios where the controller's own loop is disabled.
+## [param actor] soldier to move. [param seconds] simulated seconds.
 func move_for(actor,seconds:float):
-	# --- CONTRACT: Function `move_for` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for move_for
 	for i in range(roundi(seconds*Engine.physics_ticks_per_second)):
 		await physics_frame
 		g.elapsed+=1.0/Engine.physics_ticks_per_second

@@ -1,20 +1,35 @@
-# ==============================================================================
-# Program: omaha_simulation.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: End-to-end headless simulation harness for the Omaha Beach landing. Executes complete automated mission playthroughs to verify objective completion states and edge-case invariants.
-# ==============================================================================
+## End-to-end observer simulation of the whole Omaha landing: runs the real
+## battle with no human player and records how it develops.
+##
+## Method: loads scenes/omaha.tscn with the fixed seed 19440606, starts it, parks the
+## player far away (the player gets off the craft through the same dismount code
+## but never fights), and advances to the times in `targets` (45, 65, 90, 120,
+## 180, 240, 275, 300, 360, 480 and 600 simulated seconds). At each it writes a
+## snapshot (survivors, current AI states, wire crossings, number stuck, engineers left, spread of
+## positions, shots, penetrations...) to reviews/omaha/simulation-progress.json, and
+## at the end the full report with median and 95th percentile step times to
+## reviews/omaha/simulation.json. Environment variable OMAHA_SIM_END limits the
+## run to targets up to that time. Reported times are headless CPU step times, not GPU frame rate.
+## Run: godot --headless --path <repo> --script res://tests/omaha_simulation.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Snapshot records.
 var snapshots=[]
+
+## Reserved; unused.
 var sample_times=[]
+
+## Wall-clock duration (ms) of every physics step.
 var durations=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Records the state of all living, landed Americans: counts by AI state, stuck soldiers (stuck > 0.5 s), engineers, sorted z and x positions, soldiers beyond the last wire row, plus global counters; prints it and rewrites the progress file.
 func snapshot():
-	# --- CONTRACT: Function `snapshot` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for snapshot
 	var states={}
 	var positions=[]
 	var living=0
@@ -39,16 +54,18 @@ func snapshot():
 	print("SNAPSHOT ",JSON.stringify(record))
 	var file=FileAccess.open("res://reviews/omaha/simulation-progress.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(snapshots,"  "))
+
+## Runs the observation to the last target time and writes the final report.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()
 	root.add_child(g)
 	Engine.max_fps=0
 	await physics_frame
+
+	# Observe without an unattended player death aborting the AI battle.
+	# No team health/ammo buffs: observer is moved away after disembarkation.
 	g.begin()
 	# Observe without an unattended player death aborting the AI battle.
 	# No team health/ammo buffs: observer is moved away after disembarkation.
@@ -61,6 +78,8 @@ func run():
 	var last=Time.get_ticks_usec()
 	while g.elapsed<targets.back()+0.1:
 		await physics_frame
+
+		# The observer fixture leaves the craft explicitly (production players have to walk down the ramp).
 		if g.player.truck!=null and g.elapsed>g.first_landing_at+10:
 			# Observer fixture exits explicitly; production players must walk.
 			g.player.deck_position.z=-6.9

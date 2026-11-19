@@ -1,30 +1,40 @@
-# ==============================================================================
-# Program: ardennes_review.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Ardennes mission balance and pacing verification suite. Validates convoy escort survival ratios, German ambush wave trigger intervals, and ammunition economy constraints.
-# ==============================================================================
+## Screenshot review for the Ardennes mission: renders a set of fixed views to
+## reviews/ardennes-<label>.png so a person can inspect the look of the title,
+## truck interior, ridge defences, BAR iron sights, prone view and grenade wind-up.
+##
+## Needs a real renderer (not --headless). The game runs inside a 1440 x 900 SubViewport
+## with its own 3D world and 4x MSAA, so captures are the same size on any
+## display. Audio is muted. The HUD is hidden for the in-game shots. It uses no
+## pass/fail checks; its output is the images.
+## Run: godot --path <repo> --script res://tests/ardennes_review.gd
 extends SceneTree
+
+## The Ardennes battle controller.
 var g
+
+## Fixed-size viewport that renders the review.
 var view:SubViewport
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Awaits `n` physics frames.
 func ticks(n):
-	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
+
+## Waits until the frame is drawn, saves the viewport as reviews/ardennes-<label>.png and prints CAPTURE.
+## [param label] suffix of the file name.
 func capture(label):
-	# --- CONTRACT: Function `capture` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
 	print("CAPTURE ",label)
+
+## Starts the battle in test mode, walks the camera through the views and saves each one.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	AudioServer.set_bus_mute(0,true)
+
+	# Fixed 1440 x 900 with its own world so the images do not depend on the window size or other scenes.
 	view=SubViewport.new()
 	view.size=Vector2i(1440,900)
 	view.own_world_3d=true
@@ -37,10 +47,14 @@ func run():
 	await capture("title")
 	g.begin()
 	await ticks(8)
+
+	# Freeze the simulation while taking pictures; the HUD is hidden.
 	g.pause_game("paused")
 	g.hud.hide()
 	g.player.camera.current=true
 	g.player.head.rotation.x=-0.06
+
+	# Runs the view-model animation by hand because paused physics would not.
 	g.player.update_view(0.2)
 	await ticks(4)
 	await capture("truck")

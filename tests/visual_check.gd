@@ -1,32 +1,37 @@
-# ==============================================================================
-# Program: visual_check.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Automated visual rendering check and framebuffer snapshot harness. Confirms shader compilation, material binding, UI canvas layout, and lighting parameters without visual anomalies.
-# ==============================================================================
+## Scripted walk through the desert mission that saves screenshots to reviews/
+## for a visual regression review (start screen, briefing, spawn, rifle pickup,
+## outpost, patrol rendezvous, tea scene, end).
+##
+## Role: created and run by game.gd when started with `--visual-check` (see
+## Game.run_visual_check); `g` is the Game node. It needs a real renderer (not
+## --headless) because it reads viewport textures. Timings are wall-clock
+## timers sized for the cutscene lengths in game.gd (pickup 1.8 s, tea scene about
+## 5.6 s). It teleports the player and kills enemies to jump between stages.
 extends Node
 
+## Waits for the frame to finish drawing and saves the viewport as reviews/<name>.png.
+## [param name] file name without extension.
 func snap(name: String):
-	# --- CONTRACT: Function `snap` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for snap
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://reviews/"+name+".png")
 
+## Plays the staged walkthrough using timers, taking one screenshot per stage; prints VISUAL_CHECK_COMPLETE and quits.
+## [param g] the Game node (game.gd).
 func run(g):
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	await get_tree().create_timer(1.5).timeout
 	await snap("start-screen")
 	g.begin()
 	await get_tree().create_timer(0.3).timeout
 	await snap("opening-briefing")
+
+	# Keep the enemies from shooting during the screenshots.
 	for enemy in g.enemies: enemy.cooldown=999
 	g.resume_game()
 	await get_tree().create_timer(0.8).timeout
 	await snap("sheltered-spawn")
 	g.player.position=Vector3(1.5,0.04,5.7)
+
+	# Kill the sentry so his rifle drops and the pickup cutscene can play.
 	g.enemies[0].take_damage(200)
 	await get_tree().create_timer(1.8).timeout
 	await snap("rifle-pickup")

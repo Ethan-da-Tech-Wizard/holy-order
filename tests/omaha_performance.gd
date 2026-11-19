@@ -1,32 +1,45 @@
-# ==============================================================================
-# Program: omaha_performance.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Omaha coastal theater performance profiling test harness. Measures render frame rates, ocean wave shader vertex calculation throughput, and rigid body physics ticks during amphibious assaults.
-# ==============================================================================
+## Performance probe for the Omaha mission: measures frame intervals during 45
+## simulated seconds of the beach battle with the full force.
+## Method: loads scenes/omaha.tscn in test mode with the seed 19440606, jumps to
+## 14 s after the first landing with the player hovering (65 m up, frozen), then
+## records every physics frame interval (and render frame interval through
+## _process) while the battle runs. The report (median, p95 etc. of the sorted
+## samples, wire mesh triangle count) is printed and written to
+## reviews/omaha/performance-<tag>.json. These are headless CPU intervals, not
+## desktop FPS (stated in the report's "mode").
+## Environment variables: HOLY_ORDER_PHYSICS_HZ overrides the physics rate;
+## OMAHA_PERF_TAG names the output file (default "current").
+## Run: godot --headless --path <repo> --script res://tests/omaha_performance.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## Physics frame intervals (ms).
 var frames=[]
+
+## Render frame intervals (ms).
 var render_frames=[]
+
+## True while samples are collected.
 var measuring=false
+
+## Timestamp (microseconds) of the previous render frame.
 var render_last:int=0
+
+## Records the interval since the previous rendered frame while measuring. Returns false so the engine keeps running.
 func _process(_delta):
-	# --- VISUAL FRAME RENDERING: Viewport Interpolation & Viewmodel Transformations ---
-	# Invariants:
-	# - Runs decoupled from fixed physics ticks for smooth visual presentation.
-	# - Updates camera position slerp, viewmodel breathing bob, and HUD crosshair spreading.
-	# Step: Execute variable delta-time frame logic, camera tracking, and visual updates
 	if not measuring:return false
 	var now=Time.get_ticks_usec()
 	if render_last>0:render_frames.append((now-render_last)/1000.0)
 	render_last=now
 	return false
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Sets up the scene, runs the 45 s measurement loop, then writes and prints the report and quits.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19440606)
 	g=load("res://scenes/omaha.tscn").instantiate()
@@ -34,9 +47,13 @@ func run():
 	Engine.max_fps=0
 	if OS.has_environment("HOLY_ORDER_PHYSICS_HZ"):Engine.physics_ticks_per_second=int(OS.get_environment("HOLY_ORDER_PHYSICS_HZ"))
 	await physics_frame
+
+	# `true` skips the approach cinematic and lands the first wave immediately.
 	g.begin(true)
 	g.player.set_physics_process(false)
 	g.player.collision_layer=0
+
+	# Start measuring when the troops are on the beach and the fight is at its busiest.
 	g.elapsed=g.first_landing_at+14
 	for boat in g.boats:boat.tick(0.016667)
 	g.player.truck=null
@@ -45,6 +62,8 @@ func run():
 	var last=Time.get_ticks_usec()
 	var wall_start=last
 	measuring=true
+
+	# Keeps the phase "playing" even if the player's state (frozen, invulnerable placement) would end it.
 	while g.elapsed<start+45:
 		await physics_frame
 		var now=Time.get_ticks_usec()

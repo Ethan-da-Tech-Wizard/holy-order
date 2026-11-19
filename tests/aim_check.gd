@@ -1,51 +1,52 @@
-# ==============================================================================
-# Program: aim_check.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Target acquisition and weapon aiming accuracy verification suite. Tests raycast projectile alignment, iron sight offsets, recoil impulse recovery, and dispersion cone bounds.
-# ==============================================================================
+## Verification of rifle aiming accuracy and sight alignment in the desert mission.
+##
+## Checks (PASS/FAIL, also reviews/aim-checks.json; exit 1 on failure): for each
+## stance (standing, crouched, prone, lean left, lean right) the front sight and rear
+## notch both coincide with the screen centre to within 0.35 px while aiming, and an aimed
+## shot hits a 28 mm target 25 m away. Also: recoil returns to the original alignment;
+## a reload lowers the sights, shows the clip and keeps ammunition accounting right (2 loaded and 18 spare become 6 and 14);
+## aim re-acquires after reload; and the aim transition settles to the same FOV and sight alignment at 30, 60 and 144 FPS.
+## Why: iron sights are real geometry (carcano_model.gd), so camera and view-model maths must line
+## up exactly or the weapon would be unusable.
+## Run: godot --path <repo> --script res://tests/aim_check.gd
 extends SceneTree
 
+## A tiny static target that counts how many times it takes damage.
 class AimTarget extends StaticBody3D:
+	## Number of hits received.
 	var hits: int = 0
-	func take_damage(_amount: float, _head: bool = false): hits += 1
-	# --- DAMAGE MITIGATION & HEALTH STATE MACHINE: Kinetic Impact Resolution ---
-	# Invariants:
-	# - Deducts incoming ballistic/explosive damage from entity health pool.
-	# - Triggers directional damage indicators and flinch screen-shake impulse.
-	# - If health drops to or below 0, initiates ragdoll transition and cleanup lifecycle.
-		# Step: Process damage reception, evaluate armor mitigation, and update health status
 
+	## Called by the player's shot; only counts.
+	func take_damage(_amount: float, _head: bool = false): hits += 1
+
+## The desert Game node.
 var game
+
+## Collected results {check, passed}.
 var checks: Array = []
 
+## SceneTree entry point: sets a 1440 x 900 window and defers to run().
 func _initialize():
-	# Step: Configure initial parameters and dependency references for _initialize
 	root.size = Vector2i(1440,900)
 	call_deferred("run")
 
+## Records and prints one result. [param ok] pass/fail. [param description] text.
 func check(ok: bool, description: String):
-	# --- CONTRACT: Function `check` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for check
 	checks.append({"check":description,"passed":ok})
 	print(("PASS " if ok else "FAIL ")+description)
 
+## Awaits `count` frames' worth of physics, scaled to the physics rate so 60 means one second at any rate.
 func ticks(count: int):
-	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(maxi(1,roundi(count*Engine.physics_ticks_per_second/60.0))): await physics_frame
 
+## Distance in screen pixels between a sight marker and the screen centre.
+## [param p] the player. [param marker_name] "SightLine" (front sight) or "RearSightLine".
 func sight_error(p, marker_name: String = "SightLine") -> float:
-	# --- CONTRACT: Function `sight_error` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for sight_error
 	var point = p.rifle.get_node(marker_name).global_position
 	return p.camera.unproject_position(point).distance_to(p.camera.get_viewport().get_visible_rect().size*0.5)
 
+## Runs all the checks (see the class comment).
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)
 	current_scene = game
@@ -58,6 +59,8 @@ func run():
 	p.select_weapon(1)
 	p.camera.current = true
 	Input.action_press("aim")
+
+	# Each stance is held for 60 ticks so the view settles, then the sight alignment and a real shot are checked.
 	for stance in ["standing","crouched","prone","lean left","lean right"]:
 		for action in ["crouch","lean_left","lean_right"]: Input.action_release(action)
 		p.prone = stance == "prone"

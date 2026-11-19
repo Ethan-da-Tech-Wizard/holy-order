@@ -1,19 +1,31 @@
-# ==============================================================================
-# Program: omaha_town_assault.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Urban warfare combat simulation test suite. Measures squad clearing tactics, doorway breach mechanics, and short-range firearm balance within French coastal village environments.
-# ==============================================================================
+## Urban-combat fixture for the Omaha village: 240 Americans (plus the bazooka
+## carriers) advance on the 150 town guards and three Panzer IVs with no help from the player.
+##
+## Method: everyone is parked; German beach defenders are removed; the attackers are laid out in a 24-wide grid at z = -338
+## (just outside the village) with assault_stage 6 (the village phase of assault_goal), then the controller's loop is run
+## manually (tanks, rocket teams, heavy projectiles, think about twice a second,
+## bullets, effects) for TOWN_ASSAULT_SECONDS (default 180 s of simulated time).
+## Every 30 s it records allies and enemies alive and tank health, finally writing
+## reviews/omaha/town-assault.json. It reports; it does not fail on a threshold (exit 0).
+## Why: it checks house routing, doorway fighting, building collapse, tank and bazooka behaviour
+## under load without the landing.
+## Run: godot --headless --path <repo> --script res://tests/omaha_town_assault.gd
 extends SceneTree
+
+## The Omaha battle controller.
 var g
+
+## The attacking soldiers.
 var attack=[]
+
+## Snapshot records.
 var snapshots=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Builds the fixture, runs the simulation and writes the report.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	g=load("res://scenes/omaha.tscn").instantiate()
 	root.add_child(g)
@@ -25,12 +37,15 @@ func run():
 	g.player.position=Vector3(900,80,0)
 	g.player.collision_layer=0
 	for a in g.actors:
+		# Park every actor; the German beach garrison is then marked dead so only the village is contested.
 		a.set_reserve(true)
 		a.set_physics_process(false)
 		if a.team==0 and a.role!="town_guard":
 			a.alive=false
 			a.collision_layer=0
 			a.equipment.collision_layer=0
+
+	# Match the counter to the remaining guards.
 	g.germans_alive=150
 	for a in g.friendlies:
 		if a.boat==null and attack.size()<240:attack.append(a)
@@ -44,12 +59,16 @@ func run():
 		a.home=a.position
 		a.lane=a.position.x
 		a.sector=g.Layout.sector_for(a.position.x)
+
+		# Skip the beach stages of the assault plan.
 		a.assault_stage=6
 		a.order="assault"
 		a.state="advance"
 		a.set_reserve(false)
 	g.phase="playing"
 	g.elapsed=300
+
+	# Wake the garrison and tanks so the fight starts immediately.
 	g.activate_town()
 	g.rebuild_spatial()
 	var hz=Engine.physics_ticks_per_second

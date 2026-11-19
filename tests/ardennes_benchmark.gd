@@ -1,32 +1,50 @@
-# ==============================================================================
-# Program: ardennes_benchmark.gd
-# Programmer: Ethan-da-Tech-Wizard
-# Last Modified: November 19, 2026
-# Purpose: Performance benchmark and memory profiling suite for the Ardennes theater. Measures frame time variance, physics tick stability under 60-agent skirmishes, and particle pool allocation overhead.
-# ==============================================================================
+## GPU-side benchmark of the Ardennes battle: 125 simulated seconds with a roaming
+## observer camera, measuring frame times and rendering cost while the full battle plays.
+##
+## Needs a renderer (not --headless). Uses a fixed seed (19441224) and a 1440 x 900 viewport with
+## 4x MSAA. The observer rides in truck 4's passenger seat view until the truck unloads, then follows
+## the nearest advancing soldier; it is not a combatant. Screenshots are taken at 10, 40, 70, 100
+## and 120 s ("battle-NN"). Writes reviews/ardennes-performance.json (median, 95th and
+## 99th percentile frame time, ride versus combat summaries) and
+## reviews/ardennes-slow-frames.json (every frame over 65 ms with physics/process timings).
+## Run: godot --path <repo> --script res://tests/ardennes_benchmark.gd
 extends SceneTree
+
+## The Ardennes battle controller.
 var g
+
+## Fixed-size render viewport.
 var view:SubViewport
+
+## All frame times (ms) after the first 3 s.
 var frames:Array=[]
+
+## Periodic samples taken with the screenshots (counts, draw calls...).
 var samples:Array=[]
+
+## Frames over 65 ms with their timing breakdown.
 var slow_frames:Array=[]
+
+## Frame times while the observer is in the truck.
 var ride_frames:Array=[]
+
+## Frame times after unloading.
 var combat_frames:Array=[]
+
+## SceneTree entry point; defers to run().
 func _initialize():call_deferred("run")
-	# Step: Configure initial parameters and dependency references for _initialize
+
+## Awaits `n` physics frames.
 func ticks(n):
-	# Step: Update internal simulation state and refresh cached coordinates
 	for i in range(n):await physics_frame
+
+## Saves the viewport as reviews/ardennes-<label>.png.
 func capture(label):
-	# --- CONTRACT: Function `capture` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for capture
 	await RenderingServer.frame_post_draw
 	view.get_texture().get_image().save_png("res://reviews/ardennes-"+label+".png")
+
+## Runs the benchmark loop until 125 s of battle or the end of the mission, then writes the reports.
 func run():
-	# --- CONTRACT: Function `run` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for run
 	set_meta("battle_test",true)
 	set_meta("battle_seed",19441224)
 	AudioServer.set_bus_mute(0,true)
@@ -53,6 +71,8 @@ func run():
 	var captured={}
 	var tracked=null
 	var track_clock=0.0
+
+	# The camera is driven by hand: first from the seat, then trailing a soldier toward the hill it is assigned to.
 	while g.elapsed<125 and g.phase=="playing":
 		var point=g.trucks[4].position
 		var cam=g.world.world_camera
@@ -81,6 +101,8 @@ func run():
 			frames.append(ms)
 			if riding:ride_frames.append(ms)
 			else:combat_frames.append(ms)
+
+		# Slow frames are listed separately with the engine's own timing monitors, to find hitches.
 		if ms>65 and g.elapsed>3:
 			var sample={"second":snappedf(g.elapsed,0.1),"frame_ms":ms,"physics_ms":Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)*1000,"process_ms":Performance.get_monitor(Performance.TIME_PROCESS)*1000,"cut_jobs":g.world.cut_jobs,"active_cuts":g.world.active_cuts.size(),"queued_cuts":g.world.pending_cuts.size()}
 			slow_frames.append(sample)
@@ -88,6 +110,8 @@ func run():
 			if g.elapsed>=mark and not captured.has(mark):
 				captured[mark]=true
 				await capture("battle-%02d"%mark)
+
+				# Screenshots read back from the GPU synchronously, so their time is excluded from the next frame's measurement.
 				last=Time.get_ticks_usec() # Exclude synchronous screenshot readback.
 				var sample={"second":mark,"allies":g.allies_alive,"germans":g.germans_alive,"shots":g.ammo_spent,"deaths":g.death_causes.duplicate(),"bodies":get_nodes_in_group("winter_corpses").size(),"draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"primitives":Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)}
 				samples.append(sample)
@@ -105,10 +129,10 @@ func run():
 	await ticks(5)
 	quit()
 
+## Summary of a list of frame times: count, median, 95th and 99th percentile in milliseconds (sorts the list).
 func summarize(values:Array)->Dictionary:
-	# --- CONTRACT: Function `summarize` ---
-	# Enforces state consistency, validates spatial parameters, and coordinates game systems.
-	# Logic: Execute step-by-step processing for summarize
 	if values.is_empty():return {"frames":0}
+
+	# Percentiles are read by index from the sorted list.
 	values.sort()
 	return {"frames":values.size(),"median_ms":values[values.size()/2],"p95_ms":values[int(values.size()*0.95)],"p99_ms":values[int(values.size()*0.99)]}
