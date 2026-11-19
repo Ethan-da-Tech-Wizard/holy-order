@@ -4,33 +4,59 @@
 # Last Modified: November 19, 2026
 # Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for tactics.gd.
 # ==============================================================================
+## High-level squad AI ("tactics") for the Ardennes friendly forces.
+##
+## Splits dismounted friendlies into a LEFT and RIGHT wing (two groups of four
+## squads), walks each wing along a route of hilltop gun areas and sets per-squad
+## orders (support, flank, clear) from the JSON "book" of plans. Also handles
+## leader succession when leaders die. Used by the battle script, which calls `update()`
+## each tactics tick and `formation_goal()` per actor.
 extends RefCounted
+
+# Parsed tactical_plans.json: `plans` (order and approach_distance per plan) and `spacing` (squad_lateral, column, row).
 var book:Dictionary
+
+# Two dictionaries (LEFT/RIGHT): side (-1/1), name, squads (ids), leader, route (area ids), step (index into route), area (current target).
 var groups:Array=[]
+
+# Index of the current objective sector (0..3); advances when its areas are cleared.
 var sector:int=0
 var sector_names=["ROADBLOCK","FIR RIDGE","UPPER DUGOUTS"]
 var sector_areas=[[0,1,2],[3,4,5],[6,7]]
+
+# Overall commander; replaced automatically when he dies.
 var commander
+
+# Statistics counters used by tests and the debug report.
 var orders_issued:int=0
 var successions:int=0
 
+## Load the tactical plan table from disk.
 func _init():
 	book=JSON.parse_string(FileAccess.get_file_as_string("res://scripts/ardennes/tactical_plans.json"))
 
+## Create the two wing groups after the squads exist.
+## @param game The battle controller (provides squads).
 func initialize(game):
+	# Squad 4's leader is the overall commander.
 	commander=game.squads[4].leader
 	for i in range(3):groups.append({"squads":[i*3,i*3+1,i*3+2],"leader":game.squads[i*3+1].leader,"area":i})
 
+## Whether any member of an enemy gun-site squad (id 9 + area) is still alive.
+## @param area Area index 0..7.
 func area_alive(game,area:int)->bool:
 	for actor in game.squads[9+area].members:
 		if actor.alive:return true
 	return false
 
+## Run one tactics tick: assign soldiers, advance sector, pick leaders and issue squad orders.
+## @param game The battle controller.
 func update(game):
 	while sector<2 and sector_areas[sector].all(func(i):return not area_alive(game,i)):
 		sector+=1
 		game.toast("SECTOR SECURED • Advance to "+sector_names[sector],7)
 		game.say("Keep moving. Next defensive area is marked.",4,"SGT. HAYES")
+	# Dead commander: choose the first living friendly.
 	if commander==null or not commander.alive:
 		commander=null
 		for sq in game.squads.slice(0,9):
@@ -63,6 +89,7 @@ func update(game):
 			var sq=game.squads[group.squads[j]]
 			var plan=["support","flank_left","flank_right"][j]
 			if sq.leader!=null and sq.leader.position.distance_to(anchor)<32:plan="clear"
+			# Count an order change only when plan or area actually changed.
 			if sq.get("plan","")!=plan or sq.get("area",-1)!=group.area:orders_issued+=1
 			sq.plan=plan
 			sq.area=group.area
@@ -75,6 +102,10 @@ func update(game):
 			var offset=book.plans[plan].offset
 			sq.objective=game.world.on_ground(anchor+right*float(offset[0])+direction*float(offset[1]))
 
+## Choose a formation slot for one soldier near his squad objective.
+## @param game The battle controller.
+## @param actor The soldier.
+## @return A world position on the ground for the soldier's slot: columns of three, rows behind each other.
 func formation_goal(game,actor)->Vector3:
 	var sq=game.squads[actor.squad]
 	var goal:Vector3=sq.objective
