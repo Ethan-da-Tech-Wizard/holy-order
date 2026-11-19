@@ -4,17 +4,30 @@
 # Last Modified: November 19, 2026
 # Purpose: Ardennes theater component implementing gameplay mechanics, simulation physics, or AI routines for prop.gd.
 # ==============================================================================
+## Generic destructible world prop (tree, wall, sandbag, crate, truck part, soil).
+##
+## Built on breakable.gd. Adds material-specific wear thresholds, tree felling,
+## cheap instanced bullet marks and routing of cuts/craters through the Ardennes
+## battle world, which batches terrain edits. Truck panels (armored_panel.gd,
+## armor.gd) extend this. Receives damage through `damage_at()`.
 extends "res://scripts/breakable.gd"
 
+# The Ardennes battle controller; queued cuts and ground deformation go through it.
 var battle_world
 var tree_health: float = 0
 var is_tree: bool = false
+
+# Accumulated damage; compared with a per-material failure limit.
 var wear:float=0
+
+# Owning truck if this is a vehicle part, so damage is reported upward.
 var truck_owner
 
 func damage_at(amount: float, point: Vector3, radius: float=0.24, explosive: bool=false) -> bool:
 	if destroyed:return false
+	# Rifle fire cannot dig soil; only explosions deform terrain.
 	if material_kind=="soil" and not explosive and radius<0.3:return false
+	# Wear persists across hits so many small hits can still destroy a prop.
 	wear+=amount
 	# Bound the complexity of repeatedly chipped cover. Worn-out pieces collapse
 	# completely; they never become invulnerable because the cut budget was reached.
@@ -27,12 +40,14 @@ func damage_at(amount: float, point: Vector3, radius: float=0.24, explosive: boo
 		if cuts_completed>=12 and not explosive:return false
 	if truck_owner != null:
 		truck_owner.receive_part_damage(amount,point,explosive)
+	# Trees fall after enough total damage; the world animates the fall.
 	if is_tree:
 		tree_health -= amount
 		if tree_health <= 0:
 			# A severed trunk topples as a whole, then becomes low deadwood cover.
 			battle_world.fell_tree(self)
 			return true
+	# Explosions fall through to the base class, which carves a real hole.
 	return super.damage_at(amount,point,radius,explosive)
 
 func carve(point: Vector3, radius: float):
